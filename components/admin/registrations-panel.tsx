@@ -56,16 +56,32 @@ const PAY_VARIANT: Record<PaymentStatus, "success" | "warning" | "mute"> = {
   waived: "mute",
 };
 
-/** 명단 정렬: 미납 → 완납 → 면제. 그룹 내에서는 입력순 유지(안정 정렬). */
+/** 납부 정렬 순위: 미납 → 완납 → 면제. */
 const STATUS_RANK: Record<PaymentStatus, number> = {
   unpaid: 0,
   paid: 1,
   waived: 2,
 };
-const byStatus = (arr: AdminRegRow[]) =>
-  [...arr].sort(
-    (a, b) => STATUS_RANK[a.payment_status] - STATUS_RANK[b.payment_status]
+
+/**
+ * 캠퍼스 그룹 안 정렬 (안정 정렬 — 같은 키 내에서는 입력순 유지).
+ * - groupByBus=false(입력 단계): 미납 → 완납 → 면제
+ * - groupByBus=true(마감 단계): 상행 배차 호차별(2호차끼리 → 3호차끼리, 미배정 마지막),
+ *   같은 호차 안에서는 미납 우선.
+ */
+function sortRows(arr: AdminRegRow[], groupByBus: boolean): AdminRegRow[] {
+  if (!groupByBus) {
+    return [...arr].sort(
+      (a, b) => STATUS_RANK[a.payment_status] - STATUS_RANK[b.payment_status]
+    );
+  }
+  const busKey = (r: AdminRegRow) => r.assigned_up_bus_id ?? Number.MAX_SAFE_INTEGER;
+  return [...arr].sort(
+    (a, b) =>
+      busKey(a) - busKey(b) ||
+      STATUS_RANK[a.payment_status] - STATUS_RANK[b.payment_status]
   );
+}
 
 function attendanceLabel(r: AdminRegRow): string {
   const key = presetKeyOf(r);
@@ -83,12 +99,14 @@ export function RegistrationsPanel({
   buses,
   roleLabels,
   isMaster,
+  groupByBus,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
   buses: BusInfo[];
   roleLabels: RoleLabel[];
   isMaster: boolean;
+  groupByBus: boolean;
 }) {
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -122,10 +140,10 @@ export function RegistrationsPanel({
   const grouped = searching || tab === ALL;
   const groups = grouped
     ? campuses
-        .map((c) => ({ c, members: byStatus(base.filter((r) => r.campus_id === c.id)) }))
+        .map((c) => ({ c, members: sortRows(base.filter((r) => r.campus_id === c.id), groupByBus) }))
         .filter((g) => g.members.length > 0)
     : [];
-  const flatRows = grouped ? [] : byStatus(base);
+  const flatRows = grouped ? [] : sortRows(base, groupByBus);
   const emptyMsg = searching
     ? `‘${query}’ 검색 결과가 없습니다.`
     : tab === ALL

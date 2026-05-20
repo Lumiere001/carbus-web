@@ -22,7 +22,7 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes] = await Promise.all([
+  const [regRes, campusRes, busRes, roleRes, cfgRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
@@ -32,7 +32,10 @@ export default async function AdminRegistrationsPage() {
     supabase.from("campuses").select("id, name, display_order"),
     supabase.from("buses").select("id, name, departure_day").order("id"),
     supabase.from("role_labels").select("label, color").order("display_order"),
+    supabase.from("system_config").select("current_phase").maybeSingle(),
   ]);
+  // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
+  const phase2 = cfgRes.data?.current_phase === "phase2";
 
   const campuses = ((campusRes.data ?? []) as CampusInfo[]).sort(
     (a, b) => a.display_order - b.display_order
@@ -53,6 +56,7 @@ export default async function AdminRegistrationsPage() {
         buses={(busRes.data ?? []) as BusInfo[]}
         roleLabels={(roleRes.data ?? []) as { label: string; color: string | null }[]}
         isMaster={isMaster}
+        groupByBus={phase2}
       />
     </div>
   );
