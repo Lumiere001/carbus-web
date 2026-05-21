@@ -97,10 +97,15 @@ export async function updateCells(
     return { ok: false, message: "신청 내역을 찾을 수 없습니다" };
   }
 
+  // 값 기반 비교 (배열·null 안전). 참조 비교는 roles[] 등에서 오탐.
+  const sameValue = (a: unknown, b: unknown) =>
+    JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const conflictFields = Object.keys(expected).filter(
     (k) =>
-      current[k as keyof RegistrationRow] !==
-      expected[k as keyof RegistrationRow]
+      !sameValue(
+        current[k as keyof RegistrationRow],
+        expected[k as keyof RegistrationRow]
+      )
   );
   if (conflictFields.length > 0) {
     return {
@@ -112,15 +117,31 @@ export async function updateCells(
     };
   }
 
+  // 원자적 낙관 락: 읽은 version 일 때만 갱신. 그 사이 누가 바꿨으면 0행 → 충돌.
   const { data, error } = await supabase
     .from("registrations")
     .update(patch)
     .eq("id", id)
+    .eq("version", current.version)
     .select()
     .maybeSingle();
 
   if (error) return { ok: false, message: humanizeError(error.message) };
-  if (!data) return { ok: false, message: "수정에 실패했습니다 (대상 없음)" };
+  if (!data) {
+    // version 불일치 — SELECT 이후 다른 사람이 먼저 커밋함
+    const { data: latest } = await supabase
+      .from("registrations")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    return {
+      ok: false,
+      conflict: true,
+      conflictFields: Object.keys(expected),
+      latest: latest ?? current,
+      message: "다른 임역원이 같은 항목을 먼저 수정했습니다. 최신값을 반영했어요.",
+    };
+  }
   return { ok: true, row: data };
 }
 

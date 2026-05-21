@@ -28,7 +28,12 @@ export type ParsedRow = Omit<RegistrationInput, "campus_id">;
 export type CsvParseResult = {
   successes: ParsedRow[];
   failures: { row: number; reason: string; raw: Record<string, string> }[];
+  /** 사용자 안내 (빈 파일·행수 초과 등). 없으면 정상. */
+  notice?: string;
 };
+
+/** 한 번에 처리할 최대 행 수 (수련회 규모상 충분, 폭주 방지). */
+const MAX_ROWS = 1000;
 
 /**
  * @param csv     CSV 또는 TSV 텍스트 (복붙 포함). papaparse가 구분자 자동 감지.
@@ -47,7 +52,23 @@ export function parseRegistrationsCsv(
   const successes: ParsedRow[] = [];
   const failures: CsvParseResult["failures"] = [];
 
-  parsed.data.forEach((rawRow, idx) => {
+  // 빈 파일 안내
+  if (parsed.data.length === 0) {
+    return {
+      successes,
+      failures,
+      notice: "행이 없습니다. 헤더와 데이터가 있는 CSV인지 확인해주세요.",
+    };
+  }
+
+  // 행수 초과 시 잘라서 처리하고 안내
+  const overflow = parsed.data.length > MAX_ROWS;
+  const rows = overflow ? parsed.data.slice(0, MAX_ROWS) : parsed.data;
+
+  // 파일 내 중복(이름+학번) 검출용
+  const seen = new Set<string>();
+
+  rows.forEach((rawRow, idx) => {
     const mapped: Record<string, unknown> = {};
     for (const [ko, en] of Object.entries(HEADER_MAP)) {
       if (rawRow[ko] !== undefined) mapped[en] = rawRow[ko]?.trim();
@@ -64,7 +85,9 @@ export function parseRegistrationsCsv(
     }
     if ("uses_return_bus" in mapped) {
       const b = (mapped.uses_return_bus as string) ?? "";
-      mapped.uses_return_bus = BOOL_FROM_KO[b] ?? false;
+      if (b === "") mapped.uses_return_bus = false;
+      else if (b in BOOL_FROM_KO) mapped.uses_return_bus = BOOL_FROM_KO[b];
+      else mapped.uses_return_bus = undefined; // 인식 불가 값 → 검증 실패로 표면화(조용히 false로 두지 않음)
     } else {
       mapped.uses_return_bus = false;
     }
@@ -76,7 +99,17 @@ export function parseRegistrationsCsv(
     if (result.success) {
       const { campus_id: _omit, ...rest } = result.data;
       void _omit;
-      successes.push(rest);
+      const key = `${rest.name}|${rest.student_id}`;
+      if (seen.has(key)) {
+        failures.push({
+          row: idx + 2,
+          reason: "파일 내 중복 (이름+학번이 위 행과 같음)",
+          raw: rawRow,
+        });
+      } else {
+        seen.add(key);
+        successes.push(rest);
+      }
     } else {
       const errs = fieldErrors(result.error);
       const reason = Object.entries(errs)
@@ -86,5 +119,11 @@ export function parseRegistrationsCsv(
     }
   });
 
-  return { successes, failures };
+  return {
+    successes,
+    failures,
+    notice: overflow
+      ? `행이 너무 많아 처음 ${MAX_ROWS}건만 처리했습니다. 나눠서 올려주세요.`
+      : undefined,
+  };
 }

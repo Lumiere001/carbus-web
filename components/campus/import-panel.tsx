@@ -101,6 +101,11 @@ export function ImportPanel({ campusId }: { campusId: string }) {
 
       {preview && (
         <div className="space-y-3">
+          {preview.notice && (
+            <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
+              {preview.notice}
+            </div>
+          )}
           <div className="flex gap-4 text-sm">
             <span className="text-success font-medium">
               등록 가능 {preview.successes.length}건
