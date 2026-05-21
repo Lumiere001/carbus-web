@@ -84,6 +84,9 @@ export default async function AdminProtectedLayout({
                   </a>
                 </>
               )}
+              <a href="/admin/changes" className={navLink}>
+                변동
+              </a>
               <a href="/admin/errors" className={navLink}>
                 오류
               </a>
