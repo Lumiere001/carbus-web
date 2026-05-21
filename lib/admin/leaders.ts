@@ -12,6 +12,103 @@ import { createClient } from "@/lib/supabase/client";
 type Mode = "up" | "down";
 type Result = { ok: true } | { ok: false; message: string };
 
+/**
+ * 역할 토글 → 현재 배정 호차에 자동 결박/해제.
+ * 차량순장/고정탑승 역할을 켜면 그 사람이 *이미 배정된* 호차(상행/하행)에
+ * driver/fixed 로 묶고, 끄면 모든 호차에서 해제한다. (단일 진실원 = buses 바인딩)
+ *
+ * - 타는 방향에 배정 호차가 하나도 없으면 결박 불가 → 안내.
+ * - 차량순장 결박 시 그 호차에 이미 다른 순장이 있으면 차단(덮어쓰기 방지).
+ */
+export async function setLeaderRole(opts: {
+  regId: string;
+  ridesUp: boolean;
+  upBusId: number | null;
+  ridesDown: boolean;
+  downBusId: number | null;
+  kind: "driver" | "fixed";
+  on: boolean;
+}): Promise<Result> {
+  const supabase = createClient();
+  const { regId, ridesUp, upBusId, ridesDown, downBusId, kind, on } = opts;
+
+  if (on) {
+    const targets: { mode: Mode; busId: number }[] = [];
+    if (ridesUp && upBusId != null) targets.push({ mode: "up", busId: upBusId });
+    if (ridesDown && downBusId != null) targets.push({ mode: "down", busId: downBusId });
+    if (targets.length === 0)
+      return {
+        ok: false,
+        message:
+          "아직 배정된 호차가 없어 결박할 수 없습니다. 먼저 배차하거나 '리더 관리'에서 호차를 지정하세요.",
+      };
+    for (const t of targets) {
+      const res =
+        kind === "driver"
+          ? await assignDriverBusChecked(supabase, regId, t.busId, t.mode)
+          : await assignFixedBus(regId, t.busId, t.mode);
+      if (!res.ok) return res;
+    }
+    return { ok: true };
+  }
+
+  // off: 모든 호차에서 해제
+  const res =
+    kind === "driver"
+      ? await clearDriverEverywhere(supabase, regId)
+      : await clearFixedEverywhere(supabase, regId);
+  return res;
+}
+
+type SupabaseClient = ReturnType<typeof createClient>;
+
+/** 차량순장 결박 — 대상 호차에 다른 순장이 있으면 차단. 본인의 다른 순장 호차는 해제. */
+async function assignDriverBusChecked(
+  supabase: SupabaseClient,
+  regId: string,
+  busId: number,
+  mode: Mode
+): Promise<Result> {
+  const { data: bus } = await supabase
+    .from("buses")
+    .select("id, name, driver_registration_id, down_driver_registration_id")
+    .eq("id", busId)
+    .single();
+  const occupant = mode === "up" ? bus?.driver_registration_id : bus?.down_driver_registration_id;
+  if (occupant && occupant !== regId)
+    return {
+      ok: false,
+      message: `${bus?.name ?? `${busId}호차`}에 이미 ${mode === "up" ? "상행" : "하행"} 차량순장이 있습니다. 먼저 해제하세요.`,
+    };
+  return assignDriverBus(regId, busId, mode);
+}
+
+async function clearDriverEverywhere(supabase: SupabaseClient, regId: string): Promise<Result> {
+  const a = await supabase.from("buses").update({ driver_registration_id: null }).eq("driver_registration_id", regId);
+  if (a.error) return { ok: false, message: humanize(a.error.message) };
+  const b = await supabase.from("buses").update({ down_driver_registration_id: null }).eq("down_driver_registration_id", regId);
+  if (b.error) return { ok: false, message: humanize(b.error.message) };
+  return { ok: true };
+}
+
+async function clearFixedEverywhere(supabase: SupabaseClient, regId: string): Promise<Result> {
+  const { data: all, error } = await supabase
+    .from("buses")
+    .select("id, fixed_passenger_ids, down_fixed_passenger_ids");
+  if (error) return { ok: false, message: humanize(error.message) };
+  for (const b of all ?? []) {
+    if ((b.fixed_passenger_ids ?? []).includes(regId)) {
+      const u = await supabase.from("buses").update({ fixed_passenger_ids: (b.fixed_passenger_ids ?? []).filter((x) => x !== regId) }).eq("id", b.id);
+      if (u.error) return { ok: false, message: humanize(u.error.message) };
+    }
+    if ((b.down_fixed_passenger_ids ?? []).includes(regId)) {
+      const u = await supabase.from("buses").update({ down_fixed_passenger_ids: (b.down_fixed_passenger_ids ?? []).filter((x) => x !== regId) }).eq("id", b.id);
+      if (u.error) return { ok: false, message: humanize(u.error.message) };
+    }
+  }
+  return { ok: true };
+}
+
 function humanize(msg: string): string {
   if (msg.includes("row-level security") || msg.includes("policy"))
     return "권한이 없습니다 (master만 변경할 수 있어요)";
@@ -62,7 +159,6 @@ export async function assignFixedBus(
   mode: Mode
 ): Promise<Result> {
   const supabase = createClient();
-  const col = mode === "up" ? "fixed_passenger_ids" : "down_fixed_passenger_ids";
 
   // 현재 이 사람이 들어있는 모든 호차의 고정 배열 조회 후 제거
   const { data: all, error: fErr } = await supabase
@@ -96,6 +192,5 @@ export async function assignFixedBus(
       if (u.error) return { ok: false, message: humanize(u.error.message) };
     }
   }
-  void col;
   return { ok: true };
 }

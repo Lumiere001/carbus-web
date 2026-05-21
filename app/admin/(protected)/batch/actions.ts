@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runBatch } from "@/lib/batch/engine";
 import type { Passenger, Bus } from "@/lib/batch/types";
-import { ROLE_DRIVER, ROLE_FIXED } from "@/lib/roles/special";
 import type { UserRole } from "@/lib/supabase/types";
 
 export type BatchActionResult =
@@ -76,32 +75,30 @@ export async function runBatchAction(
     return { ok: false, message: "호차 시드가 없습니다 (buses 0건)" };
   }
 
-  // ── 선행조건: 차량순장/고정탑승 역할자는 타는 방향의 호차가 지정돼 있어야 함 ──
-  // (역할만 있고 호차 미지정이면 배차를 돌리지 않고, 먼저 호차 지정을 요구)
+  // ── 선행조건: 차량순장/고정탑승(= 호차에 묶인 리더)은 타는 방향에도 호차가 있어야 함 ──
+  // 역할 = 호차 바인딩(단일 진실원). 어떤 방향에든 묶인 사람은 "리더"이고,
+  // 그 사람이 이 방향을 타는데 이 방향 호차가 없으면 배차를 멈추고 호차 지정을 요구.
   {
     const ridesDir = (r: { departure_day: string | null; uses_return_bus: boolean }) =>
       mode === "up" ? r.departure_day !== null : r.uses_return_bus === true;
-    const driverBound = new Set<string>();
-    const fixedBound = new Set<string>();
+    const dirDriver = new Set<string>(); // 이 방향 차량순장
+    const dirFixed = new Set<string>(); // 이 방향 고정
+    const anyLeader = new Set<string>(); // 어느 방향에든 묶인 사람(=리더)
     for (const b of busRes.data ?? []) {
+      if (b.driver_registration_id) anyLeader.add(b.driver_registration_id);
+      if (b.down_driver_registration_id) anyLeader.add(b.down_driver_registration_id);
+      for (const id of b.fixed_passenger_ids ?? []) anyLeader.add(id);
+      for (const id of b.down_fixed_passenger_ids ?? []) anyLeader.add(id);
       const drv = mode === "up" ? b.driver_registration_id : b.down_driver_registration_id;
       const fxd = mode === "up" ? b.fixed_passenger_ids : b.down_fixed_passenger_ids;
-      if (drv) driverBound.add(drv);
-      for (const id of fxd ?? []) fixedBound.add(id);
+      if (drv) dirDriver.add(drv);
+      for (const id of fxd ?? []) dirFixed.add(id);
     }
     const missing: string[] = [];
     for (const r of regRes.data ?? []) {
-      if (!ridesDir(r)) continue;
-      const roles = r.roles ?? [];
-      const isDriver = roles.includes(ROLE_DRIVER);
-      const isFixed = roles.includes(ROLE_FIXED);
-      if (!isDriver && !isFixed) continue;
-      // 차량순장 우선: 순장 역할이면 차량순장으로 지정돼야 함
-      if (isDriver) {
-        if (!driverBound.has(r.id)) missing.push(`${r.name} (차량순장)`);
-      } else if (isFixed) {
-        if (!fixedBound.has(r.id)) missing.push(`${r.name} (고정탑승)`);
-      }
+      if (!anyLeader.has(r.id)) continue; // 리더 아님
+      if (!ridesDir(r)) continue; // 이 방향 안 탐
+      if (!dirDriver.has(r.id) && !dirFixed.has(r.id)) missing.push(r.name);
     }
     if (missing.length > 0) {
       const dir = mode === "up" ? "상행" : "하행";
@@ -109,7 +106,7 @@ export async function runBatchAction(
       const more = missing.length > 8 ? ` 외 ${missing.length - 8}명` : "";
       return {
         ok: false,
-        message: `${dir} 배차 전에 호차를 먼저 지정해야 하는 차량순장/고정탑승이 있습니다: ${head}${more}. '리더 관리' 화면에서 호차를 지정한 뒤 다시 실행하세요.`,
+        message: `${dir}을 타지만 ${dir} 호차가 지정되지 않은 리더(차량순장/고정탑승)가 있습니다: ${head}${more}. '리더 관리' 화면에서 ${dir} 호차를 지정한 뒤 다시 실행하세요.`,
       };
     }
   }

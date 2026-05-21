@@ -25,6 +25,8 @@ import {
 import { RegForm } from "@/components/admin/reg-form";
 import { Button } from "@/components/ui/button";
 import { Pencil, Plus } from "lucide-react";
+import { setLeaderRole } from "@/lib/admin/leaders";
+import { ROLE_DRIVER, ROLE_FIXED, isSpecialRole } from "@/lib/roles/special";
 
 export type AdminRegRow = {
   id: string;
@@ -103,6 +105,8 @@ export function RegistrationsPanel({
   roleLabels,
   isMaster,
   groupByBus,
+  driverIds,
+  fixedIds,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -110,6 +114,10 @@ export function RegistrationsPanel({
   roleLabels: RoleLabel[];
   isMaster: boolean;
   groupByBus: boolean;
+  /** 호차에 차량순장으로 묶인 reg id (상/하행) — 역할 파생용. */
+  driverIds: Set<string>;
+  /** 호차에 고정탑승으로 묶인 reg id (상/하행) — 역할 파생용. */
+  fixedIds: Set<string>;
 }) {
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -279,6 +287,8 @@ export function RegistrationsPanel({
                         isMaster={isMaster}
                         onMsg={setMsg}
                         onEdit={(row) => setForm({ mode: "edit", row })}
+                        driverIds={driverIds}
+                        fixedIds={fixedIds}
                       />
                     ))}
                   </Fragment>
@@ -294,6 +304,8 @@ export function RegistrationsPanel({
                     isMaster={isMaster}
                     onMsg={setMsg}
                         onEdit={(row) => setForm({ mode: "edit", row })}
+                        driverIds={driverIds}
+                        fixedIds={fixedIds}
                   />
                 ))
               )}
@@ -319,6 +331,8 @@ function Row({
   isMaster,
   onMsg,
   onEdit,
+  driverIds,
+  fixedIds,
 }: {
   r: AdminRegRow;
   busName: Map<number, string>;
@@ -327,6 +341,8 @@ function Row({
   isMaster: boolean;
   onMsg: (m: Msg) => void;
   onEdit: (row: AdminRegRow) => void;
+  driverIds: Set<string>;
+  fixedIds: Set<string>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -334,8 +350,43 @@ function Row({
   const roleColor = (label: string) =>
     roleHex(roleLabels.find((rl) => rl.label === label)?.color ?? null);
 
+  // 일반 역할(roles[]) + 특수 역할(차량순장/고정 — 호차 바인딩에서 파생)
+  const isDriver = driverIds.has(r.id);
+  const isFixed = fixedIds.has(r.id);
+  const plainRoles = r.roles.filter((x) => !isSpecialRole(x));
+  const displayRoles = [
+    ...plainRoles,
+    ...(isDriver ? [ROLE_DRIVER] : []),
+    ...(isFixed ? [ROLE_FIXED] : []),
+  ];
+  const hasRole = (label: string) =>
+    isSpecialRole(label)
+      ? label === ROLE_DRIVER
+        ? isDriver
+        : isFixed
+      : plainRoles.includes(label);
+
+  /** 역할 토글 — 특수 역할은 현재 배정 호차에 자동 결박/해제, 일반 역할은 roles[]. */
   function toggleRole(label: string) {
-    const has = r.roles.includes(label);
+    if (isSpecialRole(label)) {
+      const kind = label === ROLE_DRIVER ? "driver" : "fixed";
+      const on = !hasRole(label);
+      startTransition(async () => {
+        const res = await setLeaderRole({
+          regId: r.id,
+          ridesUp: r.departure_day !== null,
+          upBusId: r.assigned_up_bus_id,
+          ridesDown: r.uses_return_bus === true,
+          downBusId: r.assigned_down_bus_id,
+          kind,
+          on,
+        });
+        if (!res.ok) return onMsg({ type: "err", text: res.message });
+        router.refresh();
+      });
+      return;
+    }
+    const has = plainRoles.includes(label);
     const next = has ? r.roles.filter((x) => x !== label) : [...r.roles, label];
     startTransition(async () => {
       const res = await setRoles(r.id, next);
@@ -386,9 +437,9 @@ function Row({
       <td className="px-4 py-2.5 text-foreground">
         <div className="flex flex-col gap-1">
           <span>{r.name}</span>
-          {(r.roles.length > 0 || isMaster) && (
+          {(displayRoles.length > 0 || isMaster) && (
             <span className="flex flex-wrap items-center gap-1">
-              {r.roles.map((role) => (
+              {displayRoles.map((role) => (
                 <span
                   key={role}
                   className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-white"
@@ -417,7 +468,7 @@ function Row({
                 >
                   <option value="">+ 역할</option>
                   {roleLabels
-                    .filter((rl) => !r.roles.includes(rl.label))
+                    .filter((rl) => !hasRole(rl.label))
                     .map((rl) => (
                       <option key={rl.label} value={rl.label}>
                         {rl.label}

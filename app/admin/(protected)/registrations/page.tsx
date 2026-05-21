@@ -30,7 +30,12 @@ export default async function AdminRegistrationsPage() {
       )
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name, display_order"),
-    supabase.from("buses").select("id, name, departure_day").order("id"),
+    supabase
+      .from("buses")
+      .select(
+        "id, name, departure_day, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+      )
+      .order("id"),
     supabase.from("role_labels").select("label, color").order("display_order"),
     supabase.from("system_config").select("current_phase").maybeSingle(),
   ]);
@@ -40,6 +45,16 @@ export default async function AdminRegistrationsPage() {
   const campuses = ((campusRes.data ?? []) as CampusInfo[]).sort(
     (a, b) => a.display_order - b.display_order
   );
+
+  // 호차 바인딩에서 차량순장/고정 역할 파생 (상·하행 합집합)
+  const driverIds = new Set<string>();
+  const fixedIds = new Set<string>();
+  for (const b of busRes.data ?? []) {
+    if (b.driver_registration_id) driverIds.add(b.driver_registration_id);
+    if (b.down_driver_registration_id) driverIds.add(b.down_driver_registration_id);
+    for (const id of b.fixed_passenger_ids ?? []) fixedIds.add(id);
+    for (const id of b.down_fixed_passenger_ids ?? []) fixedIds.add(id);
+  }
 
   return (
     <div className="space-y-5">
@@ -57,6 +72,8 @@ export default async function AdminRegistrationsPage() {
         roleLabels={(roleRes.data ?? []) as { label: string; color: string | null }[]}
         isMaster={isMaster}
         groupByBus={phase2}
+        driverIds={driverIds}
+        fixedIds={fixedIds}
       />
     </div>
   );

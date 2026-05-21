@@ -4,7 +4,6 @@ import { ROLE_DRIVER, ROLE_FIXED } from "@/lib/roles/special";
 import {
   LeadersPanel,
   type LeaderRow,
-  type MismatchRow,
   type BusOpt,
 } from "@/components/admin/leaders-panel";
 
@@ -22,7 +21,7 @@ export default async function AdminLeadersPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [busRes, campusRes] = await Promise.all([
+  const [busRes, campusRes, labelRes] = await Promise.all([
     supabase
       .from("buses")
       .select(
@@ -30,29 +29,46 @@ export default async function AdminLeadersPage() {
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
+    supabase.from("role_labels").select("label"),
   ]);
   const buses = busRes.data ?? [];
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
+  // 일반 역할(차량순장/고정 제외) — roles[]에 저장되는 라벨
+  const plainLabels = (labelRes.data ?? [])
+    .map((l) => l.label)
+    .filter((l) => l !== ROLE_DRIVER && l !== ROLE_FIXED);
 
-  // 호차에 묶인 사람들(불일치 감지용) + 특수 역할자 합집합
-  const boundIds = new Set<string>();
+  // 호차 바인딩 → 차량순장/고정 파생
+  const upDriverOf = new Map<string, number>();
+  const downDriverOf = new Map<string, number>();
+  const upFixedOf = new Map<string, number>();
+  const downFixedOf = new Map<string, number>();
   for (const b of buses) {
-    if (b.driver_registration_id) boundIds.add(b.driver_registration_id);
-    if (b.down_driver_registration_id) boundIds.add(b.down_driver_registration_id);
-    for (const id of b.fixed_passenger_ids ?? []) boundIds.add(id);
-    for (const id of b.down_fixed_passenger_ids ?? []) boundIds.add(id);
+    if (b.driver_registration_id) upDriverOf.set(b.driver_registration_id, b.id);
+    if (b.down_driver_registration_id) downDriverOf.set(b.down_driver_registration_id, b.id);
+    for (const id of b.fixed_passenger_ids ?? []) upFixedOf.set(id, b.id);
+    for (const id of b.down_fixed_passenger_ids ?? []) downFixedOf.set(id, b.id);
   }
+  const boundIds = new Set<string>([
+    ...upDriverOf.keys(),
+    ...downDriverOf.keys(),
+    ...upFixedOf.keys(),
+    ...downFixedOf.keys(),
+  ]);
 
-  const [roleRes, boundRes] = await Promise.all([
-    supabase
-      .from("registrations")
-      .select("id, name, student_id, campus_id, departure_day, uses_return_bus, roles")
-      .overlaps("roles", [ROLE_DRIVER, ROLE_FIXED]),
+  // 리더 = 호차에 묶인 사람(차량순장/고정 파생) ∪ 일반 역할 보유자(총단·간사 등)
+  const [boundRes, roleRes] = await Promise.all([
     boundIds.size > 0
       ? supabase
           .from("registrations")
           .select("id, name, student_id, campus_id, departure_day, uses_return_bus, roles")
           .in("id", [...boundIds])
+      : Promise.resolve({ data: [] as never[] }),
+    plainLabels.length > 0
+      ? supabase
+          .from("registrations")
+          .select("id, name, student_id, campus_id, departure_day, uses_return_bus, roles")
+          .overlaps("roles", plainLabels)
       : Promise.resolve({ data: [] as never[] }),
   ]);
 
@@ -68,67 +84,44 @@ export default async function AdminLeadersPage() {
       roles: string[];
     }
   >();
-  for (const r of [...(roleRes.data ?? []), ...(boundRes.data ?? [])]) byId.set(r.id, r);
-
-  // 현재 호차 바인딩 조회 헬퍼
-  const upDriverOf = new Map<string, number>();
-  const downDriverOf = new Map<string, number>();
-  const upFixedOf = new Map<string, number>();
-  const downFixedOf = new Map<string, number>();
-  for (const b of buses) {
-    if (b.driver_registration_id) upDriverOf.set(b.driver_registration_id, b.id);
-    if (b.down_driver_registration_id) downDriverOf.set(b.down_driver_registration_id, b.id);
-    for (const id of b.fixed_passenger_ids ?? []) upFixedOf.set(id, b.id);
-    for (const id of b.down_fixed_passenger_ids ?? []) downFixedOf.set(id, b.id);
-  }
+  for (const r of [...(boundRes.data ?? []), ...(roleRes.data ?? [])]) byId.set(r.id, r);
 
   const leaders: LeaderRow[] = [];
-  for (const r of roleRes.data ?? []) {
-    const roles = r.roles ?? [];
-    const isDriver = roles.includes(ROLE_DRIVER);
-    const kind: "driver" | "fixed" = isDriver ? "driver" : "fixed";
+  for (const r of byId.values()) {
+    const isDriver = upDriverOf.has(r.id) || downDriverOf.has(r.id);
+    const isFixed = upFixedOf.has(r.id) || downFixedOf.has(r.id);
+    const plain = (r.roles ?? []).filter((x) => x !== ROLE_DRIVER && x !== ROLE_FIXED);
+    const roleBadges = [
+      ...plain,
+      ...(isDriver ? [ROLE_DRIVER] : []),
+      ...(isFixed ? [ROLE_FIXED] : []),
+    ];
+    if (roleBadges.length === 0) continue;
+    const kind: "driver" | "fixed" | null = isDriver ? "driver" : isFixed ? "fixed" : null;
     const ridesUp = r.departure_day !== null;
     const ridesDown = r.uses_return_bus === true;
-    const upBus = isDriver ? upDriverOf.get(r.id) : upFixedOf.get(r.id);
-    const downBus = isDriver ? downDriverOf.get(r.id) : downFixedOf.get(r.id);
+    const upBus = isDriver ? upDriverOf.get(r.id) : isFixed ? upFixedOf.get(r.id) : undefined;
+    const downBus = isDriver ? downDriverOf.get(r.id) : isFixed ? downFixedOf.get(r.id) : undefined;
     leaders.push({
       id: r.id,
       name: r.name,
       student_id: r.student_id,
       campus_name: campusName.get(r.campus_id) ?? "—",
+      roleBadges,
       kind,
       departure_day: (r.departure_day as "TUE" | "WED" | null) ?? null,
       ridesUp,
       ridesDown,
       upBusId: upBus ?? null,
       downBusId: downBus ?? null,
-      needUp: ridesUp && upBus == null,
-      needDown: ridesDown && downBus == null,
+      needUp: kind != null && ridesUp && upBus == null,
+      needDown: kind != null && ridesDown && downBus == null,
     });
   }
-  leaders.sort((a, b) =>
-    a.kind !== b.kind ? (a.kind === "driver" ? -1 : 1) : a.name < b.name ? -1 : 1
-  );
-
-  // 불일치: 호차에 묶였지만 해당 역할이 없는 사람
-  const mismatches: MismatchRow[] = [];
-  const pushMismatch = (id: string, busId: number, label: string, roleNeeded: string) => {
-    const r = byId.get(id);
-    if (!r) return;
-    if (!(r.roles ?? []).includes(roleNeeded))
-      mismatches.push({
-        id,
-        name: r.name,
-        campus_name: campusName.get(r.campus_id) ?? "—",
-        detail: `${busName(buses, busId)} ${label} — '${roleNeeded}' 역할 없음`,
-      });
-  };
-  for (const b of buses) {
-    if (b.driver_registration_id) pushMismatch(b.driver_registration_id, b.id, "상행 차량순장", ROLE_DRIVER);
-    if (b.down_driver_registration_id) pushMismatch(b.down_driver_registration_id, b.id, "하행 차량순장", ROLE_DRIVER);
-    for (const id of b.fixed_passenger_ids ?? []) pushMismatch(id, b.id, "상행 고정", ROLE_FIXED);
-    for (const id of b.down_fixed_passenger_ids ?? []) pushMismatch(id, b.id, "하행 고정", ROLE_FIXED);
-  }
+  leaders.sort((a, b) => {
+    const rank = (l: LeaderRow) => (l.kind === "driver" ? 0 : l.kind === "fixed" ? 1 : 2);
+    return rank(a) !== rank(b) ? rank(a) - rank(b) : a.name < b.name ? -1 : 1;
+  });
 
   const busOpts: BusOpt[] = buses.map((b) => ({
     id: b.id,
@@ -136,16 +129,5 @@ export default async function AdminLeadersPage() {
     departure_day: b.departure_day,
   }));
 
-  return (
-    <LeadersPanel
-      leaders={leaders}
-      mismatches={mismatches}
-      buses={busOpts}
-      isMaster={isMaster}
-    />
-  );
-}
-
-function busName(buses: { id: number; name: string }[], id: number): string {
-  return buses.find((b) => b.id === id)?.name ?? `${id}호차`;
+  return <LeadersPanel leaders={leaders} buses={busOpts} isMaster={isMaster} />;
 }
