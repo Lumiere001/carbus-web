@@ -86,21 +86,31 @@ export default async function AdminChangesPage() {
 
   const { data: cfg } = await supabase
     .from("system_config")
-    .select("phase2_started_at, current_phase")
+    .select("phase2_started_at, last_batch_at, current_phase")
     .maybeSingle();
-  // 기준점 = 마감(phase2) 전환 시각. phase2 가 아니면 null.
-  const cutoff = cfg?.phase2_started_at ?? null;
+  // 현재 마감 단계인가로 판단(과거에 이미 phase2였어도 인식).
+  const isPhase2 = cfg?.current_phase === "phase2";
+  // 기준점: 마감 전환 시각 → 없으면(컬럼 추가 전부터 phase2였던 경우) 마지막 배차 시각으로 대체.
+  const cutoff = cfg?.phase2_started_at ?? cfg?.last_batch_at ?? null;
 
-  // 마감(phase2) 이후 audit (마감 전이면 비움)
-  const auditRes = cutoff
-    ? await supabase
-        .from("registration_audit")
-        .select(
-          "id, registration_id, created_at, change_type, before_value, after_value, changed_by"
-        )
-        .gt("created_at", cutoff)
-        .order("created_at", { ascending: false })
-        .limit(500)
+  // 마감 단계면 audit 조회. cutoff 있으면 그 이후만, 없으면 전체(내용 변경만 추림).
+  const auditRes = isPhase2
+    ? await (cutoff
+        ? supabase
+            .from("registration_audit")
+            .select(
+              "id, registration_id, created_at, change_type, before_value, after_value, changed_by"
+            )
+            .gt("created_at", cutoff)
+            .order("created_at", { ascending: false })
+            .limit(500)
+        : supabase
+            .from("registration_audit")
+            .select(
+              "id, registration_id, created_at, change_type, before_value, after_value, changed_by"
+            )
+            .order("created_at", { ascending: false })
+            .limit(500))
     : { data: [] };
   const audit = auditRes.data ?? [];
 
@@ -227,20 +237,21 @@ export default async function AdminChangesPage() {
         </p>
       </div>
 
-      {!cutoff && (
+      {!isPhase2 && (
         <Card className="p-5">
           <p className="text-sm text-muted">
-            아직 <b>마감 단계(phase2)</b>로 전환하기 전입니다. Phase 화면에서 마감으로
+            아직 <b>마감 단계(phase2)</b>가 아닙니다. Phase 화면에서 마감으로
             전환하면, 그 이후의 변동이 여기에 모입니다.
           </p>
         </Card>
       )}
 
-      {cutoff && (
+      {isPhase2 && (
         <>
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="text-muted">
-              마감 시각 <b className="text-foreground">{fmt(cutoff)}</b>
+              마감 시각{" "}
+              <b className="text-foreground">{cutoff ? fmt(cutoff) : "기록 없음"}</b>
             </span>
             <span className="text-muted">
               변동 인원 <b className="text-foreground tabular-nums">{rows.length}</b>
