@@ -17,6 +17,12 @@ export type PaxData = {
   campus_name: string;
 };
 
+/** 차량순장·고정탑승 사전 지정 후보 (전체 명단). 방향·요일로 필터해 선택. */
+export type CandidateData = PaxData & {
+  departure_day: DepartureDay | null;
+  uses_return_bus: boolean;
+};
+
 export type BusData = {
   id: number;
   name: string;
@@ -35,9 +41,11 @@ type Msg = { type: "ok" | "err"; text: string } | null;
 
 export function BusesPanel({
   buses: initial,
+  candidates,
   isMaster,
 }: {
   buses: BusData[];
+  candidates: CandidateData[];
   isMaster: boolean;
 }) {
   const [buses, setBuses] = useState(initial);
@@ -102,6 +110,8 @@ export function BusesPanel({
                       bus={b}
                       mode="up"
                       passengers={b.passengers}
+                      candidates={candidates}
+                      buses={buses}
                       dayText={`${DAY_LABELS[day]} 출발`}
                       isMaster={isMaster}
                       onPatch={(f) => patch(b.id, f)}
@@ -126,6 +136,8 @@ export function BusesPanel({
                     bus={b}
                     mode="down"
                     passengers={b.downPassengers}
+                    candidates={candidates}
+                    buses={buses}
                     dayText="토요일 하행"
                     isMaster={isMaster}
                     onPatch={(f) => patch(b.id, f)}
@@ -147,6 +159,8 @@ function BusCard({
   bus,
   mode,
   passengers,
+  candidates,
+  buses,
   dayText,
   isMaster,
   onPatch,
@@ -155,6 +169,8 @@ function BusCard({
   bus: BusData;
   mode: "up" | "down";
   passengers: PaxData[];
+  candidates: CandidateData[];
+  buses: BusData[];
   dayText: string;
   isMaster: boolean;
   onPatch: (f: Partial<BusData>) => void;
@@ -175,10 +191,21 @@ function BusCard({
   const fixedIds =
     mode === "up" ? bus.fixed_passenger_ids : bus.down_fixed_passenger_ids;
 
-  const driver = pax.find((p) => p.id === driverId);
+  // 사전 지정 후보(A): 상행=호차 요일 일치자, 하행=하행 이용자. 이름순.
+  const candidateMap = new Map(candidates.map((c) => [c.id, c]));
+  const pinPool = candidates
+    .filter((c) =>
+      mode === "up"
+        ? c.departure_day === bus.departure_day
+        : c.uses_return_bus === true
+    )
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+
+  // 차량순장·고정 표시는 후보 전체에서 조회(배차 전이라 pax에 없을 수 있음).
+  const driver = driverId ? candidateMap.get(driverId) : undefined;
   const fixed = fixedIds
-    .map((id) => pax.find((p) => p.id === id))
-    .filter((p): p is PaxData => !!p);
+    .map((id) => candidateMap.get(id))
+    .filter((p): p is CandidateData => !!p);
   const fixedSet = new Set(fixedIds);
 
   const dist = new Map<string, number>();
@@ -187,7 +214,30 @@ function BusCard({
 
   const dirText = mode === "up" ? "상행" : "하행";
 
+  /** G: 같은 방향에서 regId 가 다른 호차에 이미 고정(차량순장/고정)됐으면 그 호차 번호. */
+  function pinnedElsewhere(regId: string): number | null {
+    for (const b of buses) {
+      if (b.id === bus.id) continue;
+      const d =
+        mode === "up" ? b.driver_registration_id : b.down_driver_registration_id;
+      const f =
+        mode === "up" ? b.fixed_passenger_ids : b.down_fixed_passenger_ids;
+      if (d === regId || f.includes(regId)) return b.id;
+    }
+    return null;
+  }
+
   async function handleSetDriver(regId: string | null) {
+    if (regId) {
+      const dup = pinnedElsewhere(regId);
+      if (dup != null) {
+        const who = candidateMap.get(regId)?.name ?? "해당 인원";
+        return onMsg({
+          type: "err",
+          text: `${who}는 이미 ${dirText} ${dup}호차에 고정되어 있습니다 (먼저 해제하세요)`,
+        });
+      }
+    }
     setBusy(true);
     const res = await setDriver(bus.id, regId, mode);
     setBusy(false);
@@ -197,7 +247,7 @@ function BusCard({
         ? { driver_registration_id: regId }
         : { down_driver_registration_id: regId }
     );
-    const who = regId ? pax.find((p) => p.id === regId)?.name : null;
+    const who = regId ? candidateMap.get(regId)?.name : null;
     onMsg({
       type: "ok",
       text: who
@@ -207,6 +257,29 @@ function BusCard({
   }
 
   async function handleToggleFixed(regId: string) {
+    const adding = !fixedSet.has(regId);
+    if (adding) {
+      // G: 다른 호차 중복 고정 방지
+      const dup = pinnedElsewhere(regId);
+      if (dup != null) {
+        const who = candidateMap.get(regId)?.name ?? "해당 인원";
+        return onMsg({
+          type: "err",
+          text: `${who}는 이미 ${dirText} ${dup}호차에 고정되어 있습니다`,
+        });
+      }
+      // E: 고정 인원이 호차 정원(보조석 포함)을 넘지 않게
+      const pinnedCount = new Set([
+        ...(driverId ? [driverId] : []),
+        ...fixedIds,
+      ]).size;
+      if (pinnedCount >= bus.hard_cap) {
+        return onMsg({
+          type: "err",
+          text: `${bus.name} 고정 인원이 정원(${bus.hard_cap}석)에 도달했습니다`,
+        });
+      }
+    }
     const next = fixedSet.has(regId)
       ? fixedIds.filter((id) => id !== regId)
       : [...fixedIds, regId];
@@ -269,7 +342,7 @@ function BusCard({
                   className="text-xs border border-border-2 rounded-md px-2 py-1 bg-surface max-w-[12rem]"
                 >
                   <option value="">미지정</option>
-                  {pax.map((p) => (
+                  {pinPool.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.campus_name})
                     </option>
@@ -318,8 +391,8 @@ function BusCard({
                   className="mt-2 text-xs border border-border-2 rounded-md px-2 py-1 bg-surface"
                 >
                   <option value="">+ 고정 탑승자 추가</option>
-                  {pax
-                    .filter((p) => !fixedSet.has(p.id))
+                  {pinPool
+                    .filter((p) => !fixedSet.has(p.id) && p.id !== driverId)
                     .map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name} ({p.campus_name})

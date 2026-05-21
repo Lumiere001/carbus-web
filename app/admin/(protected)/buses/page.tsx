@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
-import { BusesPanel, type BusData, type PaxData } from "@/components/admin/buses-panel";
+import {
+  BusesPanel,
+  type BusData,
+  type PaxData,
+  type CandidateData,
+} from "@/components/admin/buses-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +32,8 @@ export default async function AdminBusesPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, assigned_up_bus_id, assigned_down_bus_id"
+        "id, name, student_id, campus_id, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
       )
-      .or("assigned_up_bus_id.not.is.null,assigned_down_bus_id.not.is.null")
       .order("name"),
     supabase.from("campuses").select("id, name"),
   ]);
@@ -40,6 +44,8 @@ export default async function AdminBusesPage() {
 
   const upByBus = new Map<number, PaxData[]>();
   const downByBus = new Map<number, PaxData[]>();
+  // 차량순장·고정탑승 사전 지정용 후보(전체 명단). 호차 카드에서 방향·요일로 필터.
+  const candidates: CandidateData[] = [];
   for (const r of regRes.data ?? []) {
     const pax: PaxData = {
       id: r.id,
@@ -47,6 +53,11 @@ export default async function AdminBusesPage() {
       student_id: r.student_id,
       campus_name: campusName.get(r.campus_id) ?? "—",
     };
+    candidates.push({
+      ...pax,
+      departure_day: r.departure_day,
+      uses_return_bus: r.uses_return_bus,
+    });
     if (r.assigned_up_bus_id != null) {
       const list = upByBus.get(r.assigned_up_bus_id) ?? [];
       list.push(pax);
@@ -73,7 +84,7 @@ export default async function AdminBusesPage() {
           9대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행·하행 각각)" : " (보기 전용)"}
         </p>
       </div>
-      <BusesPanel buses={buses} isMaster={isMaster} />
+      <BusesPanel buses={buses} candidates={candidates} isMaster={isMaster} />
     </div>
   );
 }

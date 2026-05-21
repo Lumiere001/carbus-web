@@ -76,7 +76,15 @@ export function BatchPanel({
 
   function run(mode: "up" | "down") {
     const label = mode === "up" ? "상행" : "하행";
-    if (!confirm(`${label} 배차를 새로 계산해 덮어씁니다. 진행할까요?`)) return;
+    if (
+      !confirm(
+        `${label} 배차를 새로 계산해 덮어씁니다.\n\n` +
+          `⚠️ 수동으로 직접 옮긴 ${label} 배정은 모두 사라지고 다시 계산됩니다.\n` +
+          `특정 인원을 그대로 두려면 호차 화면에서 '고정 탑승자'로 지정한 뒤 실행하세요.\n\n` +
+          `진행할까요?`
+      )
+    )
+      return;
     setResult(null);
     startTransition(async () => {
       const res = await runBatchAction(mode);
