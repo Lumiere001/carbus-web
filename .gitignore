@@ -51,3 +51,4 @@ scripts/inspect-remote.mjs
 scripts/reset-money.mjs
 scripts/insert-dummy.mjs
 scripts/reset-for-launch.mjs
+scripts/apply-ffd-remote.mjs

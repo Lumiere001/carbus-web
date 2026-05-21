@@ -50,6 +50,7 @@ export function BatchPanel({
   lastBatchAt,
   currentPhase,
   runs,
+  pinStatus,
 }: {
   upParticipants: number;
   upAssigned: number;
@@ -61,6 +62,13 @@ export function BatchPanel({
   lastBatchAt: string | null;
   currentPhase: string;
   runs: BatchRunRow[];
+  /** 차량순장·고정탑승 현황 + 미반영(stale) 수 (방향별). */
+  pinStatus: {
+    upPins: number;
+    downPins: number;
+    upStale: number;
+    downStale: number;
+  };
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -90,6 +98,31 @@ export function BatchPanel({
           상행·하행은 따로 실행합니다.
         </p>
       </div>
+
+      {/* 권장 운영 순서 안내 */}
+      <div className="text-sm rounded-lg px-3 py-2 border bg-primary-50 border-primary-200 text-primary-800">
+        <b>권장 순서</b> ① 호차 화면에서 차량순장·고정탑승을 먼저 지정 → ② 여기서 배차 실행 →
+        ③ 결과 확인. 고정 지정을 <b>배차 실행 후</b>에 바꾸면 다시 실행해야 반영됩니다.
+        <span className="ml-1 text-primary-700">
+          (현재 고정: 상행 {pinStatus.upPins}명 · 하행 {pinStatus.downPins}명)
+        </span>
+      </div>
+
+      {/* 미반영(stale) 경고 — 고정 지정이 마지막 배차에 안 들어간 경우 */}
+      {(pinStatus.upStale > 0 || pinStatus.downStale > 0) && (
+        <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning flex items-start gap-2">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <b>재배차 필요</b> — 차량순장·고정탑승 지정이 현재 배차 결과에 반영되지 않았습니다
+            {pinStatus.upStale > 0 && ` (상행 ${pinStatus.upStale}명`}
+            {pinStatus.upStale > 0 && pinStatus.downStale > 0 && ", "}
+            {pinStatus.downStale > 0 &&
+              `${pinStatus.upStale > 0 ? "" : " ("}하행 ${pinStatus.downStale}명`}
+            {(pinStatus.upStale > 0 || pinStatus.downStale > 0) && ")"}.
+            해당 방향 <b>배차 실행</b>을 다시 눌러주세요.
+          </span>
+        </div>
+      )}
 
       {currentPhase !== "phase2" && (
         <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
