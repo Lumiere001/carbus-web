@@ -11,8 +11,14 @@
  *   4. 혼자만 다른 캠퍼스 금지 — 분할 조각이 1명이 되지 않게.
  *   5. (상행만) 요일 분리 + 고정 배정(driver/fixed) 보존. 차량순장은 개별 배정.
  *
- * 알고리즘: 캠퍼스 큰 순으로 정렬해 연속으로 호차에 순차 채움(44).
- * 넘치면 보조석(45) → 그래도 넘치면 미배정. 순수 함수.
+ * 알고리즘 (FFD — First-Fit Decreasing, 캠퍼스 단위):
+ *   캠퍼스 큰 순으로, 각 캠퍼스를
+ *     ① 통째로 들어가는 호차 중 잔여 최소(best-fit)에 배정 — 분할·빈자리 동시 최소화.
+ *     ② 어느 호차에도 통째로 못 들어가면(캠퍼스 > 호차 잔여) 잔여 큰 호차부터 분할
+ *        (조각 최소, 1명 조각 방지).
+ *     ③ 정원(44) 다 차면 보조석(45)까지 → 그래도 넘치면 미배정.
+ *   순차 채움(next-fit) 대비 작은 캠퍼스의 불필요한 분할을 없애면서 빈좌석은
+ *   동일하게 유지한다(파레토 개선). 순수 함수.
  */
 
 import type {
@@ -67,59 +73,52 @@ function fillBuses(
   }
 
   const campuses = campusesBySizeDesc(group);
-  const overflow: Passenger[] = [];
-  let bi = 0;
+  let unassigned = 0;
 
   for (const members of campuses) {
     let q = members;
+
+    // ① 통째로 들어가는 호차 중 잔여 최소(best-fit) — 분할·빈자리 동시 최소화
+    const whole = buses
+      .filter((b) => b.capacity - b.count >= q.length)
+      .sort((a, b) => a.capacity - a.count - (b.capacity - b.count))[0];
+    if (whole) {
+      for (const m of q) {
+        assign(m.id, whole.id);
+        whole.count++;
+      }
+      continue;
+    }
+
+    // ② 통째로 못 들어감 → 잔여 큰 호차부터 분할 (조각 최소, 1명 조각 방지)
     while (q.length > 0) {
-      // 정원(44) 여유 있는 다음 호차로
-      while (bi < buses.length && buses[bi].count >= buses[bi].capacity) bi++;
-      if (bi >= buses.length) {
-        overflow.push(...q);
-        break;
-      }
-      const b = buses[bi];
-      const rem = b.capacity - b.count;
-
-      if (q.length <= rem) {
-        for (const m of q) {
-          assign(m.id, b.id);
-          b.count++;
-        }
-        q = [];
-        continue;
-      }
-
-      // 캠퍼스가 이 호차 잔여보다 큼 → 분할
-      let take = rem;
-      const spill = q.length - take;
-      if (spill === 1 && take > 1) take--; // 흘리는 조각이 1명 되지 않게
-      if (take <= 1 && b.count > 0) {
-        // 이미 다른 캠퍼스가 탄 호차에 1명만 끼지 않도록 → 이 호차 건너뜀
-        bi++;
-        continue;
-      }
+      const b = buses
+        .filter((x) => x.count < x.capacity)
+        .sort((a, b2) => b2.capacity - b2.count - (a.capacity - a.count))[0];
+      if (!b) break;
+      let take = Math.min(b.capacity - b.count, q.length);
+      if (q.length - take === 1 && take > 1) take--; // 흘리는 조각이 1명 되지 않게
       for (const m of q.slice(0, take)) {
         assign(m.id, b.id);
         b.count++;
       }
       q = q.slice(take);
-      bi++; // 이 호차 가득 → 다음 호차
     }
+
+    // ③ 정원(44) 다 참 → 보조석(hard_cap)까지, 잔여 큰 호차부터
+    while (q.length > 0) {
+      const b = buses
+        .filter((x) => x.count < x.hard_cap)
+        .sort((a, b2) => b2.hard_cap - b2.count - (a.hard_cap - a.count))[0];
+      if (!b) break;
+      assign(q[0].id, b.id);
+      b.count++;
+      q = q.slice(1);
+    }
+
+    unassigned += q.length;
   }
 
-  // 정원(44) 초과분 → 보조석(45)까지
-  let i = 0;
-  for (; i < overflow.length; i++) {
-    const b = buses
-      .filter((x) => x.count < x.hard_cap)
-      .sort((a, b2) => b2.hard_cap - b2.count - (a.hard_cap - a.count))[0];
-    if (!b) break;
-    assign(overflow[i].id, b.id);
-    b.count++;
-  }
-  const unassigned = overflow.length - i;
   if (unassigned > 0) {
     errors.push(`미배정: ${label} ${unassigned}명 (좌석 부족 — 호차 증편 필요)`);
   }

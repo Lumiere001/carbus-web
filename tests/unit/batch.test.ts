@@ -257,8 +257,9 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(r.up_assignments["wrong"]).not.toBe(1);
   });
 
-  it("16) 호차를 정원(44)까지 꽉 채움 — 미배정 0, 정원 초과 0", () => {
-    // 7개 캠퍼스 × 20명(140), 4대. 채우기 위해 분할 허용 → 3대 44 + 1대 8.
+  it("16) FFD 채움 — 미배정 0, 정원 초과 0, 캠퍼스 분할 없음", () => {
+    // 7개 캠퍼스 × 20명(140), 4대. FFD는 캠퍼스를 통째로 best-fit 호차에 넣어
+    // 불필요한 분할을 만들지 않는다 (정원 안 채워도 분할보다 낫다 — 빈좌석 동일).
     const buses = [1, 2, 3, 4].map((id) => bus({ id, departure_day: "TUE" }));
     const passengers = Array.from({ length: 7 }, (_, c) =>
       paxN(20, { campus: `c${c}`, departure_day: "TUE" })
@@ -268,7 +269,14 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(r.total_assigned).toBe(140);
     const counts = Object.values(r.by_bus);
     expect(Math.max(...counts)).toBeLessThanOrEqual(44); // 정원 초과 없음
-    expect(counts.filter((n) => n === 44).length).toBe(3); // 3대는 꽉 참
+    // 20명 캠퍼스는 44 정원에 통째로 들어가므로 어떤 캠퍼스도 분할되지 않음
+    const campusBuses = new Map<string, Set<number>>();
+    for (const p of passengers) {
+      const set = campusBuses.get(p.campus) ?? new Set<number>();
+      set.add(r.up_assignments[p.id]);
+      campusBuses.set(p.campus, set);
+    }
+    for (const set of campusBuses.values()) expect(set.size).toBe(1);
   });
 
   it("19) 정원 초과 방지: 빈 호차가 있으면 보조석(45) 쓰지 않음", () => {
