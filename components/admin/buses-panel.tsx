@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DAY_LABELS } from "@/lib/labels";
 import type { DepartureDay } from "@/lib/supabase/types";
 import { setDriver, setFixedPassengers } from "@/lib/admin/buses";
+import { sortRoster } from "@/lib/registrations/roster-sort";
 
 export type PaxData = {
   id: string;
@@ -160,7 +161,7 @@ function BusCard({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const pax = passengers;
+  const pax = sortRoster(passengers);
   const cap = bus.capacity;
   const filled = pax.length;
   const over = filled > cap;

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DAY_LABELS } from "@/lib/labels";
 import type { DepartureDay, AttendanceType } from "@/lib/supabase/types";
+import { sortRoster } from "@/lib/registrations/roster-sort";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,9 @@ function groupBy(regs: Reg[], key: (r: Reg) => number | null) {
     list.push(r);
     m.set(b, list);
   }
-  return [...m.entries()].sort((a, b) => a[0] - b[0]);
+  return [...m.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([busId, members]) => [busId, sortRoster(members)] as [number, Reg[]]);
 }
 
 function BusGroups({
