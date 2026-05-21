@@ -25,6 +25,8 @@ export type BusData = {
   hard_cap: number;
   driver_registration_id: string | null;
   fixed_passenger_ids: string[];
+  down_driver_registration_id: string | null;
+  down_fixed_passenger_ids: string[];
   passengers: PaxData[]; // 상행 탑승
   downPassengers: PaxData[]; // 하행 탑승 (독립 배차)
 };
@@ -165,40 +167,58 @@ function BusCard({
   const cap = bus.capacity;
   const filled = pax.length;
   const over = filled > cap;
-  const editable = mode === "up" && isMaster;
+  const editable = isMaster; // 상·하행 모두 master 편집 가능
 
-  const driver = pax.find((p) => p.id === bus.driver_registration_id);
-  const fixed = bus.fixed_passenger_ids
+  // 방향별 차량순장·고정탑승 (상행/하행 별개 컬럼)
+  const driverId =
+    mode === "up" ? bus.driver_registration_id : bus.down_driver_registration_id;
+  const fixedIds =
+    mode === "up" ? bus.fixed_passenger_ids : bus.down_fixed_passenger_ids;
+
+  const driver = pax.find((p) => p.id === driverId);
+  const fixed = fixedIds
     .map((id) => pax.find((p) => p.id === id))
     .filter((p): p is PaxData => !!p);
-  const fixedSet = new Set(bus.fixed_passenger_ids);
+  const fixedSet = new Set(fixedIds);
 
   const dist = new Map<string, number>();
   for (const p of pax) dist.set(p.campus_name, (dist.get(p.campus_name) ?? 0) + 1);
   const distSorted = [...dist.entries()].sort((a, b) => b[1] - a[1]);
 
+  const dirText = mode === "up" ? "상행" : "하행";
+
   async function handleSetDriver(regId: string | null) {
     setBusy(true);
-    const res = await setDriver(bus.id, regId);
+    const res = await setDriver(bus.id, regId, mode);
     setBusy(false);
     if (!res.ok) return onMsg({ type: "err", text: res.message });
-    onPatch({ driver_registration_id: regId });
+    onPatch(
+      mode === "up"
+        ? { driver_registration_id: regId }
+        : { down_driver_registration_id: regId }
+    );
     const who = regId ? pax.find((p) => p.id === regId)?.name : null;
     onMsg({
       type: "ok",
-      text: who ? `${bus.name} 차량순장: ${who}` : `${bus.name} 차량순장 해제`,
+      text: who
+        ? `${bus.name} ${dirText} 차량순장: ${who}`
+        : `${bus.name} ${dirText} 차량순장 해제`,
     });
   }
 
   async function handleToggleFixed(regId: string) {
     const next = fixedSet.has(regId)
-      ? bus.fixed_passenger_ids.filter((id) => id !== regId)
-      : [...bus.fixed_passenger_ids, regId];
+      ? fixedIds.filter((id) => id !== regId)
+      : [...fixedIds, regId];
     setBusy(true);
-    const res = await setFixedPassengers(bus.id, next);
+    const res = await setFixedPassengers(bus.id, next, mode);
     setBusy(false);
     if (!res.ok) return onMsg({ type: "err", text: res.message });
-    onPatch({ fixed_passenger_ids: next });
+    onPatch(
+      mode === "up"
+        ? { fixed_passenger_ids: next }
+        : { down_fixed_passenger_ids: next }
+    );
   }
 
   return (
@@ -234,16 +254,16 @@ function BusCard({
           ))}
         </div>
 
-        {/* 차량순장 · 고정 탑승자 (상행만) */}
-        {mode === "up" && (
+        {/* 차량순장 · 고정 탑승자 (상행·하행 각각) */}
+        {(
           <>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-muted flex items-center gap-1.5">
-                <Star size={13} className="text-warning" /> 차량순장
+                <Star size={13} className="text-warning" /> {dirText} 차량순장
               </span>
               {editable ? (
                 <select
-                  value={bus.driver_registration_id ?? ""}
+                  value={driverId ?? ""}
                   disabled={busy}
                   onChange={(e) => handleSetDriver(e.target.value || null)}
                   className="text-xs border border-border-2 rounded-md px-2 py-1 bg-surface max-w-[12rem]"
@@ -349,10 +369,10 @@ function BusCard({
                   <span className="text-xs text-muted-2 ml-1.5">
                     {p.campus_name} · {p.student_id}
                   </span>
-                  {mode === "up" && p.id === bus.driver_registration_id && (
+                  {p.id === driverId && (
                     <Star size={11} className="inline ml-1 text-warning" />
                   )}
-                  {mode === "up" && fixedSet.has(p.id) && (
+                  {fixedSet.has(p.id) && (
                     <Pin size={11} className="inline ml-1 text-primary-600" />
                   )}
                 </li>

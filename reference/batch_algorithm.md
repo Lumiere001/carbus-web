@@ -129,9 +129,13 @@ Step 5. 하행 (down) — 상행과 완전히 독립 배정  [v4.3 변경]
 # 하행 대상 = uses_return_bus == true 전원 (왕복 + 하행편도)
 # 토요일은 9대 모두 운행. 요일 무관, 상행 호차 상속 X.
 # → 왕복자도 상행 호차와 하행 호차가 다를 수 있음.
-downParticipants = registrations filter (uses_return_bus == true)
-downBuses = buses (전부, 잔여좌석 독립 트래커)
-# 상행과 동일한 캠퍼스 묶음 Bin Packing 을 down 풀에 별도 실행
+# [v4.5] 하행도 차량순장·고정탑승 지원 — 상행과 별개 컬럼
+#        (down_driver_registration_id, down_fixed_passenger_ids).
+#        하행은 요일 제약이 없으므로 요일 일치 검증 없이 그대로 고정.
+downPinned = buses 의 down_driver + down_fixed → 해당 호차 선점 (uses_return_bus 확인)
+downParticipants = registrations filter (uses_return_bus == true) − downPinned
+downBuses = buses (전부, 잔여좌석 독립 트래커, 고정분 count 반영)
+# 상행과 동일한 FFD 캠퍼스 묶음을 down 풀에 별도 실행
 packGroup("하행", downParticipants, downBuses, assignDown, errors)
 
 # 편도-상행 (uses_return_bus == false): 하행 없음 → down_bus_id = null (기본값)

@@ -33,6 +33,8 @@ function bus(overrides: Partial<Bus> = {}): Bus {
     departure_day: "TUE",
     driver_registration_id: null,
     fixed_passenger_ids: [],
+    down_driver_registration_id: null,
+    down_fixed_passenger_ids: [],
     ...overrides,
   };
 }
@@ -319,6 +321,70 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const r = runBatch(big, buses);
     const used = new Set(big.map((m) => r.up_assignments[m.id]));
     expect(used.size).toBe(2);
+  });
+
+  it("20) 하행 차량순장 고정: down_driver 지정 호차에 고정 (상행과 독립)", () => {
+    const drv = pax({
+      id: "ddrv",
+      attendance_type: "oneway",
+      departure_day: null,
+      uses_return_bus: true,
+      campus: "조선대",
+    });
+    const others = paxN(40, {
+      attendance_type: "oneway",
+      departure_day: null,
+      uses_return_bus: true,
+      campus: "전남대",
+    });
+    const buses = [
+      bus({ id: 1, departure_day: "TUE", down_driver_registration_id: "ddrv" }),
+      bus({ id: 2, departure_day: "TUE" }),
+    ];
+    const r = runBatch([drv, ...others], buses);
+    expect(r.errors).toEqual([]);
+    // 하행 차량순장은 1호차에 고정
+    expect(r.down_assignments["ddrv"]).toBe(1);
+    // 상행 배정은 없음 (하행편도)
+    expect(r.up_assignments["ddrv"]).toBeUndefined();
+  });
+
+  it("21) 하행 고정탑승: down_fixed 5명 지정 호차 점유", () => {
+    const fixed = paxN(5, {
+      attendance_type: "oneway",
+      departure_day: null,
+      uses_return_bus: true,
+      campus: "채플팀",
+    });
+    const buses = [
+      bus({
+        id: 1,
+        departure_day: "TUE",
+        down_fixed_passenger_ids: fixed.map((p) => p.id),
+      }),
+      bus({ id: 2, departure_day: "TUE" }),
+    ];
+    const r = runBatch(fixed, buses);
+    expect(r.errors).toEqual([]);
+    for (const p of fixed) expect(r.down_assignments[p.id]).toBe(1);
+  });
+
+  it("22) 하행 고정은 상행 고정과 별개 (같은 사람 상/하행 다른 호차)", () => {
+    // 왕복자: 상행은 1호차 driver, 하행은 2호차 down_driver 로 지정 → 각각 따로 고정.
+    const p = pax({
+      id: "both",
+      attendance_type: "roundtrip",
+      departure_day: "TUE",
+      uses_return_bus: true,
+      campus: "호남대",
+    });
+    const buses = [
+      bus({ id: 1, departure_day: "TUE", driver_registration_id: "both" }),
+      bus({ id: 2, departure_day: "TUE", down_driver_registration_id: "both" }),
+    ];
+    const r = runBatch([p], buses);
+    expect(r.up_assignments["both"]).toBe(1); // 상행 1호차
+    expect(r.down_assignments["both"]).toBe(2); // 하행 2호차
   });
 
   it("15) 350명 화 4대 → hard_cap 후도 대량 미배정 (reference §9 #3)", () => {

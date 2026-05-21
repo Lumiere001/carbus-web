@@ -50,10 +50,14 @@ export interface Bus {
   hard_cap: number;
   /** 상행 운행 요일. */
   departure_day: DepartureDay;
-  /** 차량순장 신청자 id. 해당 호차에서 절대 이동 X. */
+  /** 상행 차량순장 신청자 id. 해당 호차에서 절대 이동 X. */
   driver_registration_id: string | null;
-  /** 고정 탑승자 id 목록. 해당 호차에서 절대 이동 X. */
+  /** 상행 고정 탑승자 id 목록. 해당 호차에서 절대 이동 X. */
   fixed_passenger_ids: string[];
+  /** 하행 차량순장 신청자 id (상행과 별개). 해당 호차에서 절대 이동 X. */
+  down_driver_registration_id: string | null;
+  /** 하행 고정 탑승자 id 목록 (상행과 별개). 해당 호차에서 절대 이동 X. */
+  down_fixed_passenger_ids: string[];
 }
 
 /** 한 신청자의 상·하행 배정 결과. */

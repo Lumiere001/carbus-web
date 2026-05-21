@@ -21,7 +21,7 @@ export default async function AdminBusesPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, departure_day, capacity, hard_cap, driver_registration_id, fixed_passenger_ids"
+        "id, name, departure_day, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase
@@ -70,7 +70,7 @@ export default async function AdminBusesPage() {
       <div>
         <h2 className="text-xl font-semibold text-foreground">호차 배차 현황</h2>
         <p className="text-sm text-muted mt-0.5">
-          9대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행)" : " (보기 전용)"}
+          9대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행·하행 각각)" : " (보기 전용)"}
         </p>
       </div>
       <BusesPanel buses={buses} isMaster={isMaster} />

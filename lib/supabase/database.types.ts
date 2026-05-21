@@ -65,6 +65,8 @@ export type Database = {
         Row: {
           capacity: number
           departure_day: Database["public"]["Enums"]["departure_day"]
+          down_driver_registration_id: string | null
+          down_fixed_passenger_ids: string[]
           driver_registration_id: string | null
           fixed_passenger_ids: string[]
           hard_cap: number
@@ -74,6 +76,8 @@ export type Database = {
         Insert: {
           capacity?: number
           departure_day: Database["public"]["Enums"]["departure_day"]
+          down_driver_registration_id?: string | null
+          down_fixed_passenger_ids?: string[]
           driver_registration_id?: string | null
           fixed_passenger_ids?: string[]
           hard_cap?: number
@@ -83,6 +87,8 @@ export type Database = {
         Update: {
           capacity?: number
           departure_day?: Database["public"]["Enums"]["departure_day"]
+          down_driver_registration_id?: string | null
+          down_fixed_passenger_ids?: string[]
           driver_registration_id?: string | null
           fixed_passenger_ids?: string[]
           hard_cap?: number
@@ -93,6 +99,13 @@ export type Database = {
           {
             foreignKeyName: "buses_driver_registration_id_fkey"
             columns: ["driver_registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_down_driver_registration_id_fkey"
+            columns: ["down_driver_registration_id"]
             isOneToOne: false
             referencedRelation: "registrations"
             referencedColumns: ["id"]

@@ -194,7 +194,30 @@ export function runBatch(
   if (runDown) {
     // 토요일 9대 모두 운행. 상행 호차 상속 X.
     const downBuses: BusWork[] = buses.map((b) => ({ ...b, count: 0 }));
-    const downParticipants = passengers.filter((p) => p.uses_return_bus === true);
+    const pinnedDown = new Set<string>();
+
+    // Step 1. 하행 고정 배정 (down 차량순장 + down 고정탑승). 하행은 요일 제약 없음.
+    for (const bus of downBuses) {
+      const ids = [
+        ...(bus.down_driver_registration_id
+          ? [bus.down_driver_registration_id]
+          : []),
+        ...bus.down_fixed_passenger_ids,
+      ];
+      for (const rid of [...new Set(ids)]) {
+        if (pinnedDown.has(rid)) continue;
+        const reg = byId.get(rid);
+        if (!reg || reg.uses_return_bus !== true) continue; // 하행 미이용자는 고정 불가
+        assignDown(rid, bus.id);
+        bus.count++;
+        pinnedDown.add(rid);
+      }
+    }
+
+    // Step 2. 나머지 하행 이용자만 채움 (고정자 제외).
+    const downParticipants = passengers.filter(
+      (p) => p.uses_return_bus === true && !pinnedDown.has(p.id)
+    );
     fillBuses("하행", downParticipants, downBuses, assignDown, errors);
   }
 
