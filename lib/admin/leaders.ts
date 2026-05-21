@@ -115,6 +115,38 @@ function humanize(msg: string): string {
   return msg;
 }
 
+/**
+ * 상행 호차는 신청자의 출발 슬롯과 일치해야 함 (하행은 슬롯 무관 → 통과).
+ * 드롭다운 필터 우회·API 직접 호출 대비 서버측 방어 (setAssignment 와 동일 정책).
+ */
+async function assertUpSlotMatch(
+  supabase: SupabaseClient,
+  personId: string,
+  busId: number,
+  mode: Mode
+): Promise<Result> {
+  if (mode !== "up") return { ok: true };
+  const [{ data: reg }, { data: bus }] = await Promise.all([
+    supabase.from("registrations").select("departure_slot_id").eq("id", personId).single(),
+    supabase.from("buses").select("name, departure_slot_id").eq("id", busId).single(),
+  ]);
+  if (!reg || !bus) return { ok: true }; // 못 찾으면 후속 쿼리에서 처리
+  if (reg.departure_slot_id == null)
+    return { ok: false, message: "상행 대상이 아닙니다 (하행 편도 신청자)" };
+  if (reg.departure_slot_id !== bus.departure_slot_id) {
+    const { data: slots } = await supabase
+      .from("departure_slots")
+      .select("id, label")
+      .in("id", [reg.departure_slot_id, bus.departure_slot_id]);
+    const lbl = (sid: number) => slots?.find((s) => s.id === sid)?.label ?? `slot ${sid}`;
+    return {
+      ok: false,
+      message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(bus.departure_slot_id)})`,
+    };
+  }
+  return { ok: true };
+}
+
 /** 사람을 (방향) busId 의 차량순장으로 지정. busId=null 이면 해제. 이전 순장 호차는 자동 해제. */
 export async function assignDriverBus(
   personId: string,
@@ -122,6 +154,23 @@ export async function assignDriverBus(
   mode: Mode
 ): Promise<Result> {
   const supabase = createClient();
+  // 가드: 상행 슬롯 일치 + 대상 호차에 이미 다른 차량순장이 있으면 차단(무경고 덮어쓰기 방지).
+  if (busId != null) {
+    const slotG = await assertUpSlotMatch(supabase, personId, busId, mode);
+    if (!slotG.ok) return slotG;
+    const { data: bus } = await supabase
+      .from("buses")
+      .select("name, driver_registration_id, down_driver_registration_id")
+      .eq("id", busId)
+      .single();
+    const occupant =
+      mode === "up" ? bus?.driver_registration_id : bus?.down_driver_registration_id;
+    if (occupant && occupant !== personId)
+      return {
+        ok: false,
+        message: `${bus?.name ?? `${busId}호차`}에 이미 ${mode === "up" ? "상행" : "하행"} 차량순장이 있습니다. 먼저 해제하세요.`,
+      };
+  }
   if (mode === "up") {
     const c = await supabase
       .from("buses")
@@ -159,6 +208,12 @@ export async function assignFixedBus(
   mode: Mode
 ): Promise<Result> {
   const supabase = createClient();
+
+  // 가드: 상행 호차는 신청자 출발 슬롯과 일치해야 함 (드롭다운 우회 방어).
+  if (busId != null) {
+    const slotG = await assertUpSlotMatch(supabase, personId, busId, mode);
+    if (!slotG.ok) return slotG;
+  }
 
   // 현재 이 사람이 들어있는 모든 호차의 고정 배열 조회 후 제거
   const { data: all, error: fErr } = await supabase
