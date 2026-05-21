@@ -88,8 +88,18 @@ export default async function AdminLeadersPage() {
 
   const leaders: LeaderRow[] = [];
   for (const r of byId.values()) {
-    const isDriver = upDriverOf.has(r.id) || downDriverOf.has(r.id);
-    const isFixed = upFixedOf.has(r.id) || downFixedOf.has(r.id);
+    const upKind: "driver" | "fixed" | null = upDriverOf.has(r.id)
+      ? "driver"
+      : upFixedOf.has(r.id)
+        ? "fixed"
+        : null;
+    const downKind: "driver" | "fixed" | null = downDriverOf.has(r.id)
+      ? "driver"
+      : downFixedOf.has(r.id)
+        ? "fixed"
+        : null;
+    const isDriver = upKind === "driver" || downKind === "driver";
+    const isFixed = upKind === "fixed" || downKind === "fixed";
     const plain = (r.roles ?? []).filter((x) => x !== ROLE_DRIVER && x !== ROLE_FIXED);
     const roleBadges = [
       ...plain,
@@ -97,29 +107,32 @@ export default async function AdminLeadersPage() {
       ...(isFixed ? [ROLE_FIXED] : []),
     ];
     if (roleBadges.length === 0) continue;
-    const kind: "driver" | "fixed" | null = isDriver ? "driver" : isFixed ? "fixed" : null;
+    // 새 방향 결박 시 사용할 기본 종류 (차량순장 우선)
+    const primaryKind: "driver" | "fixed" | null = isDriver ? "driver" : isFixed ? "fixed" : null;
     const ridesUp = r.departure_day !== null;
     const ridesDown = r.uses_return_bus === true;
-    const upBus = isDriver ? upDriverOf.get(r.id) : isFixed ? upFixedOf.get(r.id) : undefined;
-    const downBus = isDriver ? downDriverOf.get(r.id) : isFixed ? downFixedOf.get(r.id) : undefined;
+    const upBusId = upDriverOf.get(r.id) ?? upFixedOf.get(r.id) ?? null;
+    const downBusId = downDriverOf.get(r.id) ?? downFixedOf.get(r.id) ?? null;
     leaders.push({
       id: r.id,
       name: r.name,
       student_id: r.student_id,
       campus_name: campusName.get(r.campus_id) ?? "—",
       roleBadges,
-      kind,
+      primaryKind,
       departure_day: (r.departure_day as "TUE" | "WED" | null) ?? null,
       ridesUp,
       ridesDown,
-      upBusId: upBus ?? null,
-      downBusId: downBus ?? null,
-      needUp: kind != null && ridesUp && upBus == null,
-      needDown: kind != null && ridesDown && downBus == null,
+      upKind,
+      downKind,
+      upBusId,
+      downBusId,
+      needUp: primaryKind != null && ridesUp && upBusId == null,
+      needDown: primaryKind != null && ridesDown && downBusId == null,
     });
   }
   leaders.sort((a, b) => {
-    const rank = (l: LeaderRow) => (l.kind === "driver" ? 0 : l.kind === "fixed" ? 1 : 2);
+    const rank = (l: LeaderRow) => (l.primaryKind === "driver" ? 0 : l.primaryKind === "fixed" ? 1 : 2);
     return rank(a) !== rank(b) ? rank(a) - rank(b) : a.name < b.name ? -1 : 1;
   });
 

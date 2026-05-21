@@ -552,7 +552,7 @@ export function RegistrationGrid({
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, student_id: e.target.value }))
                     }
-                    placeholder="26 / 간사"
+                    placeholder="26 / 외국인 / 타지구"
                     className="w-full rounded-md border border-border bg-surface px-2 py-1 text-sm text-foreground placeholder:text-muted-2 focus:outline-none focus:border-primary-800"
                   />
                 </td>
@@ -652,15 +652,8 @@ function StatDot({
   );
 }
 
-/** 학번 셀: 숫자 평문 · 간사 primary badge · 외국인/타지구 mute badge. */
+/** 학번 셀: 숫자 평문 · 외국인/타지구 mute badge. */
 function StudentIdCell({ value }: { value: string }) {
-  if (value === "간사") {
-    return (
-      <Badge variant="primary" dot={false}>
-        간사
-      </Badge>
-    );
-  }
   if (value === "외국인" || value === "타지구") {
     return (
       <Badge variant="mute" dot={false}>

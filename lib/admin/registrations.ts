@@ -22,8 +22,23 @@ export type RegFormFields = {
   note: string | null;
 };
 
+/** 학번 형식: 두 자리 숫자 또는 외국인/타지구. */
+function validStudentId(s: string): boolean {
+  return /^\d{2}$/.test(s) || s === "외국인" || s === "타지구";
+}
+/** 폼 공통 검증 — DB CHECK 도달 전 친절한 메시지. */
+function validateForm(f: RegFormFields): string | null {
+  if (!f.name.trim()) return "이름은 필수입니다";
+  if (!f.campus_id) return "캠퍼스를 선택하세요";
+  if (!validStudentId(f.student_id.trim()))
+    return "학번은 두 자리 숫자 또는 외국인/타지구만 가능합니다";
+  return null;
+}
+
 /** 순장/순원 신규 추가 (master 전용, 캠퍼스 지정). */
 export async function createRegistration(f: RegFormFields): Promise<Result> {
+  const err = validateForm(f);
+  if (err) return { ok: false, message: err };
   const supabase = createClient();
   const { error } = await supabase
     .from("registrations")
@@ -37,6 +52,8 @@ export async function updateRegistrationFields(
   id: string,
   f: RegFormFields
 ): Promise<Result> {
+  const err = validateForm(f);
+  if (err) return { ok: false, message: err };
   const supabase = createClient();
   const { error } = await supabase.from("registrations").update(f).eq("id", id);
   if (error) return { ok: false, message: humanize(error.message) };

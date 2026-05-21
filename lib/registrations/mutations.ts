@@ -168,7 +168,7 @@ function humanizeError(msg: string): string {
     return "편도는 상행 또는 하행 중 하나만 선택 가능합니다";
   }
   if (msg.includes("student_id")) {
-    return "학번 형식이 올바르지 않습니다 (예: 26 / 간사 / 외국인 / 타지구)";
+    return "학번 형식이 올바르지 않습니다 (예: 26 / 외국인 / 타지구)";
   }
   if (msg.includes("row-level security") || msg.includes("policy")) {
     return "권한이 없습니다 (본인 캠퍼스 순장/순원만 관리할 수 있어요)";

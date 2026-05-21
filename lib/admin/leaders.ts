@@ -163,8 +163,28 @@ export async function assignFixedBus(
   // 현재 이 사람이 들어있는 모든 호차의 고정 배열 조회 후 제거
   const { data: all, error: fErr } = await supabase
     .from("buses")
-    .select("id, fixed_passenger_ids, down_fixed_passenger_ids");
+    .select(
+      "id, name, hard_cap, driver_registration_id, down_driver_registration_id, fixed_passenger_ids, down_fixed_passenger_ids"
+    );
   if (fErr) return { ok: false, message: humanize(fErr.message) };
+
+  // 정원 초과 가드: 대상 호차의 (차량순장 + 고정) 인원이 hard_cap 도달이면 차단
+  if (busId != null) {
+    const t = (all ?? []).find((b) => b.id === busId);
+    if (t) {
+      const fixedArr: string[] =
+        (mode === "up" ? t.fixed_passenger_ids : t.down_fixed_passenger_ids) ?? [];
+      const driver = mode === "up" ? t.driver_registration_id : t.down_driver_registration_id;
+      const occupied =
+        fixedArr.filter((x) => x !== personId).length + (driver && driver !== personId ? 1 : 0);
+      if (!fixedArr.includes(personId) && occupied >= t.hard_cap) {
+        return {
+          ok: false,
+          message: `${t.name} 고정 인원이 정원(${t.hard_cap}석)에 도달했습니다`,
+        };
+      }
+    }
+  }
 
   for (const b of all ?? []) {
     const arr: string[] =

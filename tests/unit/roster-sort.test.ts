@@ -33,14 +33,14 @@ describe("sortRoster — 캠퍼스 묶음 + 학번 오름차순", () => {
     expect(r.map((x) => x.student_id)).toEqual(["21", "23", "24"]);
   });
 
-  it("학번 특수값('간사'·'타지구')은 숫자 뒤로", () => {
+  it("학번 특수값('외국인'·'타지구')은 숫자 뒤로", () => {
     const r = sortRoster([
-      m("간사A", "간사", "전남대"),
+      m("외국A", "외국인", "전남대"),
       m("학생", "22", "전남대"),
       m("타지구원", "타지구", "전남대"),
     ]);
     expect(r[0].student_id).toBe("22");
-    expect(r.slice(1).map((x) => x.student_id).sort()).toEqual(["간사", "타지구"]);
+    expect(r.slice(1).map((x) => x.student_id).sort()).toEqual(["외국인", "타지구"]);
   });
 
   it("같은 학번은 이름 가나다순", () => {

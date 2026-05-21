@@ -13,7 +13,7 @@ const TEMPLATE_CSV = [
   "이름,학번,참석 유형,상행 요일,하행 차량 이용,비고",
   "홍길동,26,왕복,화요일,O,",
   "김영희,27,편도,수요일,X,상행만",
-  "박간사,간사,편도,,O,하행만",
+  "이타지,타지구,편도,,O,하행만",
 ].join("\n");
 
 export function ImportPanel({ campusId }: { campusId: string }) {

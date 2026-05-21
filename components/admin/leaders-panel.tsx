@@ -17,11 +17,14 @@ export type LeaderRow = {
   campus_name: string;
   /** 표시용 역할 배지 (총단·간사 등 + 파생된 차량순장/고정). */
   roleBadges: string[];
-  /** 호차 바인딩 종류 (차량순장/고정). 일반 역할만 있으면 null. */
-  kind: "driver" | "fixed" | null;
+  /** 새 방향 결박 시 기본 종류. 일반 역할만 있으면 null(호차 칸 비활성). */
+  primaryKind: "driver" | "fixed" | null;
   departure_day: DepartureDay | null;
   ridesUp: boolean;
   ridesDown: boolean;
+  /** 방향별 현재 바인딩 종류 (없으면 null). */
+  upKind: "driver" | "fixed" | null;
+  downKind: "driver" | "fixed" | null;
   upBusId: number | null;
   downBusId: number | null;
   needUp: boolean;
@@ -50,12 +53,15 @@ export function LeadersPanel({
 
   const needCount = leaders.filter((l) => l.needUp || l.needDown).length;
 
-  function assign(row: LeaderRow, mode: "up" | "down", value: string) {
-    if (row.kind == null) return;
+  function assign(
+    row: LeaderRow,
+    mode: "up" | "down",
+    cellKind: "driver" | "fixed",
+    value: string
+  ) {
     const busId = value ? Number(value) : null;
-    const kind = row.kind;
     startTransition(async () => {
-      const fn = kind === "driver" ? assignDriverBus : assignFixedBus;
+      const fn = cellKind === "driver" ? assignDriverBus : assignFixedBus;
       const res = await fn(row.id, busId, mode);
       if (!res.ok) return setMsg({ type: "err", text: res.message });
       setMsg({
@@ -67,10 +73,12 @@ export function LeadersPanel({
   }
 
   const busCell = (row: LeaderRow, mode: "up" | "down") => {
-    if (row.kind == null) return <span className="text-muted-2">—</span>;
+    if (row.primaryKind == null) return <span className="text-muted-2">—</span>;
     const rides = mode === "up" ? row.ridesUp : row.ridesDown;
     const cur = mode === "up" ? row.upBusId : row.downBusId;
     const need = mode === "up" ? row.needUp : row.needDown;
+    // 이 방향의 결박 종류 (없으면 기본 종류로 새로 결박)
+    const cellKind = (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind;
     if (!rides) return <span className="text-muted-2">해당 없음</span>;
     const opts = mode === "up" ? buses.filter((b) => b.departure_day === row.departure_day) : buses;
     if (!isMaster) {
@@ -85,7 +93,7 @@ export function LeadersPanel({
       <select
         value={cur ?? ""}
         disabled={pending}
-        onChange={(e) => assign(row, mode, e.target.value)}
+        onChange={(e) => assign(row, mode, cellKind, e.target.value)}
         className={
           "text-xs border rounded-md px-2 py-1 bg-surface " +
           (need ? "border-warning-border text-warning" : "border-border-2")
