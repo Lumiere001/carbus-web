@@ -2,8 +2,45 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { DAY_LABELS } from "@/lib/labels";
+import type {
+  AttendanceType,
+  DepartureDay,
+  PaymentStatus,
+} from "@/lib/supabase/types";
 
 type Result = { ok: true } | { ok: false; message: string };
+
+/** master 명단 추가·수정 폼 필드 (참석 3필드는 프리셋으로 일관성 보장된 값). */
+export type RegFormFields = {
+  name: string;
+  student_id: string;
+  campus_id: string;
+  attendance_type: AttendanceType;
+  departure_day: DepartureDay | null;
+  uses_return_bus: boolean;
+  payment_status: PaymentStatus;
+};
+
+/** 순장/순원 신규 추가 (master 전용, 캠퍼스 지정). */
+export async function createRegistration(f: RegFormFields): Promise<Result> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("registrations")
+    .insert({ ...f, roles: [] });
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true };
+}
+
+/** 이름·학번·참석일정·납부·캠퍼스 수정 (master 전용). 배정 컬럼은 건드리지 않음. */
+export async function updateRegistrationFields(
+  id: string,
+  f: RegFormFields
+): Promise<Result> {
+  const supabase = createClient();
+  const { error } = await supabase.from("registrations").update(f).eq("id", id);
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true };
+}
 type Client = ReturnType<typeof createClient>;
 
 /**

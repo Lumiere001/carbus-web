@@ -22,6 +22,9 @@ import {
   excludeRegistration,
   setRoles,
 } from "@/lib/admin/registrations";
+import { RegForm } from "@/components/admin/reg-form";
+import { Button } from "@/components/ui/button";
+import { Pencil, Plus } from "lucide-react";
 
 export type AdminRegRow = {
   id: string;
@@ -111,6 +114,9 @@ export function RegistrationsPanel({
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
+  const [form, setForm] = useState<
+    { mode: "new" } | { mode: "edit"; row: AdminRegRow } | null
+  >(null);
 
   const busName = useMemo(
     () => new Map(buses.map((b) => [b.id, b.name])),
@@ -171,20 +177,37 @@ export function RegistrationsPanel({
         </div>
       )}
 
-      {/* 이름 검색 */}
-      <div className="relative max-w-xs">
-        <Search
-          size={15}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-2"
-        />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="이름·학번 검색"
-          className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-2 rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-200"
-        />
+      {/* 이름 검색 + (master) 추가 */}
+      <div className="flex items-center gap-2">
+        <div className="relative max-w-xs flex-1">
+          <Search
+            size={15}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-2"
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="이름·학번 검색"
+            className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-2 rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+        </div>
+        {isMaster && (
+          <Button size="sm" onClick={() => setForm({ mode: "new" })}>
+            <Plus size={14} /> 추가
+          </Button>
+        )}
       </div>
+
+      {/* master 추가·수정 폼 */}
+      {isMaster && form && (
+        <RegForm
+          mode={form.mode}
+          initial={form.mode === "edit" ? form.row : undefined}
+          campuses={campuses}
+          onClose={() => setForm(null)}
+        />
+      )}
 
       {/* 캠퍼스 탭 (검색 중에는 비활성 표시) */}
       <div className={"flex flex-wrap gap-1.5" + (searching ? " opacity-50 pointer-events-none" : "")}>
@@ -255,6 +278,7 @@ export function RegistrationsPanel({
                         roleLabels={roleLabels}
                         isMaster={isMaster}
                         onMsg={setMsg}
+                        onEdit={(row) => setForm({ mode: "edit", row })}
                       />
                     ))}
                   </Fragment>
@@ -269,6 +293,7 @@ export function RegistrationsPanel({
                     roleLabels={roleLabels}
                     isMaster={isMaster}
                     onMsg={setMsg}
+                        onEdit={(row) => setForm({ mode: "edit", row })}
                   />
                 ))
               )}
@@ -293,6 +318,7 @@ function Row({
   roleLabels,
   isMaster,
   onMsg,
+  onEdit,
 }: {
   r: AdminRegRow;
   busName: Map<number, string>;
@@ -300,6 +326,7 @@ function Row({
   roleLabels: RoleLabel[];
   isMaster: boolean;
   onMsg: (m: Msg) => void;
+  onEdit: (row: AdminRegRow) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -425,15 +452,26 @@ function Row({
       </td>
       {isMaster && (
         <td className="px-4 py-2.5">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={exclude}
-            className="text-muted-2 hover:text-danger"
-            aria-label="명단에서 제외"
-          >
-            <Trash2 size={14} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => onEdit(r)}
+              className="text-muted-2 hover:text-primary-700"
+              aria-label="수정"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={exclude}
+              className="text-muted-2 hover:text-danger"
+              aria-label="명단에서 제외"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </td>
       )}
     </tr>

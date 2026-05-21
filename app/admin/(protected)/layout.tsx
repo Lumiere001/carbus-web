@@ -68,6 +68,9 @@ export default async function AdminProtectedLayout({
                   배차
                 </a>
               )}
+              <a href="/admin/leaders" className={navLink}>
+                리더
+              </a>
               <a href="/admin/payments" className={navLink}>
                 정산
               </a>

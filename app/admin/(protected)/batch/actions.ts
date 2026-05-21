@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runBatch } from "@/lib/batch/engine";
 import type { Passenger, Bus } from "@/lib/batch/types";
+import { ROLE_DRIVER, ROLE_FIXED } from "@/lib/roles/special";
 import type { UserRole } from "@/lib/supabase/types";
 
 export type BatchActionResult =
@@ -49,7 +50,7 @@ export async function runBatchAction(
     supabase
       .from("registrations")
       .select(
-        "id, name, campus_id, attendance_type, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, name, campus_id, attendance_type, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, roles"
       ),
     supabase
       .from("buses")
@@ -73,6 +74,44 @@ export async function runBatchAction(
 
   if (buses.length === 0) {
     return { ok: false, message: "호차 시드가 없습니다 (buses 0건)" };
+  }
+
+  // ── 선행조건: 차량순장/고정탑승 역할자는 타는 방향의 호차가 지정돼 있어야 함 ──
+  // (역할만 있고 호차 미지정이면 배차를 돌리지 않고, 먼저 호차 지정을 요구)
+  {
+    const ridesDir = (r: { departure_day: string | null; uses_return_bus: boolean }) =>
+      mode === "up" ? r.departure_day !== null : r.uses_return_bus === true;
+    const driverBound = new Set<string>();
+    const fixedBound = new Set<string>();
+    for (const b of busRes.data ?? []) {
+      const drv = mode === "up" ? b.driver_registration_id : b.down_driver_registration_id;
+      const fxd = mode === "up" ? b.fixed_passenger_ids : b.down_fixed_passenger_ids;
+      if (drv) driverBound.add(drv);
+      for (const id of fxd ?? []) fixedBound.add(id);
+    }
+    const missing: string[] = [];
+    for (const r of regRes.data ?? []) {
+      if (!ridesDir(r)) continue;
+      const roles = r.roles ?? [];
+      const isDriver = roles.includes(ROLE_DRIVER);
+      const isFixed = roles.includes(ROLE_FIXED);
+      if (!isDriver && !isFixed) continue;
+      // 차량순장 우선: 순장 역할이면 차량순장으로 지정돼야 함
+      if (isDriver) {
+        if (!driverBound.has(r.id)) missing.push(`${r.name} (차량순장)`);
+      } else if (isFixed) {
+        if (!fixedBound.has(r.id)) missing.push(`${r.name} (고정탑승)`);
+      }
+    }
+    if (missing.length > 0) {
+      const dir = mode === "up" ? "상행" : "하행";
+      const head = missing.slice(0, 8).join(", ");
+      const more = missing.length > 8 ? ` 외 ${missing.length - 8}명` : "";
+      return {
+        ok: false,
+        message: `${dir} 배차 전에 호차를 먼저 지정해야 하는 차량순장/고정탑승이 있습니다: ${head}${more}. '리더 관리' 화면에서 호차를 지정한 뒤 다시 실행하세요.`,
+      };
+    }
   }
 
   const result = runBatch(passengers, buses, mode);
