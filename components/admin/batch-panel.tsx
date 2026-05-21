@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { runBatchAction, type BatchActionResult } from "@/app/admin/(protected)/batch/actions";
 import { setAssignment } from "@/lib/admin/registrations";
-import { DAY_LABELS } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
+import { slotLabel } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 
 export type BatchRunRow = {
   id: string;
@@ -27,7 +27,7 @@ export type UnassignedRow = {
   student_id: string;
   campus_name: string;
 };
-export type BusOption = { id: number; name: string; departure_day: DepartureDay };
+export type BusOption = { id: number; name: string; departure_slot_id: number };
 
 function fmt(iso: string | null): string {
   if (!iso) return "기록 없음";
@@ -47,6 +47,7 @@ export function BatchPanel({
   upUnassigned,
   downUnassigned,
   buses,
+  slots,
   lastBatchAt,
   currentPhase,
   runs,
@@ -59,6 +60,7 @@ export function BatchPanel({
   upUnassigned: UnassignedRow[];
   downUnassigned: UnassignedRow[];
   buses: BusOption[];
+  slots: Pick<DepartureSlot, "id" | "label">[];
   lastBatchAt: string | null;
   currentPhase: string;
   runs: BatchRunRow[];
@@ -226,12 +228,14 @@ export function BatchPanel({
           mode="up"
           rows={upUnassigned}
           buses={buses}
+          slots={slots}
         />
         <UnassignedList
           title="하행 미배정"
           mode="down"
           rows={downUnassigned}
           buses={buses}
+          slots={slots}
         />
       </div>
 
@@ -293,11 +297,13 @@ function UnassignedList({
   mode,
   rows,
   buses,
+  slots,
 }: {
   title: string;
   mode: "up" | "down";
   rows: UnassignedRow[];
   buses: BusOption[];
+  slots: Pick<DepartureSlot, "id" | "label">[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -346,7 +352,7 @@ function UnassignedList({
                 {buses.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
-                    {mode === "up" ? ` (${DAY_LABELS[b.departure_day]})` : ""}
+                    {mode === "up" ? ` (${slotLabel(b.departure_slot_id, slots)})` : ""}
                   </option>
                 ))}
               </select>

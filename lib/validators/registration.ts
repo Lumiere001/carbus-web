@@ -6,7 +6,6 @@ import { z } from "zod";
  */
 
 export const STUDENT_ID_SPECIAL = ["외국인", "타지구"] as const;
-export const DEPARTURE_DAYS = ["TUE", "WED"] as const;
 export const ATTENDANCE_TYPES = ["roundtrip", "oneway"] as const;
 
 export const RegistrationSchema = z
@@ -27,29 +26,33 @@ export const RegistrationSchema = z
     attendance_type: z.enum(ATTENDANCE_TYPES, {
       error: "참석 유형을 선택해주세요",
     }),
-    departure_day: z.enum(DEPARTURE_DAYS).nullable(),
+    departure_slot_id: z
+      .number({ error: "상행 출발 시간대를 선택해주세요" })
+      .int()
+      .positive()
+      .nullable(),
     uses_return_bus: z.boolean(),
     note: z.string().max(200, "비고는 200자 이내입니다").nullish(),
     roles: z.array(z.string()).default([]),
   })
-  // 규칙 3: 왕복 일관성 — departure_day NOT NULL AND uses_return_bus
+  // 규칙 3: 왕복 일관성 — departure_slot_id NOT NULL AND uses_return_bus
   .refine(
     (data) =>
       data.attendance_type !== "roundtrip" ||
-      (data.departure_day !== null && data.uses_return_bus === true),
+      (data.departure_slot_id !== null && data.uses_return_bus === true),
     {
-      message: "왕복은 상행 요일과 하행 차량 이용이 모두 필요합니다",
+      message: "왕복은 상행 출발 시간대와 하행 차량 이용이 모두 필요합니다",
       path: ["attendance_type"],
     }
   )
-  // 규칙 4: 편도 일관성 — 편도 상행(요일O+하행X) 또는 편도 하행(요일X+하행O) 중 하나
+  // 규칙 4: 편도 일관성 — 편도 상행(슬롯O+하행X) 또는 편도 하행(슬롯X+하행O) 중 하나
   .refine(
     (data) => {
       if (data.attendance_type !== "oneway") return true;
       const upOnly =
-        data.departure_day !== null && data.uses_return_bus === false;
+        data.departure_slot_id !== null && data.uses_return_bus === false;
       const downOnly =
-        data.departure_day === null && data.uses_return_bus === true;
+        data.departure_slot_id === null && data.uses_return_bus === true;
       return upOnly || downOnly;
     },
     {

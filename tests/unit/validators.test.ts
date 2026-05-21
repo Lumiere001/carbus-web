@@ -12,7 +12,7 @@ function base(overrides: Record<string, unknown> = {}) {
     campus_id: VALID_CAMPUS,
     student_id: "26",
     attendance_type: "roundtrip",
-    departure_day: "TUE",
+    departure_slot_id: 1,
     uses_return_bus: true,
     roles: [],
     ...overrides,
@@ -46,26 +46,26 @@ describe("RegistrationSchema (reference/validators.md §8)", () => {
     expect(RegistrationSchema.safeParse(base({ student_id: "타지구" })).success).toBe(true);
   });
 
-  it("4) 왕복인데 departure_day=null → 실패 (규칙 3)", () => {
+  it("4) 왕복인데 departure_slot_id=null → 실패 (규칙 3)", () => {
     const r = RegistrationSchema.safeParse(
-      base({ attendance_type: "roundtrip", departure_day: null, uses_return_bus: true })
+      base({ attendance_type: "roundtrip", departure_slot_id: null, uses_return_bus: true })
     );
     expect(r.success).toBe(false);
     if (!r.success) {
-      expect(fieldErrors(r.error).attendance_type?.[0]).toContain("왕복은 상행 요일");
+      expect(fieldErrors(r.error).attendance_type?.[0]).toContain("왕복은 상행 출발");
     }
   });
 
-  it("4b) 왕복 + 요일 + 하행이용 → 통과", () => {
+  it("4b) 왕복 + 슬롯 + 하행이용 → 통과", () => {
     const r = RegistrationSchema.safeParse(
-      base({ attendance_type: "roundtrip", departure_day: "WED", uses_return_bus: true })
+      base({ attendance_type: "roundtrip", departure_slot_id: 2, uses_return_bus: true })
     );
     expect(r.success).toBe(true);
   });
 
-  it("5) 편도인데 요일+하행 둘 다 → 실패 (규칙 4)", () => {
+  it("5) 편도인데 슬롯+하행 둘 다 → 실패 (규칙 4)", () => {
     const r = RegistrationSchema.safeParse(
-      base({ attendance_type: "oneway", departure_day: "TUE", uses_return_bus: true })
+      base({ attendance_type: "oneway", departure_slot_id: 1, uses_return_bus: true })
     );
     expect(r.success).toBe(false);
     if (!r.success) {
@@ -73,29 +73,29 @@ describe("RegistrationSchema (reference/validators.md §8)", () => {
     }
   });
 
-  it("6) 편도 상행 (요일O + 하행X) → 통과", () => {
+  it("6) 편도 상행 (슬롯O + 하행X) → 통과", () => {
     const r = RegistrationSchema.safeParse(
-      base({ attendance_type: "oneway", departure_day: "TUE", uses_return_bus: false })
+      base({ attendance_type: "oneway", departure_slot_id: 1, uses_return_bus: false })
     );
     expect(r.success).toBe(true);
   });
 
-  it("7) 편도 하행 (요일X + 하행O) → 통과", () => {
+  it("7) 편도 하행 (슬롯X + 하행O) → 통과", () => {
     const r = RegistrationSchema.safeParse(
-      base({ attendance_type: "oneway", departure_day: null, uses_return_bus: true })
+      base({ attendance_type: "oneway", departure_slot_id: null, uses_return_bus: true })
     );
     expect(r.success).toBe(true);
   });
 
-  it("8) 편도인데 요일X + 하행X → 실패", () => {
+  it("8) 편도인데 슬롯X + 하행X → 실패", () => {
     const r = RegistrationSchema.safeParse(
-      base({ attendance_type: "oneway", departure_day: null, uses_return_bus: false })
+      base({ attendance_type: "oneway", departure_slot_id: null, uses_return_bus: false })
     );
     expect(r.success).toBe(false);
   });
 
-  it("9) departure_day=THU → 실패 (규칙 5, Zod enum)", () => {
-    const r = RegistrationSchema.safeParse(base({ departure_day: "THU" }));
+  it("9) departure_slot_id 문자열 → 실패 (number 아님)", () => {
+    const r = RegistrationSchema.safeParse(base({ departure_slot_id: "TUE" }));
     expect(r.success).toBe(false);
   });
 
@@ -104,7 +104,7 @@ describe("RegistrationSchema (reference/validators.md §8)", () => {
     expect(r.success).toBe(false);
   });
 
-  it("정상 케이스 (왕복 화요일) → 통과 + roles 기본 []", () => {
+  it("정상 케이스 (왕복 슬롯1) → 통과 + roles 기본 []", () => {
     const r = RegistrationSchema.safeParse(base({ roles: undefined }));
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.roles).toEqual([]);

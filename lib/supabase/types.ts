@@ -10,10 +10,12 @@
 import type { Database } from "./database.types";
 
 export type UserRole = Database["public"]["Enums"]["user_role"];
-export type DepartureDay = Database["public"]["Enums"]["departure_day"];
 export type AttendanceType = Database["public"]["Enums"]["attendance_type"];
 export type PaymentStatus = Database["public"]["Enums"]["payment_status"];
 export type SystemPhase = Database["public"]["Enums"]["system_phase"];
+
+/** 출발 슬롯 (departure_slots 행). 상행 출발 시간대 = 배차 제약. */
+export type DepartureSlot = Database["public"]["Tables"]["departure_slots"]["Row"];
 
 /** profiles 행 (조회 시 자주 쓰는 형태). */
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];

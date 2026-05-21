@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
+import { buildAttendancePresets } from "@/lib/labels";
 import {
   RegistrationsPanel,
   type AdminRegRow,
@@ -22,23 +23,25 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes, cfgRes] = await Promise.all([
+  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, departure_day, uses_return_bus, payment_status, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
+        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, payment_status, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
       )
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name, display_order"),
     supabase
       .from("buses")
       .select(
-        "id, name, departure_day, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("role_labels").select("label, color").order("display_order"),
     supabase.from("system_config").select("current_phase").maybeSingle(),
+    supabase.from("departure_slots").select("*").order("display_order"),
   ]);
+  const slots = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
   const phase2 = cfgRes.data?.current_phase === "phase2";
 
@@ -74,6 +77,8 @@ export default async function AdminRegistrationsPage() {
         groupByBus={phase2}
         driverIds={driverIds}
         fixedIds={fixedIds}
+        presets={buildAttendancePresets(slots)}
+        slots={slots}
       />
     </div>
   );

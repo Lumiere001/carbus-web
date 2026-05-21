@@ -150,7 +150,7 @@ export default async function AdminChangesPage() {
   const regMap = new Map<
     string,
     {
-      departure_day: string | null;
+      departure_slot_id: number | null;
       uses_return_bus: boolean;
       assigned_up_bus_id: number | null;
       assigned_down_bus_id: number | null;
@@ -160,14 +160,14 @@ export default async function AdminChangesPage() {
     const { data: regs } = await supabase
       .from("registrations")
       .select(
-        "id, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
       )
       .in("id", liveIds);
     for (const r of regs ?? []) regMap.set(r.id, r);
   }
 
   const [busRes, campusRes] = await Promise.all([
-    supabase.from("buses").select("id, name, departure_day"),
+    supabase.from("buses").select("id, name, departure_slot_id"),
     supabase.from("campuses").select("id, name"),
   ]);
   const busMap = new Map((busRes.data ?? []).map((b) => [b.id, b]));
@@ -196,14 +196,14 @@ export default async function AdminChangesPage() {
     let down = "—";
     let rebatch = false;
     if (e.kind !== "제외" && cur) {
-      if (cur.departure_day != null) {
+      if (cur.departure_slot_id != null) {
         if (cur.assigned_up_bus_id == null) {
           up = "미배정";
           rebatch = true;
         } else {
           const b = busMap.get(cur.assigned_up_bus_id);
-          const match = b?.departure_day === cur.departure_day;
-          up = (b?.name ?? `${cur.assigned_up_bus_id}호차`) + (match ? "" : " ⚠요일불일치");
+          const match = b?.departure_slot_id === cur.departure_slot_id;
+          up = (b?.name ?? `${cur.assigned_up_bus_id}호차`) + (match ? "" : " ⚠슬롯불일치");
           if (!match) rebatch = true;
         }
       }

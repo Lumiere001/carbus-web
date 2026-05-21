@@ -21,15 +21,16 @@ export default async function AdminLeadersPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [busRes, campusRes, labelRes] = await Promise.all([
+  const [busRes, campusRes, labelRes, slotRes] = await Promise.all([
     supabase
       .from("buses")
       .select(
-        "id, name, departure_day, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
     supabase.from("role_labels").select("label"),
+    supabase.from("departure_slots").select("id, label").order("display_order"),
   ]);
   const buses = busRes.data ?? [];
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
@@ -61,13 +62,13 @@ export default async function AdminLeadersPage() {
     boundIds.size > 0
       ? supabase
           .from("registrations")
-          .select("id, name, student_id, campus_id, departure_day, uses_return_bus, roles")
+          .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, roles")
           .in("id", [...boundIds])
       : Promise.resolve({ data: [] as never[] }),
     plainLabels.length > 0
       ? supabase
           .from("registrations")
-          .select("id, name, student_id, campus_id, departure_day, uses_return_bus, roles")
+          .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, roles")
           .overlaps("roles", plainLabels)
       : Promise.resolve({ data: [] as never[] }),
   ]);
@@ -79,7 +80,7 @@ export default async function AdminLeadersPage() {
       name: string;
       student_id: string;
       campus_id: string;
-      departure_day: string | null;
+      departure_slot_id: number | null;
       uses_return_bus: boolean;
       roles: string[];
     }
@@ -109,7 +110,7 @@ export default async function AdminLeadersPage() {
     if (roleBadges.length === 0) continue;
     // 새 방향 결박 시 사용할 기본 종류 (차량순장 우선)
     const primaryKind: "driver" | "fixed" | null = isDriver ? "driver" : isFixed ? "fixed" : null;
-    const ridesUp = r.departure_day !== null;
+    const ridesUp = r.departure_slot_id !== null;
     const ridesDown = r.uses_return_bus === true;
     const upBusId = upDriverOf.get(r.id) ?? upFixedOf.get(r.id) ?? null;
     const downBusId = downDriverOf.get(r.id) ?? downFixedOf.get(r.id) ?? null;
@@ -120,7 +121,7 @@ export default async function AdminLeadersPage() {
       campus_name: campusName.get(r.campus_id) ?? "—",
       roleBadges,
       primaryKind,
-      departure_day: (r.departure_day as "TUE" | "WED" | null) ?? null,
+      departure_slot_id: r.departure_slot_id ?? null,
       ridesUp,
       ridesDown,
       upKind,
@@ -139,8 +140,15 @@ export default async function AdminLeadersPage() {
   const busOpts: BusOpt[] = buses.map((b) => ({
     id: b.id,
     name: b.name,
-    departure_day: b.departure_day,
+    departure_slot_id: b.departure_slot_id,
   }));
 
-  return <LeadersPanel leaders={leaders} buses={busOpts} isMaster={isMaster} />;
+  return (
+    <LeadersPanel
+      leaders={leaders}
+      buses={busOpts}
+      slots={slotRes.data ?? []}
+      isMaster={isMaster}
+    />
+  );
 }

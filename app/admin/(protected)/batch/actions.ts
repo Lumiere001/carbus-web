@@ -49,12 +49,12 @@ export async function runBatchAction(
     supabase
       .from("registrations")
       .select(
-        "id, name, campus_id, attendance_type, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, roles"
+        "id, name, campus_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, roles"
       ),
     supabase
       .from("buses")
       .select(
-        "id, name, capacity, hard_cap, departure_day, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, capacity, hard_cap, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       ),
   ]);
   if (regRes.error) return { ok: false, message: regRes.error.message };
@@ -65,7 +65,7 @@ export async function runBatchAction(
     name: r.name,
     campus: r.campus_id,
     attendance_type: r.attendance_type,
-    departure_day: r.departure_day,
+    departure_slot_id: r.departure_slot_id,
     uses_return_bus: r.uses_return_bus,
     fixed_up_bus_id: null,
   }));
@@ -79,8 +79,8 @@ export async function runBatchAction(
   // 역할 = 호차 바인딩(단일 진실원). 어떤 방향에든 묶인 사람은 "리더"이고,
   // 그 사람이 이 방향을 타는데 이 방향 호차가 없으면 배차를 멈추고 호차 지정을 요구.
   {
-    const ridesDir = (r: { departure_day: string | null; uses_return_bus: boolean }) =>
-      mode === "up" ? r.departure_day !== null : r.uses_return_bus === true;
+    const ridesDir = (r: { departure_slot_id: number | null; uses_return_bus: boolean }) =>
+      mode === "up" ? r.departure_slot_id !== null : r.uses_return_bus === true;
     const dirDriver = new Set<string>(); // 이 방향 차량순장
     const dirFixed = new Set<string>(); // 이 방향 고정
     const anyLeader = new Set<string>(); // 어느 방향에든 묶인 사람(=리더)
@@ -117,7 +117,7 @@ export async function runBatchAction(
   const assignMap = mode === "up" ? result.up_assignments : result.down_assignments;
   // 그 방향 참여자만 대상 (상행=요일 있음 / 하행=uses_return_bus)
   const participants = passengers.filter((p) =>
-    mode === "up" ? p.departure_day !== null : p.uses_return_bus === true
+    mode === "up" ? p.departure_slot_id !== null : p.uses_return_bus === true
   );
   const groups = new Map<number | null, string[]>();
   for (const p of participants) {

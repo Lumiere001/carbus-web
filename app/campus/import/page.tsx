@@ -16,6 +16,12 @@ export default async function ImportPage() {
     .single();
   if (!profile?.campus_id) redirect("/pending");
 
+  const { data: slots } = await supabase
+    .from("departure_slots")
+    .select("id, key, label")
+    .eq("active", true)
+    .order("display_order");
+
   return (
     <div className="space-y-4">
       <div>
@@ -25,7 +31,7 @@ export default async function ImportPage() {
           캠퍼스로 자동 지정됩니다.
         </p>
       </div>
-      <ImportPanel campusId={profile.campus_id} />
+      <ImportPanel campusId={profile.campus_id} slots={slots ?? []} />
     </div>
   );
 }

@@ -2,24 +2,25 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { dayLabel } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
+import { slotLabel } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
+type SlotMini = Pick<DepartureSlot, "id" | "label">;
 type Reg = {
   id: string;
   name: string;
   student_id: string;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
   note: string | null;
 };
 
-function partialLabel(r: Reg): string {
-  if (r.departure_day !== null && !r.uses_return_bus)
-    return `편도 상행 (${dayLabel(r.departure_day)})`;
-  if (r.departure_day === null && r.uses_return_bus) return "편도 하행";
+function partialLabel(r: Reg, slots: SlotMini[]): string {
+  if (r.departure_slot_id !== null && !r.uses_return_bus)
+    return `편도 상행 (${slotLabel(r.departure_slot_id, slots)})`;
+  if (r.departure_slot_id === null && r.uses_return_bus) return "편도 하행";
   return "편도";
 }
 
@@ -37,13 +38,17 @@ export default async function CampusPartialPage() {
   if (!profile?.campus_id) redirect("/pending");
 
   // RLS가 본인 캠퍼스로 한정. 명시적으로도 필터.
-  const { data } = await supabase
-    .from("registrations")
-    .select("id, name, student_id, departure_day, uses_return_bus, note")
-    .eq("campus_id", profile.campus_id)
-    .eq("attendance_type", "oneway")
-    .order("name");
+  const [{ data }, { data: slotData }] = await Promise.all([
+    supabase
+      .from("registrations")
+      .select("id, name, student_id, departure_slot_id, uses_return_bus, note")
+      .eq("campus_id", profile.campus_id)
+      .eq("attendance_type", "oneway")
+      .order("name"),
+    supabase.from("departure_slots").select("id, label").order("display_order"),
+  ]);
   const regs = (data ?? []) as Reg[];
+  const slots = (slotData ?? []) as SlotMini[];
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
@@ -69,7 +74,7 @@ export default async function CampusPartialPage() {
                     {r.name}
                     <span className="ml-1.5 text-xs text-muted-2">{r.student_id}</span>
                   </span>
-                  <Badge variant="mute">{partialLabel(r)}</Badge>
+                  <Badge variant="mute">{partialLabel(r, slots)}</Badge>
                 </div>
                 {r.note?.trim() && (
                   <p className="mt-1 text-sm text-muted whitespace-pre-wrap break-words">

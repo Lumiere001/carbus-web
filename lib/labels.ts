@@ -3,7 +3,7 @@
  */
 import type {
   AttendanceType,
-  DepartureDay,
+  DepartureSlot,
   PaymentStatus,
 } from "@/lib/supabase/types";
 
@@ -12,14 +12,13 @@ export const ATTENDANCE_LABELS: Record<AttendanceType, string> = {
   oneway: "편도",
 };
 
-export const DAY_LABELS: Record<DepartureDay, string> = {
-  TUE: "화요일",
-  WED: "수요일",
-};
-
-/** departure_day NULL 포함 표시용. */
-export function dayLabel(d: DepartureDay | null): string {
-  return d ? DAY_LABELS[d] : "—";
+/** 출발 슬롯 id → 한글 라벨. 미지정(하행편도)·미존재는 "—". */
+export function slotLabel(
+  slotId: number | null | undefined,
+  slots: Pick<DepartureSlot, "id" | "label">[]
+): string {
+  if (slotId == null) return "—";
+  return slots.find((s) => s.id === slotId)?.label ?? "—";
 }
 
 export const PAYMENT_LABELS: Record<PaymentStatus, string> = {
@@ -36,12 +35,6 @@ export const ATTENDANCE_FROM_KO: Record<string, AttendanceType> = {
   편도: "oneway",
 };
 
-export const DAY_FROM_KO: Record<string, DepartureDay | null> = {
-  화요일: "TUE",
-  수요일: "WED",
-  "": null,
-};
-
 export const BOOL_FROM_KO: Record<string, boolean> = {
   O: true,
   X: false,
@@ -53,40 +46,80 @@ export const BOOL_FROM_KO: Record<string, boolean> = {
 };
 
 /**
- * 참석 유형·상행 요일·하행 차량 이용을 한 셀로 묶은 5가지 조합 (SPEC §4.3).
+ * 참석 유형·상행 슬롯·하행 차량 이용을 한 셀로 묶은 조합 (SPEC §4.3).
  * 셀 인라인 편집 시 이 preset 단위로 선택하면 왕복/편도 CHECK 일관성이 항상 보장됨.
+ *
+ * 슬롯이 데이터(departure_slots)라 preset 도 동적 생성: active 슬롯마다
+ * {왕복·편도상행} 2개 + 공통 {편도하행} 1개. 슬롯 추가 = preset 자동 증가.
  */
 export type AttendancePreset = {
   key: string;
   label: string;
   attendance_type: AttendanceType;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
 };
 
-export const ATTENDANCE_PRESETS: AttendancePreset[] = [
-  { key: "rt_tue", label: "왕복 (화)", attendance_type: "roundtrip", departure_day: "TUE", uses_return_bus: true },
-  { key: "rt_wed", label: "왕복 (수)", attendance_type: "roundtrip", departure_day: "WED", uses_return_bus: true },
-  { key: "ow_up_tue", label: "편도 상행 (화)", attendance_type: "oneway", departure_day: "TUE", uses_return_bus: false },
-  { key: "ow_up_wed", label: "편도 상행 (수)", attendance_type: "oneway", departure_day: "WED", uses_return_bus: false },
-  { key: "ow_down", label: "편도 하행", attendance_type: "oneway", departure_day: null, uses_return_bus: true },
-];
+export const OW_DOWN_KEY = "ow_down";
 
-export function presetKeyOf(row: {
-  attendance_type: AttendanceType;
-  departure_day: DepartureDay | null;
-  uses_return_bus: boolean;
-}): string | null {
+/** 하행편도 공통 preset (슬롯 무관). */
+const OW_DOWN_PRESET: AttendancePreset = {
+  key: OW_DOWN_KEY,
+  label: "편도 하행",
+  attendance_type: "oneway",
+  departure_slot_id: null,
+  uses_return_bus: true,
+};
+
+/** active 슬롯(display_order 순)으로 preset 목록 생성. */
+export function buildAttendancePresets(
+  slots: Pick<DepartureSlot, "id" | "key" | "label" | "active" | "display_order">[]
+): AttendancePreset[] {
+  const active = slots
+    .filter((s) => s.active)
+    .sort((a, b) => a.display_order - b.display_order);
+  const out: AttendancePreset[] = [];
+  for (const s of active) {
+    out.push({
+      key: `rt_${s.key}`,
+      label: `왕복 (${s.label})`,
+      attendance_type: "roundtrip",
+      departure_slot_id: s.id,
+      uses_return_bus: true,
+    });
+    out.push({
+      key: `ow_up_${s.key}`,
+      label: `편도 상행 (${s.label})`,
+      attendance_type: "oneway",
+      departure_slot_id: s.id,
+      uses_return_bus: false,
+    });
+  }
+  out.push(OW_DOWN_PRESET);
+  return out;
+}
+
+export function presetKeyOf(
+  row: {
+    attendance_type: AttendanceType;
+    departure_slot_id: number | null;
+    uses_return_bus: boolean;
+  },
+  presets: AttendancePreset[]
+): string | null {
   return (
-    ATTENDANCE_PRESETS.find(
+    presets.find(
       (p) =>
         p.attendance_type === row.attendance_type &&
-        p.departure_day === row.departure_day &&
+        p.departure_slot_id === row.departure_slot_id &&
         p.uses_return_bus === row.uses_return_bus
     )?.key ?? null
   );
 }
 
-export function presetByKey(key: string): AttendancePreset | undefined {
-  return ATTENDANCE_PRESETS.find((p) => p.key === key);
+export function presetByKey(
+  key: string,
+  presets: AttendancePreset[]
+): AttendancePreset | undefined {
+  return presets.find((p) => p.key === key);
 }

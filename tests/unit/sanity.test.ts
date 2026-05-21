@@ -10,6 +10,6 @@ describe("sanity", () => {
 
   it("@ alias import 동작", async () => {
     const mod = await import("@/lib/labels");
-    expect(Array.isArray(mod.ATTENDANCE_PRESETS)).toBe(true);
+    expect(typeof mod.buildAttendancePresets).toBe("function");
   });
 });

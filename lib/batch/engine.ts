@@ -21,13 +21,7 @@
  *   동일하게 유지한다(파레토 개선). 순수 함수.
  */
 
-import type {
-  Assignment,
-  BatchResult,
-  Bus,
-  DepartureDay,
-  Passenger,
-} from "./types";
+import type { Assignment, BatchResult, Bus, Passenger } from "./types";
 
 export type BatchMode = "up" | "down" | "both";
 
@@ -35,8 +29,6 @@ export type BatchMode = "up" | "down" | "both";
 interface BusWork extends Bus {
   count: number;
 }
-
-const DAYS: readonly DepartureDay[] = ["TUE", "WED"] as const;
 
 function groupByCampus(passengers: Passenger[]): Map<string, Passenger[]> {
   const m = new Map<string, Passenger[]>();
@@ -172,10 +164,10 @@ export function runBatch(
           continue;
         }
         const reg = byId.get(rid);
-        if (!reg || reg.departure_day === null) continue;
-        if (reg.departure_day !== bus.departure_day) {
+        if (!reg || reg.departure_slot_id === null) continue;
+        if (reg.departure_slot_id !== bus.departure_slot_id) {
           errors.push(
-            `고정 배정 요일 불일치: ${reg.name} (${reg.departure_day} → ${bus.name})`
+            `고정 배정 슬롯 불일치: ${reg.name} (slot ${reg.departure_slot_id} → ${bus.name})`
           );
           continue;
         }
@@ -189,14 +181,26 @@ export function runBatch(
       }
     }
 
-    // Step 2. 요일별로 순차 채움
+    // Step 2. 슬롯별로 채움. 운행 슬롯 = buses 에 존재하는 distinct departure_slot_id.
+    //   (요일 enum 하드코딩 제거 → 슬롯 추가는 buses 행 추가만으로 자동 반영)
     const upParticipants = passengers.filter(
-      (p) => p.departure_day !== null && !pinned.has(p.id)
+      (p) => p.departure_slot_id !== null && !pinned.has(p.id)
     );
-    for (const day of DAYS) {
-      const dayBuses = upBuses.filter((b) => b.departure_day === day);
-      const grp = upParticipants.filter((p) => p.departure_day === day);
-      fillBuses(day, grp, dayBuses, assignUp, errors);
+    const slots = [...new Set(upBuses.map((b) => b.departure_slot_id))];
+    for (const slotId of slots) {
+      const slotBuses = upBuses.filter((b) => b.departure_slot_id === slotId);
+      const grp = upParticipants.filter((p) => p.departure_slot_id === slotId);
+      fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors);
+    }
+
+    // 운행 호차가 없는 슬롯의 신청자는 배정 불가 — 조용히 누락하지 않고 표면화.
+    const orphan = upParticipants.filter(
+      (p) => !slots.includes(p.departure_slot_id as number)
+    );
+    if (orphan.length > 0) {
+      errors.push(
+        `미배정: 운행 호차 없는 상행 슬롯 ${orphan.length}명 (호차 배정 필요)`
+      );
     }
   }
 

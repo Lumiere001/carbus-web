@@ -1,40 +1,43 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { dayLabel } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
+import { slotLabel } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
+type SlotMini = Pick<DepartureSlot, "id" | "label">;
 type Reg = {
   id: string;
   name: string;
   student_id: string;
   campus_id: string;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
   note: string | null;
 };
 
-function partialLabel(r: Reg): string {
-  // 편도: 상행만(하행 미이용) 또는 하행만(요일 없음)
-  if (r.departure_day !== null && !r.uses_return_bus)
-    return `편도 상행 (${dayLabel(r.departure_day)})`;
-  if (r.departure_day === null && r.uses_return_bus) return "편도 하행";
+function partialLabel(r: Reg, slots: SlotMini[]): string {
+  // 편도: 상행만(하행 미이용) 또는 하행만(슬롯 없음)
+  if (r.departure_slot_id !== null && !r.uses_return_bus)
+    return `편도 상행 (${slotLabel(r.departure_slot_id, slots)})`;
+  if (r.departure_slot_id === null && r.uses_return_bus) return "편도 하행";
   return "편도";
 }
 
 export default async function AdminPartialPage() {
   const supabase = await createClient();
-  const [regRes, campusRes] = await Promise.all([
+  const [regRes, campusRes, slotRes] = await Promise.all([
     supabase
       .from("registrations")
-      .select("id, name, student_id, campus_id, departure_day, uses_return_bus, note")
+      .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, note")
       .eq("attendance_type", "oneway")
       .order("campus_id"),
     supabase.from("campuses").select("id, name, display_order"),
+    supabase.from("departure_slots").select("id, label").order("display_order"),
   ]);
   const regs = (regRes.data ?? []) as Reg[];
+  const slots = (slotRes.data ?? []) as SlotMini[];
   const campuses = (campusRes.data ?? []).sort(
     (a, b) => a.display_order - b.display_order
   );
@@ -85,7 +88,7 @@ export default async function AdminPartialPage() {
                           </td>
                           <td className="px-4 py-2 text-muted-2">{r.student_id}</td>
                           <td className="px-4 py-2">
-                            <Badge variant="mute">{partialLabel(r)}</Badge>
+                            <Badge variant="mute">{partialLabel(r, slots)}</Badge>
                           </td>
                           <td className="px-4 py-2 text-muted-2 whitespace-pre-wrap break-words max-w-[20rem]">
                             {r.note?.trim() ? r.note : "—"}

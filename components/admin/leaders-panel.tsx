@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { TriangleAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DAY_LABELS } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
+import { slotLabel } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 import { assignDriverBus, assignFixedBus } from "@/lib/admin/leaders";
 import { ROLE_DRIVER, ROLE_FIXED } from "@/lib/roles/special";
 
@@ -19,7 +19,7 @@ export type LeaderRow = {
   roleBadges: string[];
   /** 새 방향 결박 시 기본 종류. 일반 역할만 있으면 null(호차 칸 비활성). */
   primaryKind: "driver" | "fixed" | null;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   ridesUp: boolean;
   ridesDown: boolean;
   /** 방향별 현재 바인딩 종류 (없으면 null). */
@@ -30,7 +30,7 @@ export type LeaderRow = {
   needUp: boolean;
   needDown: boolean;
 };
-export type BusOpt = { id: number; name: string; departure_day: DepartureDay };
+export type BusOpt = { id: number; name: string; departure_slot_id: number };
 
 function badgeVariant(role: string): "warning" | "primary" | "mute" {
   if (role === ROLE_DRIVER) return "warning";
@@ -41,10 +41,12 @@ function badgeVariant(role: string): "warning" | "primary" | "mute" {
 export function LeadersPanel({
   leaders,
   buses,
+  slots,
   isMaster,
 }: {
   leaders: LeaderRow[];
   buses: BusOpt[];
+  slots: Pick<DepartureSlot, "id" | "label">[];
   isMaster: boolean;
 }) {
   const router = useRouter();
@@ -80,7 +82,7 @@ export function LeadersPanel({
     // 이 방향의 결박 종류 (없으면 기본 종류로 새로 결박)
     const cellKind = (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind;
     if (!rides) return <span className="text-muted-2">해당 없음</span>;
-    const opts = mode === "up" ? buses.filter((b) => b.departure_day === row.departure_day) : buses;
+    const opts = mode === "up" ? buses.filter((b) => b.departure_slot_id === row.departure_slot_id) : buses;
     if (!isMaster) {
       const b = buses.find((x) => x.id === cur);
       return (
@@ -103,7 +105,7 @@ export function LeadersPanel({
         {opts.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name}
-            {mode === "up" ? ` (${DAY_LABELS[b.departure_day]})` : ""}
+            {mode === "up" ? ` (${slotLabel(b.departure_slot_id, slots)})` : ""}
           </option>
         ))}
       </select>

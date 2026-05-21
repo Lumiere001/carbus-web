@@ -4,7 +4,8 @@ import {
   fieldErrors,
   type RegistrationInput,
 } from "@/lib/validators/registration";
-import { ATTENDANCE_FROM_KO, DAY_FROM_KO, BOOL_FROM_KO } from "@/lib/labels";
+import { ATTENDANCE_FROM_KO, BOOL_FROM_KO } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 
 /**
  * CSV·복붙 import 파싱 (reference/validators.md §5·7).
@@ -13,12 +14,13 @@ import { ATTENDANCE_FROM_KO, DAY_FROM_KO, BOOL_FROM_KO } from "@/lib/labels";
  * 흐름: papaparse(한글 헤더) → 영문 필드 매핑 → 값 변환 → 행별 Zod 검증 → 성공/실패 분리.
  */
 
-/** CSV 한글 헤더 → registrations 영문 필드. */
+/** CSV 한글 헤더 → registrations 영문 필드. ("상행 요일"은 구 템플릿 호환). */
 const HEADER_MAP: Record<string, string> = {
   이름: "name",
   학번: "student_id",
   "참석 유형": "attendance_type",
-  "상행 요일": "departure_day",
+  "상행 출발": "departure_slot_id",
+  "상행 요일": "departure_slot_id",
   "하행 차량 이용": "uses_return_bus",
   비고: "note",
 };
@@ -41,8 +43,19 @@ const MAX_ROWS = 1000;
  */
 export function parseRegistrationsCsv(
   csv: string,
-  campusId: string
+  campusId: string,
+  slots: Pick<DepartureSlot, "id" | "key" | "label">[]
 ): CsvParseResult {
+  // 상행 출발 입력값(라벨 또는 key) → slot id. 트림·소문자 허용.
+  const slotIdFromInput = (raw: string): number | null | undefined => {
+    const v = raw.trim();
+    if (v === "") return null; // 미입력 = 상행 미이용(하행편도)
+    const hit = slots.find(
+      (s) => s.label === v || s.key === v || s.key === v.toLowerCase()
+    );
+    return hit ? hit.id : undefined; // 미인식 → undefined(검증 실패로 표면화)
+  };
+
   const parsed = Papa.parse<Record<string, string>>(csv, {
     header: true,
     skipEmptyLines: true,
@@ -79,9 +92,12 @@ export function parseRegistrationsCsv(
       mapped.attendance_type =
         ATTENDANCE_FROM_KO[mapped.attendance_type] ?? mapped.attendance_type;
     }
-    if ("departure_day" in mapped) {
-      const d = (mapped.departure_day as string) ?? "";
-      mapped.departure_day = d in DAY_FROM_KO ? DAY_FROM_KO[d] : (d || null);
+    if ("departure_slot_id" in mapped) {
+      mapped.departure_slot_id = slotIdFromInput(
+        (mapped.departure_slot_id as string) ?? ""
+      );
+    } else {
+      mapped.departure_slot_id = null;
     }
     if ("uses_return_bus" in mapped) {
       const b = (mapped.uses_return_bus as string) ?? "";

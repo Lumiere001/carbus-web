@@ -28,13 +28,13 @@ const TOTAL_W = CAMPUS_WEIGHTS.reduce((s, [, w]) => s + w, 0);
 // 9대 고정 (화 7 + 수 2). 하행은 엔진이 같은 9대를 토요일로 재사용.
 function makeBuses() {
   const b = [];
-  for (let i = 1; i <= 7; i++) b.push(bus(i, "TUE"));
-  for (let i = 8; i <= 9; i++) b.push(bus(i, "WED"));
+  for (let i = 1; i <= 7; i++) b.push(bus(i, 1));
+  for (let i = 8; i <= 9; i++) b.push(bus(i, 2));
   return b;
 }
 const bus = (id, day) => ({
   id, name: `${id}호차`, capacity: 44, hard_cap: 45,
-  departure_day: day, driver_registration_id: null, fixed_passenger_ids: [],
+  departure_slot_id: day, driver_registration_id: null, fixed_passenger_ids: [],
 });
 
 // N명 생성. 요일 비율은 화 정원:수 정원 = 308:88 ≈ 0.78 로 맞춰 현실화.
@@ -50,29 +50,29 @@ function makePassengers(n, seed, { tueShare = 0.78, oneWayUp = 0.12 } = {}) {
   for (let i = 0; i < n; i++) {
     const campus = pick();
     const roll = rand();
-    let attendance_type, departure_day, uses_return_bus;
+    let attendance_type, departure_slot_id, uses_return_bus;
     if (roll < 1 - oneWayUp - 0.06) {
       attendance_type = "roundtrip";
-      departure_day = rand() < tueShare ? "TUE" : "WED";
+      departure_slot_id = rand() < tueShare ? 1 : 2;
       uses_return_bus = true;
     } else if (roll < 1 - 0.06) {
       attendance_type = "oneway"; // 상행 편도
-      departure_day = rand() < tueShare ? "TUE" : "WED";
+      departure_slot_id = rand() < tueShare ? 1 : 2;
       uses_return_bus = false;
     } else {
       attendance_type = "oneway"; // 하행 편도
-      departure_day = null;
+      departure_slot_id = null;
       uses_return_bus = true;
     }
-    pax.push({ id: `p${i}`, name: `${campus}-${i}`, campus, attendance_type, departure_day, uses_return_bus, fixed_up_bus_id: null });
+    pax.push({ id: `p${i}`, name: `${campus}-${i}`, campus, attendance_type, departure_slot_id, uses_return_bus, fixed_up_bus_id: null });
   }
   return pax;
 }
 
 function analyze(label, pax, buses) {
   const r = runBatch(pax, buses);
-  const upTue = pax.filter((p) => p.departure_day === "TUE").length;
-  const upWed = pax.filter((p) => p.departure_day === "WED").length;
+  const upTue = pax.filter((p) => p.departure_slot_id === 1).length;
+  const upWed = pax.filter((p) => p.departure_slot_id === 2).length;
   const down = pax.filter((p) => p.uses_return_bus).length;
 
   // 상행 by_bus / 하행 by_bus
@@ -94,8 +94,8 @@ function analyze(label, pax, buses) {
   const intra = {};
   for (const p of pax) {
     const b = r.up_assignments[p.id];
-    if (b == null || p.departure_day == null) continue;
-    (intra[`${p.campus}/${p.departure_day}`] ??= new Set()).add(b);
+    if (b == null || p.departure_slot_id == null) continue;
+    (intra[`${p.campus}/${p.departure_slot_id}`] ??= new Set()).add(b);
   }
   const splits = Object.entries(intra).filter(([, s]) => s.size > 1);
 

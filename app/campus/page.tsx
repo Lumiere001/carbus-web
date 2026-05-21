@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegistrationGrid } from "@/components/campus/registration-grid";
+import { buildAttendancePresets } from "@/lib/labels";
 
 export default async function CampusPage() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function CampusPage() {
   const campusId = profile?.campus_id;
   if (!campusId) redirect("/pending");
 
-  const [regRes, campusRes, busRes] = await Promise.all([
+  const [regRes, campusRes, busRes, slotRes] = await Promise.all([
     supabase
       .from("registrations")
       .select("*")
@@ -26,6 +27,7 @@ export default async function CampusPage() {
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("name").eq("id", campusId).single(),
     supabase.from("buses").select("id, name").order("id"),
+    supabase.from("departure_slots").select("*").order("display_order"),
   ]);
 
   return (
@@ -34,6 +36,7 @@ export default async function CampusPage() {
       campusName={campusRes.data?.name ?? "내"}
       initialRows={regRes.data ?? []}
       buses={busRes.data ?? []}
+      presets={buildAttendancePresets(slotRes.data ?? [])}
     />
   );
 }

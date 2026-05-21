@@ -17,11 +17,11 @@ import {
   deleteRegistration,
 } from "@/lib/registrations/mutations";
 import {
-  ATTENDANCE_PRESETS,
   presetKeyOf,
   presetByKey,
   PAYMENT_LABELS,
   PAYMENT_STATUSES,
+  type AttendancePreset,
 } from "@/lib/labels";
 import type { PaymentStatus } from "@/lib/supabase/types";
 import { sortRegistrations, conflictRowIdsOf } from "@/lib/registrations/sort";
@@ -32,19 +32,12 @@ import { cn } from "@/lib/utils";
 type Bus = { id: number; name: string };
 type Toast = { type: "ok" | "err"; text: string };
 
-/** 빈 행(추가용) draft. 참석/일정 기본값은 'rt_tue' (왕복 화). */
+/** 빈 행(추가용) draft. 참석/일정 기본값은 첫 active 슬롯의 왕복 preset. */
 type Draft = {
   name: string;
   student_id: string;
   presetKey: string;
   note: string;
-};
-
-const EMPTY_DRAFT: Draft = {
-  name: "",
-  student_id: "",
-  presetKey: "rt_tue",
-  note: "",
 };
 
 /** 텍스트 셀에서 편집 가능한 필드(이름·학번·비고). */
@@ -62,14 +55,22 @@ export function RegistrationGrid({
   campusName,
   initialRows,
   buses,
+  presets,
 }: {
   campusId: string;
   campusName: string;
   initialRows: RegistrationRow[];
   buses: Bus[];
+  presets: AttendancePreset[];
 }) {
+  const emptyDraft: Draft = {
+    name: "",
+    student_id: "",
+    presetKey: presets[0]?.key ?? "",
+    note: "",
+  };
   const [rows, setRows] = useState<RegistrationRow[]>(initialRows);
-  const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [toast, setToast] = useState<Toast | null>(null);
   /** 충돌난 (rowId, field) 셀 잠깐 강조용. key = `${id}:${field}`. */
   const [conflictCells, setConflictCells] = useState<Set<string>>(new Set());
@@ -162,18 +163,18 @@ export function RegistrationGrid({
 
   // 참석/일정 preset 변경 (3필드 동시).
   async function savePreset(row: RegistrationRow, key: string) {
-    const preset = presetByKey(key);
+    const preset = presetByKey(key, presets);
     if (!preset) return;
     const res = await updateCells(
       row.id,
       {
         attendance_type: row.attendance_type,
-        departure_day: row.departure_day,
+        departure_slot_id: row.departure_slot_id,
         uses_return_bus: row.uses_return_bus,
       },
       {
         attendance_type: preset.attendance_type,
-        departure_day: preset.departure_day,
+        departure_slot_id: preset.departure_slot_id,
         uses_return_bus: preset.uses_return_bus,
       }
     );
@@ -217,7 +218,7 @@ export function RegistrationGrid({
       setToast({ type: "err", text: "이름과 학번을 입력하세요" });
       return;
     }
-    const preset = presetByKey(draft.presetKey);
+    const preset = presetByKey(draft.presetKey, presets);
     if (!preset) {
       setToast({ type: "err", text: "참석/일정을 선택하세요" });
       return;
@@ -227,7 +228,7 @@ export function RegistrationGrid({
       name: draft.name.trim(),
       student_id: draft.student_id.trim(),
       attendance_type: preset.attendance_type,
-      departure_day: preset.departure_day,
+      departure_slot_id: preset.departure_slot_id,
       uses_return_bus: preset.uses_return_bus,
       note: draft.note.trim() || null,
     });
@@ -238,7 +239,7 @@ export function RegistrationGrid({
     setRows((prev) =>
       prev.some((r) => r.id === res.row.id) ? prev : [...prev, res.row]
     );
-    setDraft(EMPTY_DRAFT);
+    setDraft(emptyDraft);
     setToast({ type: "ok", text: `${res.row.name} 순장/순원 추가 완료` });
   }
 
@@ -272,19 +273,19 @@ export function RegistrationGrid({
           const row = ctx.row.original;
           const conflict =
             isConflict(row.id, "attendance_type") ||
-            isConflict(row.id, "departure_day") ||
+            isConflict(row.id, "departure_slot_id") ||
             isConflict(row.id, "uses_return_bus");
           return (
             <select
-              value={presetKeyOf(row) ?? ""}
+              value={presetKeyOf(row, presets) ?? ""}
               onChange={(e) => savePreset(row, e.target.value)}
               className={cn(
                 "w-full rounded-md border bg-surface px-2 py-1 text-[13px] text-foreground transition focus:outline-none focus:border-primary-800",
                 conflict ? "border-danger ring-1 ring-danger" : "border-border"
               )}
             >
-              {presetKeyOf(row) == null && <option value="">(직접조합)</option>}
-              {ATTENDANCE_PRESETS.map((p) => (
+              {presetKeyOf(row, presets) == null && <option value="">(직접조합)</option>}
+              {presets.map((p) => (
                 <option key={p.key} value={p.key}>
                   {p.label}
                 </option>
@@ -564,7 +565,7 @@ export function RegistrationGrid({
                     }
                     className="w-full rounded-md border border-border bg-surface px-2 py-1 text-[13px] text-foreground focus:outline-none focus:border-primary-800"
                   >
-                    {ATTENDANCE_PRESETS.map((p) => (
+                    {presets.map((p) => (
                       <option key={p.key} value={p.key}>
                         {p.label}
                       </option>

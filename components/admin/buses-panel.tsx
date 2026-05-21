@@ -5,8 +5,7 @@ import { Bus, Star, Pin, ChevronDown, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DAY_LABELS } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
+import type { DepartureSlot } from "@/lib/supabase/types";
 import { setDriver, setFixedPassengers } from "@/lib/admin/buses";
 import { sortRoster } from "@/lib/registrations/roster-sort";
 
@@ -17,16 +16,16 @@ export type PaxData = {
   campus_name: string;
 };
 
-/** 차량순장·고정탑승 사전 지정 후보 (전체 명단). 방향·요일로 필터해 선택. */
+/** 차량순장·고정탑승 사전 지정 후보 (전체 명단). 방향·슬롯으로 필터해 선택. */
 export type CandidateData = PaxData & {
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
 };
 
 export type BusData = {
   id: number;
   name: string;
-  departure_day: DepartureDay;
+  departure_slot_id: number;
   capacity: number;
   hard_cap: number;
   driver_registration_id: string | null;
@@ -42,10 +41,12 @@ type Msg = { type: "ok" | "err"; text: string } | null;
 export function BusesPanel({
   buses: initial,
   candidates,
+  slots,
   isMaster,
 }: {
   buses: BusData[];
   candidates: CandidateData[];
+  slots: Pick<DepartureSlot, "id" | "label" | "active" | "display_order">[];
   isMaster: boolean;
 }) {
   const [buses, setBuses] = useState(initial);
@@ -64,8 +65,10 @@ export function BusesPanel({
       ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
       : "border-border text-muted hover:bg-surface-2");
 
-  // 상행: 요일별 그룹 / 하행: 토요일 9대 전체 (호차순)
-  const days: DepartureDay[] = ["TUE", "WED"];
+  // 상행: 슬롯별 그룹(active·display_order 순) / 하행: 전 호차 (호차순)
+  const activeSlots = [...slots]
+    .filter((s) => s.active)
+    .sort((a, b) => a.display_order - b.display_order);
 
   return (
     <div className="space-y-6">
@@ -95,16 +98,16 @@ export function BusesPanel({
       </div>
 
       {view === "up"
-        ? days.map((day) => {
-            const dayBuses = buses.filter((b) => b.departure_day === day);
-            if (dayBuses.length === 0) return null;
+        ? activeSlots.map((slot) => {
+            const slotBuses = buses.filter((b) => b.departure_slot_id === slot.id);
+            if (slotBuses.length === 0) return null;
             return (
-              <section key={day}>
+              <section key={slot.id}>
                 <h3 className="text-sm font-medium text-muted mb-3">
-                  {DAY_LABELS[day]} 출발 · {dayBuses.length}대
+                  {slot.label} 출발 · {slotBuses.length}대
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {dayBuses.map((b) => (
+                  {slotBuses.map((b) => (
                     <BusCard
                       key={b.id}
                       bus={b}
@@ -112,7 +115,7 @@ export function BusesPanel({
                       passengers={b.passengers}
                       candidates={candidates}
                       buses={buses}
-                      dayText={`${DAY_LABELS[day]} 출발`}
+                      dayText={`${slot.label} 출발`}
                       isMaster={isMaster}
                       onPatch={(f) => patch(b.id, f)}
                       onMsg={setMsg}
@@ -196,7 +199,7 @@ function BusCard({
   const pinPool = candidates
     .filter((c) =>
       mode === "up"
-        ? c.departure_day === bus.departure_day
+        ? c.departure_slot_id === bus.departure_slot_id
         : c.uses_return_bus === true
     )
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));

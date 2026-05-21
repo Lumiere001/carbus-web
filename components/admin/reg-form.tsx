@@ -5,22 +5,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  ATTENDANCE_PRESETS,
   presetKeyOf,
   presetByKey,
   PAYMENT_LABELS,
   PAYMENT_STATUSES,
+  type AttendancePreset,
 } from "@/lib/labels";
 import {
   createRegistration,
   updateRegistrationFields,
   type RegFormFields,
 } from "@/lib/admin/registrations";
-import type {
-  AttendanceType,
-  DepartureDay,
-  PaymentStatus,
-} from "@/lib/supabase/types";
+import type { AttendanceType, PaymentStatus } from "@/lib/supabase/types";
 
 export type RegFormInitial = {
   id: string;
@@ -28,7 +24,7 @@ export type RegFormInitial = {
   student_id: string;
   campus_id: string;
   attendance_type: AttendanceType;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
   payment_status: PaymentStatus;
   note: string | null;
@@ -39,11 +35,13 @@ export function RegForm({
   mode,
   initial,
   campuses,
+  presets,
   onClose,
 }: {
   mode: "new" | "edit";
   initial?: RegFormInitial;
   campuses: { id: string; name: string }[];
+  presets: AttendancePreset[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -53,7 +51,7 @@ export function RegForm({
   const [studentId, setStudentId] = useState(initial?.student_id ?? "");
   const [campusId, setCampusId] = useState(initial?.campus_id ?? campuses[0]?.id ?? "");
   const [presetKey, setPresetKey] = useState(
-    initial ? presetKeyOf(initial) ?? "rt_tue" : "rt_tue"
+    (initial ? presetKeyOf(initial, presets) : null) ?? presets[0]?.key ?? ""
   );
   const [payment, setPayment] = useState<PaymentStatus>(
     initial?.payment_status ?? "unpaid"
@@ -62,14 +60,14 @@ export function RegForm({
 
   function submit() {
     setErr(null);
-    const preset = presetByKey(presetKey);
+    const preset = presetByKey(presetKey, presets);
     if (!preset) return setErr("참석 일정을 선택하세요");
     const fields: RegFormFields = {
       name: name.trim(),
       student_id: studentId.trim(),
       campus_id: campusId,
       attendance_type: preset.attendance_type,
-      departure_day: preset.departure_day,
+      departure_slot_id: preset.departure_slot_id,
       uses_return_bus: preset.uses_return_bus,
       payment_status: payment,
       note: note.trim() || null,
@@ -124,7 +122,7 @@ export function RegForm({
           <label className="text-xs text-muted space-y-1 block">
             참석 일정
             <select className={inputCls} value={presetKey} onChange={(e) => setPresetKey(e.target.value)}>
-              {ATTENDANCE_PRESETS.map((p) => (
+              {presets.map((p) => (
                 <option key={p.key} value={p.key}>
                   {p.label}
                 </option>

@@ -162,7 +162,7 @@ function humanizeError(msg: string): string {
     return "이미 등록된 순장/순원입니다 (캠퍼스·학번·이름 동일)";
   }
   if (msg.includes("chk_roundtrip") || msg.includes("roundtrip")) {
-    return "왕복은 상행 요일과 하행 차량 이용이 모두 필요합니다";
+    return "왕복은 상행 출발 시간대와 하행 차량 이용이 모두 필요합니다";
   }
   if (msg.includes("chk_oneway") || msg.includes("oneway")) {
     return "편도는 상행 또는 하행 중 하나만 선택 가능합니다";

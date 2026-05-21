@@ -1,7 +1,11 @@
-// 배차 엔진 더미 300 시뮬레이션 (진단용). 엔진 로직을 그대로 복제하지 않고
-// 빌드된 출력 대신, ts를 직접 못 부르므로 here 에서는 engine 을 동적 import.
-// 실행: node --experimental-strip-types scripts/sim-batch.mjs  (Node 22+)
+// 배차 엔진 더미 시뮬레이션 (진단용). 출발 슬롯 모델(v1.1.1).
+// 실행: npx tsx scripts/sim-batch.mjs
 import { runBatch } from "../lib/batch/engine.ts";
+
+// 슬롯 id: 1 = 화 오전 9시(tue_am), 2 = 화 오후 7시(tue_pm). 운영 = 8대 am + 1대 pm.
+const AM = 1;
+const PM = 2;
+const SLOT_LABEL = { [AM]: "화오전", [PM]: "화오후" };
 
 const CAMPUSES = [
   ["전남대", 55], ["조선대", 40], ["호남대", 22], ["광주교대", 8],
@@ -10,93 +14,79 @@ const CAMPUSES = [
   ["아가페", 6], ["기독간호대", 7], ["조선간호대", 9], ["간사", 5], ["타지구", 18],
 ];
 
+// 화 오후(PM)는 1대(44석)뿐이라 소수만. 대부분 화 오전(AM).
+const pickSlot = () => (Math.random() < 0.88 ? AM : PM);
+
 let id = 0;
 const passengers = [];
 for (const [campus, n] of CAMPUSES) {
   for (let i = 0; i < n; i++) {
     const roll = Math.random();
-    let attendance_type, departure_day, uses_return_bus;
+    let attendance_type, departure_slot_id, uses_return_bus;
     if (roll < 0.78) {
-      // 왕복
       attendance_type = "roundtrip";
-      departure_day = Math.random() < 0.8 ? "TUE" : "WED";
+      departure_slot_id = pickSlot();
       uses_return_bus = true;
     } else if (roll < 0.92) {
-      // 편도 상행
       attendance_type = "oneway";
-      departure_day = Math.random() < 0.8 ? "TUE" : "WED";
+      departure_slot_id = pickSlot();
       uses_return_bus = false;
     } else {
-      // 편도 하행
       attendance_type = "oneway";
-      departure_day = null;
+      departure_slot_id = null;
       uses_return_bus = true;
     }
     passengers.push({
       id: `p${++id}`, name: `${campus}${i}`, campus,
-      attendance_type, departure_day, uses_return_bus, fixed_up_bus_id: null,
+      attendance_type, departure_slot_id, uses_return_bus, fixed_up_bus_id: null,
     });
   }
 }
 
 const buses = [];
-for (let i = 1; i <= 7; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, departure_day: "TUE", driver_registration_id: null, fixed_passenger_ids: [] });
-for (let i = 8; i <= 9; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, departure_day: "WED", driver_registration_id: null, fixed_passenger_ids: [] });
+for (let i = 1; i <= 8; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, departure_slot_id: AM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [] });
+buses.push({ id: 9, name: "9호차", capacity: 44, hard_cap: 45, departure_slot_id: PM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [] });
 
-const upTue = passengers.filter((p) => p.departure_day === "TUE").length;
-const upWed = passengers.filter((p) => p.departure_day === "WED").length;
+const upAm = passengers.filter((p) => p.departure_slot_id === AM).length;
+const upPm = passengers.filter((p) => p.departure_slot_id === PM).length;
 const down = passengers.filter((p) => p.uses_return_bus).length;
-console.log(`총 ${passengers.length}명 | 상행 화 ${upTue} 수 ${upWed} | 하행 ${down}`);
-console.log(`정원: 화 ${7 * 44}=308, 수 ${2 * 44}=88, 토(하행) ${9 * 44}=396`);
+console.log(`총 ${passengers.length}명 | 상행 오전 ${upAm} 오후 ${upPm} | 하행 ${down}`);
+console.log(`정원: 오전 ${8 * 44}=352, 오후 ${1 * 44}=44, 하행 ${9 * 44}=396`);
 
 const r = runBatch(passengers, buses);
 console.log(`\n총 상행배정 ${r.total_assigned} | 상행 빈좌석 ${r.empty_seats} | errors ${r.errors.length}`);
 console.log("상행 by_bus:", JSON.stringify(r.by_bus));
 
-// 하행 by_bus 집계
 const downByBus = {};
 for (const v of Object.values(r.down_assignments)) downByBus[v] = (downByBus[v] ?? 0) + 1;
 console.log("하행 by_bus:", JSON.stringify(downByBus));
 
-// 검증 1: 요일 분리 위반?
-let dayViol = 0;
+// 검증 1: 슬롯 분리 위반?
+let slotViol = 0;
 for (const p of passengers) {
   const b = r.up_assignments[p.id];
   if (b == null) continue;
   const bus = buses.find((x) => x.id === b);
-  if (bus.departure_day !== p.departure_day) dayViol++;
+  if (bus.departure_slot_id !== p.departure_slot_id) slotViol++;
 }
-console.log("요일 분리 위반(상행):", dayViol);
+console.log("슬롯 분리 위반(상행):", slotViol);
 
-// 검증 2: 캠퍼스 분할 수 (상행)
-const campusBusesUp = {};
+// 검증 4: 같은 슬롯 내 캠퍼스 분할 (진짜 fragmentation 지표)
+const intraSlot = {};
 for (const p of passengers) {
   const b = r.up_assignments[p.id];
-  if (b == null) continue;
-  (campusBusesUp[p.campus] ??= new Set()).add(b);
+  if (b == null || p.departure_slot_id == null) continue;
+  const key = `${p.campus}/${SLOT_LABEL[p.departure_slot_id]}`;
+  (intraSlot[key] ??= new Set()).add(b);
 }
-console.log("캠퍼스별 상행 분할 호차수:", Object.fromEntries(Object.entries(campusBusesUp).map(([k, v]) => [k, v.size])));
-
-// 검증 3: 정원 초과?
-const over = Object.entries(r.by_bus).filter(([, n]) => n > 45);
-console.log("hard_cap(45) 초과 호차:", over.length ? JSON.stringify(over) : "없음");
-
-if (r.errors.length) console.log("\nerrors 샘플:", r.errors.slice(0, 5));
-
-// 검증 4: 같은 요일 내 캠퍼스 분할 (진짜 fragmentation 지표)
-const intraDay = {};
-for (const p of passengers) {
-  const b = r.up_assignments[p.id];
-  if (b == null || p.departure_day == null) continue;
-  const key = `${p.campus}/${p.departure_day}`;
-  (intraDay[key] ??= new Set()).add(b);
-}
-const split = Object.entries(intraDay).filter(([, s]) => s.size > 1);
-console.log("\n같은 요일 내 분할된 (캠퍼스/요일) 수:", split.length, "/", Object.keys(intraDay).length);
+const split = Object.entries(intraSlot).filter(([, s]) => s.size > 1);
+console.log("\n같은 슬롯 내 분할된 (캠퍼스/슬롯) 수:", split.length, "/", Object.keys(intraSlot).length);
 console.log("분할된 것:", JSON.stringify(Object.fromEntries(split.map(([k, s]) => [k, s.size]))));
 
 // 검증 5: 정원 초과 점검 (>44, >45)
-const over44 = Object.entries(r.by_bus).filter(([,n])=>n>44);
-const down44 = Object.entries(downByBus).filter(([,n])=>n>44);
+const over44 = Object.entries(r.by_bus).filter(([, n]) => n > 44);
+const down44 = Object.entries(downByBus).filter(([, n]) => n > 44);
+const over45 = Object.entries(r.by_bus).filter(([, n]) => n > 45);
 console.log("\n[정원초과] 상행 >44:", JSON.stringify(over44), "| 하행 >44:", JSON.stringify(down44));
-console.log("[미배정] errors:", r.errors.length, r.errors.slice(0,3));
+console.log("[hard_cap초과] 상행 >45:", over45.length ? JSON.stringify(over45) : "없음");
+console.log("[미배정] errors:", r.errors.length, r.errors.slice(0, 3));

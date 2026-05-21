@@ -1,12 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { DAY_LABELS } from "@/lib/labels";
-import type {
-  AttendanceType,
-  DepartureDay,
-  PaymentStatus,
-} from "@/lib/supabase/types";
+import type { AttendanceType, PaymentStatus } from "@/lib/supabase/types";
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -16,7 +11,7 @@ export type RegFormFields = {
   student_id: string;
   campus_id: string;
   attendance_type: AttendanceType;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
   payment_status: PaymentStatus;
   note: string | null;
@@ -63,7 +58,7 @@ type Client = ReturnType<typeof createClient>;
 
 /**
  * 수동 배정 검증 (B/C/F):
- *  - 상행: 학우가 상행 대상(departure_day 있음) + 호차 요일 일치
+ *  - 상행: 학우가 상행 대상(departure_slot_id 있음) + 호차 슬롯 일치
  *  - 하행: 학우가 하행 이용자(uses_return_bus)
  *  - 정원: 보조석(hard_cap) 초과 차단
  */
@@ -72,23 +67,30 @@ async function validateAssign(
   mode: "up" | "down",
   regId: string,
   busId: number,
-  reg: { departure_day: string | null; uses_return_bus: boolean }
+  reg: { departure_slot_id: number | null; uses_return_bus: boolean }
 ): Promise<Result> {
   const { data: bus } = await supabase
     .from("buses")
-    .select("name, departure_day, hard_cap")
+    .select("name, departure_slot_id, hard_cap")
     .eq("id", busId)
     .single();
   if (!bus) return { ok: false, message: "호차를 찾을 수 없습니다" };
 
   if (mode === "up") {
-    if (reg.departure_day == null)
+    if (reg.departure_slot_id == null)
       return { ok: false, message: "상행 대상이 아닙니다 (하행 편도 신청자)" };
-    if (reg.departure_day !== bus.departure_day)
+    if (reg.departure_slot_id !== bus.departure_slot_id) {
+      const { data: slots } = await supabase
+        .from("departure_slots")
+        .select("id, label")
+        .in("id", [reg.departure_slot_id, bus.departure_slot_id]);
+      const lbl = (sid: number) =>
+        slots?.find((s) => s.id === sid)?.label ?? `slot ${sid}`;
       return {
         ok: false,
-        message: `요일이 다릅니다 (신청 ${DAY_LABELS[reg.departure_day as "TUE" | "WED"]} ≠ ${bus.name} ${DAY_LABELS[bus.departure_day]})`,
+        message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(bus.departure_slot_id)})`,
       };
+    }
   } else if (reg.uses_return_bus !== true) {
     return { ok: false, message: "하행 대상이 아닙니다 (하행 미이용 신청자)" };
   }
@@ -121,7 +123,7 @@ export async function setAssignment(
   if (upBus != null || downBus != null) {
     const { data: reg, error: regErr } = await supabase
       .from("registrations")
-      .select("departure_day, uses_return_bus")
+      .select("departure_slot_id, uses_return_bus")
       .eq("id", id)
       .single();
     if (regErr || !reg)

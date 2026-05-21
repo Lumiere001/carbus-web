@@ -6,17 +6,31 @@ import {
   type CsvParseResult,
 } from "@/lib/csv/parse";
 import { insertRegistration } from "@/lib/registrations/mutations";
-import { ATTENDANCE_LABELS, dayLabel } from "@/lib/labels";
+import { ATTENDANCE_LABELS, slotLabel } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 
-const TEMPLATE_CSV = [
-  "이름,학번,참석 유형,상행 요일,하행 차량 이용,비고",
-  "홍길동,26,왕복,화요일,O,",
-  "김영희,27,편도,수요일,X,상행만",
-  "이타지,타지구,편도,,O,하행만",
-].join("\n");
+type SlotMini = Pick<DepartureSlot, "id" | "key" | "label">;
 
-export function ImportPanel({ campusId }: { campusId: string }) {
+/** active 슬롯 기준 템플릿 CSV (상행 출발 = 슬롯 라벨). */
+function buildTemplate(slots: SlotMini[]): string {
+  const s0 = slots[0]?.label ?? "";
+  const s1 = slots[1]?.label ?? s0;
+  return [
+    "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
+    `홍길동,26,왕복,${s0},O,`,
+    `김영희,27,편도,${s1},X,상행만`,
+    "이타지,타지구,편도,,O,하행만",
+  ].join("\n");
+}
+
+export function ImportPanel({
+  campusId,
+  slots,
+}: {
+  campusId: string;
+  slots: SlotMini[];
+}) {
   const [preview, setPreview] = useState<CsvParseResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ inserted: number; failed: number } | null>(
@@ -29,7 +43,7 @@ export function ImportPanel({ campusId }: { campusId: string }) {
     if (!file) return;
     const content = await file.text();
     setDone(null);
-    setPreview(parseRegistrationsCsv(content, campusId));
+    setPreview(parseRegistrationsCsv(content, campusId, slots));
   }
 
   async function handleRegister() {
@@ -57,7 +71,7 @@ export function ImportPanel({ campusId }: { campusId: string }) {
   }
 
   function downloadTemplate() {
-    const blob = new Blob(["﻿" + TEMPLATE_CSV], {
+    const blob = new Blob(["﻿" + buildTemplate(slots)], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
@@ -88,7 +102,7 @@ export function ImportPanel({ campusId }: { campusId: string }) {
 
       <p className="text-xs text-muted">
         CSV 파일을 선택하면 아래에 등록될 내용 미리보기가 표시됩니다. 템플릿
-        형식(이름·학번·참석 유형·상행 요일·하행 차량 이용·비고)에 맞춰 작성해
+        형식(이름·학번·참석 유형·상행 출발·하행 차량 이용·비고)에 맞춰 작성해
         주세요.
       </p>
 
@@ -123,7 +137,7 @@ export function ImportPanel({ campusId }: { campusId: string }) {
                     <th className="px-3 py-2">이름</th>
                     <th className="px-3 py-2">학번</th>
                     <th className="px-3 py-2">참석</th>
-                    <th className="px-3 py-2">상행 요일</th>
+                    <th className="px-3 py-2">상행 출발</th>
                     <th className="px-3 py-2">하행</th>
                     <th className="px-3 py-2">비고</th>
                   </tr>
@@ -136,7 +150,7 @@ export function ImportPanel({ campusId }: { campusId: string }) {
                       <td className="px-3 py-2">
                         {ATTENDANCE_LABELS[r.attendance_type]}
                       </td>
-                      <td className="px-3 py-2">{dayLabel(r.departure_day)}</td>
+                      <td className="px-3 py-2">{slotLabel(r.departure_slot_id, slots)}</td>
                       <td className="px-3 py-2">{r.uses_return_bus ? "O" : "X"}</td>
                       <td className="px-3 py-2 text-muted">{r.note ?? ""}</td>
                     </tr>

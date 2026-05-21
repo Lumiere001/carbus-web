@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { DAY_LABELS } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
+import { slotLabel } from "@/lib/labels";
+import type { DepartureSlot } from "@/lib/supabase/types";
 
 export type BusOcc = {
   bus_id: number | null;
   bus_name: string | null;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   capacity: number | null;
   up_passengers: number | null;
   down_passengers: number | null;
@@ -36,7 +36,13 @@ function Bar({
   );
 }
 
-export function BusOccupancy({ buses }: { buses: BusOcc[] }) {
+export function BusOccupancy({
+  buses,
+  slots,
+}: {
+  buses: BusOcc[];
+  slots: Pick<DepartureSlot, "id" | "label">[];
+}) {
   const [view, setView] = useState<View>("both");
 
   const btn = (v: View, label: string) => (
@@ -81,7 +87,9 @@ export function BusOccupancy({ buses }: { buses: BusOcc[] }) {
               <span className="text-sm font-medium text-foreground">
                 {b.bus_name}
                 <span className="ml-1.5 text-xs text-muted-2">
-                  {b.departure_day ? `${DAY_LABELS[b.departure_day]} 출발` : ""}
+                  {b.departure_slot_id != null
+                    ? `${slotLabel(b.departure_slot_id, slots)} 출발`
+                    : ""}
                 </span>
               </span>
               {view !== "down" && (

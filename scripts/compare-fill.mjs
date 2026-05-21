@@ -26,17 +26,17 @@ function makePax(n, seed) {
   for (let i = 0; i < n; i++) {
     const campus = pick(); const roll = rand();
     let at, day, ret;
-    if (roll < 0.82) { at = "roundtrip"; day = rand() < 0.78 ? "TUE" : "WED"; ret = true; }
-    else if (roll < 0.94) { at = "oneway"; day = rand() < 0.78 ? "TUE" : "WED"; ret = false; }
+    if (roll < 0.82) { at = "roundtrip"; day = rand() < 0.78 ? 1 : 2; ret = true; }
+    else if (roll < 0.94) { at = "oneway"; day = rand() < 0.78 ? 1 : 2; ret = false; }
     else { at = "oneway"; day = null; ret = true; }
-    pax.push({ id: `p${i}`, name: `${campus}-${i}`, campus, attendance_type: at, departure_day: day, uses_return_bus: ret, fixed_up_bus_id: null });
+    pax.push({ id: `p${i}`, name: `${campus}-${i}`, campus, attendance_type: at, departure_slot_id: day, uses_return_bus: ret, fixed_up_bus_id: null });
   }
   return pax;
 }
 const mkBuses = () => {
   const b = [];
-  for (let i = 1; i <= 7; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_day: "TUE" });
-  for (let i = 8; i <= 9; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_day: "WED" });
+  for (let i = 1; i <= 7; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_slot_id: 1 });
+  for (let i = 8; i <= 9; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_slot_id: 2 });
   return b;
 };
 
@@ -82,8 +82,8 @@ function metrics(label, pax, upAssign) {
   const intra = {};
   for (const p of pax) {
     const b = upAssign[p.id];
-    if (b == null || p.departure_day == null) continue;
-    (intra[`${p.campus}/${p.departure_day}`] ??= new Set()).add(b);
+    if (b == null || p.departure_slot_id == null) continue;
+    (intra[`${p.campus}/${p.departure_slot_id}`] ??= new Set()).add(b);
   }
   const splits = Object.values(intra).filter((s) => s.size > 1).length;
   const splitDetail = Object.entries(intra).filter(([, s]) => s.size > 1).map(([k, s]) => `${k}:${s.size}`);
@@ -91,7 +91,7 @@ function metrics(label, pax, upAssign) {
   for (const v of Object.values(upAssign)) byBus[v] = (byBus[v] ?? 0) + 1;
   const used = Object.keys(byBus).length;
   const assigned = Object.keys(upAssign).length;
-  const eligible = pax.filter((p) => p.departure_day != null).length;
+  const eligible = pax.filter((p) => p.departure_slot_id != null).length;
   // 빈좌석 = 사용 호차의 정원44 기준 빈자리 합
   let empty = 0;
   for (const id of Object.keys(byBus)) empty += Math.max(0, 44 - byBus[id]);
@@ -107,9 +107,9 @@ for (const n of [300, 360, 396]) {
   // FFD — 요일별로
   const ffdAssign = {};
   const buses = mkBuses();
-  for (const day of ["TUE", "WED"]) {
-    const grp = pax.filter((p) => p.departure_day === day);
-    const dayBuses = buses.filter((b) => b.departure_day === day);
+  for (const day of [1, 2]) {
+    const grp = pax.filter((p) => p.departure_slot_id === day);
+    const dayBuses = buses.filter((b) => b.departure_slot_id === day);
     const r = ffdFill(grp, dayBuses);
     Object.assign(ffdAssign, r.assign);
   }

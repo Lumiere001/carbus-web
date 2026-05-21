@@ -37,15 +37,16 @@ export default async function AdminBatchPage() {
     campusRes,
     runsRes,
     cfgRes,
+    slotRes,
   ] = await Promise.all([
-    reg().not("departure_day", "is", null),
-    reg().not("departure_day", "is", null).not("assigned_up_bus_id", "is", null),
+    reg().not("departure_slot_id", "is", null),
+    reg().not("departure_slot_id", "is", null).not("assigned_up_bus_id", "is", null),
     reg().eq("uses_return_bus", true),
     reg().eq("uses_return_bus", true).not("assigned_down_bus_id", "is", null),
     supabase
       .from("registrations")
       .select("id, name, student_id, campus_id")
-      .not("departure_day", "is", null)
+      .not("departure_slot_id", "is", null)
       .is("assigned_up_bus_id", null)
       .order("name"),
     supabase
@@ -57,7 +58,7 @@ export default async function AdminBatchPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, departure_day, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
@@ -69,6 +70,7 @@ export default async function AdminBatchPage() {
       .order("run_at", { ascending: false })
       .limit(8),
     supabase.from("system_config").select("last_batch_at, current_phase").maybeSingle(),
+    supabase.from("departure_slots").select("id, label").order("display_order"),
   ]);
 
   // 고정(차량순장+고정탑승) 현황 + staleness: 지정됐지만 현재 배정이 지정 호차와
@@ -122,6 +124,7 @@ export default async function AdminBatchPage() {
       upUnassigned={toUn(upUnRes.data ?? []) as UnassignedRow[]}
       downUnassigned={toUn(downUnRes.data ?? []) as UnassignedRow[]}
       buses={(busRes.data ?? []) as BusOption[]}
+      slots={slotRes.data ?? []}
       lastBatchAt={cfgRes.data?.last_batch_at ?? null}
       currentPhase={cfgRes.data?.current_phase ?? "phase1"}
       runs={(runsRes.data ?? []) as BatchRunRow[]}

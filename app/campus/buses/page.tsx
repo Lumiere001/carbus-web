@@ -3,19 +3,20 @@ import { Bus, ArrowUp, ArrowDown, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DAY_LABELS } from "@/lib/labels";
-import type { DepartureDay, AttendanceType } from "@/lib/supabase/types";
+import { slotLabel } from "@/lib/labels";
+import type { AttendanceType, DepartureSlot } from "@/lib/supabase/types";
 import { sortRoster } from "@/lib/registrations/roster-sort";
 
 export const dynamic = "force-dynamic";
 
-type BusInfo = { id: number; name: string; departure_day: DepartureDay };
+type SlotMini = Pick<DepartureSlot, "id" | "label">;
+type BusInfo = { id: number; name: string; departure_slot_id: number };
 type Reg = {
   id: string;
   name: string;
   student_id: string;
   attendance_type: AttendanceType;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
   assigned_up_bus_id: number | null;
   assigned_down_bus_id: number | null;
@@ -39,10 +40,12 @@ function groupBy(regs: Reg[], key: (r: Reg) => number | null) {
 function BusGroups({
   groups,
   busName,
+  slots,
   accent,
 }: {
   groups: [number, Reg[]][];
   busName: Map<number, BusInfo>;
+  slots: SlotMini[];
   accent: "up" | "down";
 }) {
   return (
@@ -57,7 +60,7 @@ function BusGroups({
                 {info?.name ?? `${busId}호차`}
                 {accent === "up" && info && (
                   <span className="text-xs font-normal text-muted-2">
-                    {DAY_LABELS[info.departure_day]} 출발
+                    {slotLabel(info.departure_slot_id, slots)} 출발
                   </span>
                 )}
                 {accent === "down" && (
@@ -103,19 +106,21 @@ export default async function CampusBusesPage() {
   const campusId = profile?.campus_id;
   if (!campusId) redirect("/pending");
 
-  const [regRes, busRes] = await Promise.all([
+  const [regRes, busRes, slotRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, attendance_type, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, name, student_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
       )
       .eq("campus_id", campusId)
       .order("name"),
-    supabase.from("buses").select("id, name, departure_day").order("id"),
+    supabase.from("buses").select("id, name, departure_slot_id").order("id"),
+    supabase.from("departure_slots").select("id, label").order("display_order"),
   ]);
 
   const buses = (busRes.data ?? []) as BusInfo[];
   const regs = (regRes.data ?? []) as Reg[];
+  const slots = (slotRes.data ?? []) as SlotMini[];
   const busName = new Map(buses.map((b) => [b.id, b]));
 
   const upGroups = groupBy(regs, (r) => r.assigned_up_bus_id);
@@ -124,7 +129,7 @@ export default async function CampusBusesPage() {
   // 배차 대기: 상행 필요(departure_day 있음)인데 미배정 / 하행 필요(uses_return_bus)인데 미배정
   const waiting = regs
     .map((r) => {
-      const upPending = r.departure_day !== null && r.assigned_up_bus_id == null;
+      const upPending = r.departure_slot_id !== null && r.assigned_up_bus_id == null;
       const downPending = r.uses_return_bus && r.assigned_down_bus_id == null;
       return { r, upPending, downPending };
     })
@@ -156,7 +161,7 @@ export default async function CampusBusesPage() {
           <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted">
             <ArrowUp size={15} className="text-primary-700" /> 상행 명단 (올라갈 때)
           </h3>
-          <BusGroups groups={upGroups} busName={busName} accent="up" />
+          <BusGroups groups={upGroups} busName={busName} slots={slots} accent="up" />
         </section>
       )}
 
@@ -166,7 +171,7 @@ export default async function CampusBusesPage() {
           <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted">
             <ArrowDown size={15} className="text-primary-700" /> 하행 명단 (내려올 때)
           </h3>
-          <BusGroups groups={downGroups} busName={busName} accent="down" />
+          <BusGroups groups={downGroups} busName={busName} slots={slots} accent="down" />
         </section>
       )}
 

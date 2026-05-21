@@ -10,8 +10,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BusOccupancy, type BusOcc } from "@/components/admin/bus-occupancy";
-import { DAY_LABELS } from "@/lib/labels";
-import type { DepartureDay } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
@@ -89,13 +87,13 @@ export default async function AdminDashboardPage() {
   const supabase = await createClient();
   const since = since24hIso();
 
-  const [campusRes, dayRes, busRes, payRes, threeWayRes, cfgRes, auditRes] =
+  const [campusRes, dayRes, busRes, payRes, threeWayRes, cfgRes, auditRes, slotRes] =
     await Promise.all([
       supabase
         .from("v_campus_stats")
         .select("*")
         .order("total", { ascending: false }),
-      supabase.from("v_day_capacity").select("*"),
+      supabase.from("v_day_capacity").select("*").order("display_order"),
       supabase.from("v_bus_occupancy").select("*").order("bus_id"),
       supabase.from("v_payment_summary").select("*"),
       supabase.from("v_payment_3way_comparison").select("*"),
@@ -104,11 +102,13 @@ export default async function AdminDashboardPage() {
         .from("registration_audit")
         .select("id", { count: "exact", head: true })
         .gte("created_at", since),
+      supabase.from("departure_slots").select("id, label").order("display_order"),
     ]);
 
   const campuses = campusRes.data ?? [];
   const days = dayRes.data ?? [];
   const buses = busRes.data ?? [];
+  const slots = slotRes.data ?? [];
   const payment = payRes.data ?? [];
   const threeWay = threeWayRes.data ?? [];
   const cfg = cfgRes.data;
@@ -178,21 +178,20 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* B. 상행 일자별 */}
-        <Card title="상행 일자별 정원" subtitle="화·수 출발 좌석 사용">
+        {/* B. 상행 슬롯별 */}
+        <Card title="상행 출발 슬롯별 정원" subtitle="출발 시간대별 좌석 사용">
           <div className="p-5 space-y-4">
-            {(["TUE", "WED"] as DepartureDay[]).map((d) => {
-              const row = days.find((x) => x.departure_day === d);
-              const cap = row?.total_capacity ?? 0;
-              const pax = row?.total_passengers ?? 0;
-              const remain = row?.remaining_seats ?? cap - pax;
+            {days.map((row) => {
+              const cap = row.total_capacity ?? 0;
+              const pax = row.total_passengers ?? 0;
+              const remain = row.remaining_seats ?? cap - pax;
               const tone =
                 remain <= 0 ? "danger" : remain < cap * 0.1 ? "warning" : "primary";
               return (
-                <div key={d}>
+                <div key={row.slot_id ?? row.slot_key}>
                   <div className="flex items-baseline justify-between mb-1.5">
                     <span className="text-sm font-medium text-foreground">
-                      {DAY_LABELS[d]} 상행
+                      {row.slot_label} 상행
                     </span>
                     <span className="text-sm tabular-nums text-muted">
                       {pax} / {cap}석
@@ -244,7 +243,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* C. 호차별 — 상행·하행 (토글) */}
-      <BusOccupancy buses={buses as BusOcc[]} />
+      <BusOccupancy buses={buses as BusOcc[]} slots={slots} />
 
       {/* A. 캠퍼스별 인원 */}
       <Card title="캠퍼스별 신청 인원" subtitle="왕복·편도 구분">

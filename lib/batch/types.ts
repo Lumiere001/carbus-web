@@ -5,19 +5,14 @@
  * 이 타입들만 받아 BatchResult 를 반환한다. (DB·fetch 의존 X)
  */
 
-export type DepartureDay = "TUE" | "WED";
-
-/** 상행 출발 요일. 하행편도(편도-하행)는 null. */
-export type PassengerDepartureDay = DepartureDay | null;
-
 export type AttendanceType = "roundtrip" | "oneway";
 
 /**
  * 신청자 (registrations Row → 순수 입력으로 투영).
  *
- * - roundtrip + departure_day(TUE/WED) + uses_return_bus=true : 완참
- * - oneway + departure_day(TUE/WED) + uses_return_bus=false  : 편도-상행
- * - oneway + departure_day=null + uses_return_bus=true        : 편도-하행
+ * - roundtrip + departure_slot_id(상행 슬롯) + uses_return_bus=true : 완참
+ * - oneway + departure_slot_id(상행 슬롯) + uses_return_bus=false  : 편도-상행
+ * - oneway + departure_slot_id=null + uses_return_bus=true          : 편도-하행
  */
 export interface Passenger {
   id: string;
@@ -25,8 +20,8 @@ export interface Passenger {
   /** 캠퍼스 식별자 (UUID 또는 라벨). 같은 값끼리 같은 호차 우선 묶음. */
   campus: string;
   attendance_type: AttendanceType;
-  /** 상행 출발 요일. 편도-하행은 null. */
-  departure_day: PassengerDepartureDay;
+  /** 상행 출발 슬롯 id. 편도-하행은 null. */
+  departure_slot_id: number | null;
   /** 하행 차량 이용 여부. */
   uses_return_bus: boolean;
   /**
@@ -39,7 +34,7 @@ export interface Passenger {
 /**
  * 호차 (buses Row → 순수 입력으로 투영).
  *
- * 9대 운영: 화요일 차 + 수요일 차. 토요일(하행)은 9대 모두 운행.
+ * 상행은 호차별 출발 슬롯(departure_slot_id)으로 운행. 하행은 슬롯 무관 전 호차 운행.
  */
 export interface Bus {
   id: number;
@@ -48,8 +43,8 @@ export interface Bus {
   capacity: number;
   /** 최대 정원 (기본 45). capacity 초과 시 fallback 한계. */
   hard_cap: number;
-  /** 상행 운행 요일. */
-  departure_day: DepartureDay;
+  /** 상행 운행 슬롯 id. */
+  departure_slot_id: number;
   /** 상행 차량순장 신청자 id. 해당 호차에서 절대 이동 X. */
   driver_registration_id: string | null;
   /** 상행 고정 탑승자 id 목록. 해당 호차에서 절대 이동 X. */

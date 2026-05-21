@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import {
   ATTENDANCE_LABELS,
   PAYMENT_LABELS,
-  dayLabel,
+  slotLabel,
   presetKeyOf,
   presetByKey,
+  type AttendancePreset,
 } from "@/lib/labels";
 import type {
   AttendanceType,
-  DepartureDay,
+  DepartureSlot,
   PaymentStatus,
 } from "@/lib/supabase/types";
 import {
@@ -34,7 +35,7 @@ export type AdminRegRow = {
   student_id: string;
   campus_id: string;
   attendance_type: AttendanceType;
-  departure_day: DepartureDay | null;
+  departure_slot_id: number | null;
   uses_return_bus: boolean;
   payment_status: PaymentStatus;
   roles: string[];
@@ -43,7 +44,7 @@ export type AdminRegRow = {
   assigned_down_bus_id: number | null;
 };
 export type CampusInfo = { id: string; name: string; display_order: number };
-export type BusInfo = { id: number; name: string; departure_day?: DepartureDay };
+export type BusInfo = { id: number; name: string; departure_slot_id?: number };
 export type RoleLabel = { label: string; color: string | null };
 
 const ROLE_HEX: Record<string, string> = {
@@ -89,10 +90,14 @@ function sortRows(arr: AdminRegRow[], groupByBus: boolean): AdminRegRow[] {
   );
 }
 
-function attendanceLabel(r: AdminRegRow): string {
-  const key = presetKeyOf(r);
-  if (key) return presetByKey(key)?.label ?? ATTENDANCE_LABELS[r.attendance_type];
-  return `${ATTENDANCE_LABELS[r.attendance_type]} ${dayLabel(r.departure_day)}`;
+function attendanceLabel(
+  r: AdminRegRow,
+  presets: AttendancePreset[],
+  slots: Pick<DepartureSlot, "id" | "label">[]
+): string {
+  const key = presetKeyOf(r, presets);
+  if (key) return presetByKey(key, presets)?.label ?? ATTENDANCE_LABELS[r.attendance_type];
+  return `${ATTENDANCE_LABELS[r.attendance_type]} ${slotLabel(r.departure_slot_id, slots)}`;
 }
 
 const ALL = "__all__";
@@ -108,6 +113,8 @@ export function RegistrationsPanel({
   groupByBus,
   driverIds,
   fixedIds,
+  presets,
+  slots,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -119,6 +126,8 @@ export function RegistrationsPanel({
   driverIds: Set<string>;
   /** 호차에 고정탑승으로 묶인 reg id (상/하행) — 역할 파생용. */
   fixedIds: Set<string>;
+  presets: AttendancePreset[];
+  slots: Pick<DepartureSlot, "id" | "label">[];
 }) {
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -214,6 +223,7 @@ export function RegistrationsPanel({
           mode={form.mode}
           initial={form.mode === "edit" ? form.row : undefined}
           campuses={campuses}
+          presets={presets}
           onClose={() => setForm(null)}
         />
       )}
@@ -291,6 +301,8 @@ export function RegistrationsPanel({
                         onEdit={(row) => setForm({ mode: "edit", row })}
                         driverIds={driverIds}
                         fixedIds={fixedIds}
+                        presets={presets}
+                        slots={slots}
                       />
                     ))}
                   </Fragment>
@@ -308,6 +320,8 @@ export function RegistrationsPanel({
                         onEdit={(row) => setForm({ mode: "edit", row })}
                         driverIds={driverIds}
                         fixedIds={fixedIds}
+                        presets={presets}
+                        slots={slots}
                   />
                 ))
               )}
@@ -335,6 +349,8 @@ function Row({
   onEdit,
   driverIds,
   fixedIds,
+  presets,
+  slots,
 }: {
   r: AdminRegRow;
   busName: Map<number, string>;
@@ -345,6 +361,8 @@ function Row({
   onEdit: (row: AdminRegRow) => void;
   driverIds: Set<string>;
   fixedIds: Set<string>;
+  presets: AttendancePreset[];
+  slots: Pick<DepartureSlot, "id" | "label">[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -376,7 +394,7 @@ function Row({
       startTransition(async () => {
         const res = await setLeaderRole({
           regId: r.id,
-          ridesUp: r.departure_day !== null,
+          ridesUp: r.departure_slot_id !== null,
           upBusId: r.assigned_up_bus_id,
           ridesDown: r.uses_return_bus === true,
           downBusId: r.assigned_down_bus_id,
@@ -483,7 +501,7 @@ function Row({
         </div>
       </td>
       <td className="px-4 py-2.5 text-muted-2">{r.student_id}</td>
-      <td className="px-4 py-2.5 text-foreground">{attendanceLabel(r)}</td>
+      <td className="px-4 py-2.5 text-foreground">{attendanceLabel(r, presets, slots)}</td>
       <td className="px-4 py-2.5">
         <Badge variant={PAY_VARIANT[r.payment_status]}>
           {PAYMENT_LABELS[r.payment_status]}

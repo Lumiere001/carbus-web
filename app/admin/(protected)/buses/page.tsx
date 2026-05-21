@@ -22,20 +22,21 @@ export default async function AdminBusesPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [busRes, regRes, campusRes] = await Promise.all([
+  const [busRes, regRes, campusRes, slotRes] = await Promise.all([
     supabase
       .from("buses")
       .select(
-        "id, name, departure_day, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, departure_slot_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, name, student_id, campus_id, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
       )
       .order("name"),
     supabase.from("campuses").select("id, name"),
+    supabase.from("departure_slots").select("id, label, active, display_order").order("display_order"),
   ]);
 
   const campusName = new Map(
@@ -55,7 +56,7 @@ export default async function AdminBusesPage() {
     };
     candidates.push({
       ...pax,
-      departure_day: r.departure_day,
+      departure_slot_id: r.departure_slot_id,
       uses_return_bus: r.uses_return_bus,
     });
     if (r.assigned_up_bus_id != null) {
@@ -84,7 +85,7 @@ export default async function AdminBusesPage() {
           9대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행·하행 각각)" : " (보기 전용)"}
         </p>
       </div>
-      <BusesPanel buses={buses} candidates={candidates} isMaster={isMaster} />
+      <BusesPanel buses={buses} candidates={candidates} slots={slotRes.data ?? []} isMaster={isMaster} />
     </div>
   );
 }
