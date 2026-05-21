@@ -387,6 +387,55 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(r.down_assignments["both"]).toBe(2); // 하행 2호차
   });
 
+  it("23) 고정 정원 초과 방지: hard_cap(45) 넘는 고정은 차단+에러", () => {
+    // 1대(hard_cap 45)에 46명 고정 시도 → 45명만 고정, 초과분 에러
+    const fixed = paxN(46, { departure_day: "TUE", campus: "전남대" });
+    const buses = [
+      bus({
+        id: 1,
+        departure_day: "TUE",
+        fixed_passenger_ids: fixed.map((p) => p.id),
+      }),
+    ];
+    const r = runBatch(fixed, buses);
+    // 어떤 호차도 hard_cap(45) 초과 안 함
+    expect(Math.max(...Object.values(r.by_bus))).toBeLessThanOrEqual(45);
+    expect(r.errors.some((e) => e.includes("정원 초과"))).toBe(true);
+  });
+
+  it("24) 같은 사람 두 호차 중복 고정 → 첫 호차만, 중복 경고", () => {
+    const dup = pax({ id: "dup", departure_day: "TUE", campus: "조선대" });
+    const buses = [
+      bus({ id: 1, departure_day: "TUE", fixed_passenger_ids: ["dup"] }),
+      bus({ id: 2, departure_day: "TUE", fixed_passenger_ids: ["dup"] }),
+    ];
+    const r = runBatch([dup], buses);
+    expect(r.up_assignments["dup"]).toBe(1); // 첫 호차
+    expect(r.errors.some((e) => e.includes("중복"))).toBe(true);
+  });
+
+  it("25) 하행 고정 정원 초과 방지", () => {
+    const fixed = paxN(46, {
+      attendance_type: "oneway",
+      departure_day: null,
+      uses_return_bus: true,
+      campus: "전남대",
+    });
+    const buses = [
+      bus({
+        id: 1,
+        departure_day: "TUE",
+        down_fixed_passenger_ids: fixed.map((p) => p.id),
+      }),
+    ];
+    const r = runBatch(fixed, buses);
+    const downCounts: Record<number, number> = {};
+    for (const v of Object.values(r.down_assignments))
+      downCounts[v] = (downCounts[v] ?? 0) + 1;
+    expect(Math.max(...Object.values(downCounts))).toBeLessThanOrEqual(45);
+    expect(r.errors.some((e) => e.includes("정원 초과"))).toBe(true);
+  });
+
   it("15) 350명 화 4대 → hard_cap 후도 대량 미배정 (reference §9 #3)", () => {
     const buses = [1, 2, 3, 4].map((id) => bus({ id, departure_day: "TUE" }));
     const passengers = Array.from({ length: 350 }, (_, i) =>

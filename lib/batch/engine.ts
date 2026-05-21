@@ -161,16 +161,26 @@ export function runBatch(
     for (const bus of upBuses) {
       const ids = [
         ...(bus.driver_registration_id ? [bus.driver_registration_id] : []),
-        ...bus.fixed_passenger_ids,
+        ...(bus.fixed_passenger_ids ?? []),
       ];
       for (const rid of [...new Set(ids)]) {
-        if (pinned.has(rid)) continue;
+        if (pinned.has(rid)) {
+          // 같은 사람이 다른 호차에도 고정됨 → 첫 호차 유지, 경고
+          errors.push(
+            `상행 고정 중복: 같은 인원이 여러 호차에 지정됨 (${byId.get(rid)?.name ?? rid})`
+          );
+          continue;
+        }
         const reg = byId.get(rid);
         if (!reg || reg.departure_day === null) continue;
         if (reg.departure_day !== bus.departure_day) {
           errors.push(
             `고정 배정 요일 불일치: ${reg.name} (${reg.departure_day} → ${bus.name})`
           );
+          continue;
+        }
+        if (bus.count >= bus.hard_cap) {
+          errors.push(`${bus.name} 정원 초과로 고정 배정 실패: ${reg.name}`);
           continue;
         }
         assignUp(rid, bus.id);
@@ -202,12 +212,21 @@ export function runBatch(
         ...(bus.down_driver_registration_id
           ? [bus.down_driver_registration_id]
           : []),
-        ...bus.down_fixed_passenger_ids,
+        ...(bus.down_fixed_passenger_ids ?? []),
       ];
       for (const rid of [...new Set(ids)]) {
-        if (pinnedDown.has(rid)) continue;
+        if (pinnedDown.has(rid)) {
+          errors.push(
+            `하행 고정 중복: 같은 인원이 여러 호차에 지정됨 (${byId.get(rid)?.name ?? rid})`
+          );
+          continue;
+        }
         const reg = byId.get(rid);
         if (!reg || reg.uses_return_bus !== true) continue; // 하행 미이용자는 고정 불가
+        if (bus.count >= bus.hard_cap) {
+          errors.push(`${bus.name} 정원 초과로 하행 고정 배정 실패: ${reg.name}`);
+          continue;
+        }
         assignDown(rid, bus.id);
         bus.count++;
         pinnedDown.add(rid);
@@ -238,9 +257,9 @@ export function runBatch(
     }
   }
 
-  // 상행 기준 빈 좌석
+  // 상행 기준 빈 좌석 (보조석으로 정원 초과 시 음수가 되지 않게 0 클램프)
   const emptySeats = buses.reduce(
-    (sum, b) => sum + (b.capacity - (byBus[b.id] ?? 0)),
+    (sum, b) => sum + Math.max(0, b.capacity - (byBus[b.id] ?? 0)),
     0
   );
 

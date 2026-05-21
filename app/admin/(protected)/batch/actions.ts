@@ -49,7 +49,7 @@ export async function runBatchAction(
     supabase
       .from("registrations")
       .select(
-        "id, name, campus_id, attendance_type, departure_day, uses_return_bus"
+        "id, name, campus_id, attendance_type, departure_day, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
       ),
     supabase
       .from("buses")
@@ -102,6 +102,28 @@ export async function runBatchAction(
         .in("id", ids.slice(i, i + 100));
       if (error) return { ok: false, message: `배정 저장 실패: ${error.message}` };
     }
+  }
+
+  // 이 방향에서 빠진 사람(비참여자)인데 옛 배정이 남아 있으면 정리 — 유령 탑승자 방지.
+  // (예: 왕복→상행편도로 바뀌어 하행 안 타는데 assigned_down_bus_id 잔존)
+  const participantIds = new Set(participants.map((p) => p.id));
+  const staleIds = (regRes.data ?? [])
+    .filter(
+      (r) =>
+        !participantIds.has(r.id) &&
+        (mode === "up"
+          ? r.assigned_up_bus_id !== null
+          : r.assigned_down_bus_id !== null)
+    )
+    .map((r) => r.id);
+  const clearPatch =
+    mode === "up" ? { assigned_up_bus_id: null } : { assigned_down_bus_id: null };
+  for (let i = 0; i < staleIds.length; i += 100) {
+    const { error } = await supabase
+      .from("registrations")
+      .update(clearPatch)
+      .in("id", staleIds.slice(i, i + 100));
+    if (error) return { ok: false, message: `배정 정리 실패: ${error.message}` };
   }
 
   const success = result.errors.length === 0;
