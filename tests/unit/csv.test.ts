@@ -9,7 +9,7 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
       "이름,학번,참석 유형,상행 요일,하행 차량 이용,비고",
       "김철수,26,왕복,화요일,O,",
       "이영희,27,편도,화요일,X,상행만",
-      "박지민,간사,편도,,O,하행만",
+      "박지민,타지구,편도,,O,하행만",
     ].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS);
     expect(failures).toHaveLength(0);
@@ -77,7 +77,7 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
       "이름,학번,참석 유형,상행 요일,하행 차량 이용,비고",
       "정상,26,왕복,화요일,O,",
       "불량,abc,왕복,화요일,O,",
-      "정상2,간사,편도,수요일,X,",
+      "정상2,타지구,편도,수요일,X,",
     ].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS);
     expect(successes).toHaveLength(2);

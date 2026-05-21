@@ -53,6 +53,12 @@ export default async function CampusLayout({
                 호차 조회
               </a>
               <a
+                href="/campus/partial"
+                className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+              >
+                부분 참석
+              </a>
+              <a
                 href="/campus/payments"
                 className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >

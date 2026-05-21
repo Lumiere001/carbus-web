@@ -31,6 +31,7 @@ export type RegFormInitial = {
   departure_day: DepartureDay | null;
   uses_return_bus: boolean;
   payment_status: PaymentStatus;
+  note: string | null;
 };
 
 /** master 전용 순장/순원 추가·수정 폼. */
@@ -57,6 +58,7 @@ export function RegForm({
   const [payment, setPayment] = useState<PaymentStatus>(
     initial?.payment_status ?? "unpaid"
   );
+  const [note, setNote] = useState(initial?.note ?? "");
 
   function submit() {
     setErr(null);
@@ -70,6 +72,7 @@ export function RegForm({
       departure_day: preset.departure_day,
       uses_return_bus: preset.uses_return_bus,
       payment_status: payment,
+      note: note.trim() || null,
     };
     if (!fields.name || !fields.student_id || !fields.campus_id)
       return setErr("이름·학번·캠퍼스는 필수입니다");
@@ -100,7 +103,7 @@ export function RegForm({
             <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label className="text-xs text-muted space-y-1 block">
-            학번 (두 자리 숫자 또는 간사/외국인/타지구)
+            학번 (두 자리 숫자 또는 외국인/타지구)
             <input
               className={inputCls}
               value={studentId}
@@ -141,6 +144,15 @@ export function RegForm({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="text-xs text-muted space-y-1 block sm:col-span-2">
+            비고 (부분참 일정·특이사항 등 자유 기록)
+            <textarea
+              className={inputCls + " min-h-[60px]"}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="예: 평창역 17:30 도착 / 금요일 저녁 KTX 귀가"
+            />
           </label>
         </div>
         <div className="flex gap-2 pt-1">

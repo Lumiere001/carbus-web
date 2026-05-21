@@ -19,6 +19,7 @@ export type RegFormFields = {
   departure_day: DepartureDay | null;
   uses_return_bus: boolean;
   payment_status: PaymentStatus;
+  note: string | null;
 };
 
 /** 순장/순원 신규 추가 (master 전용, 캠퍼스 지정). */

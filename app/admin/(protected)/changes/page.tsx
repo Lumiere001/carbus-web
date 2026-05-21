@@ -22,6 +22,7 @@ const CONTENT_FIELDS = [
   "payment_status",
   "roles",
   "campus_id",
+  "note",
 ] as const;
 
 const FIELD_LABEL: Record<string, string> = {
@@ -33,6 +34,7 @@ const FIELD_LABEL: Record<string, string> = {
   payment_status: "납부",
   roles: "역할",
   campus_id: "캠퍼스",
+  note: "비고",
 };
 
 const ROLE_LABEL: Record<string, string> = {
@@ -84,19 +86,19 @@ export default async function AdminChangesPage() {
 
   const { data: cfg } = await supabase
     .from("system_config")
-    .select("last_batch_at, current_phase")
+    .select("phase2_started_at, current_phase")
     .maybeSingle();
-  const lastBatchAt = cfg?.last_batch_at ?? null;
-  const phase2 = cfg?.current_phase === "phase2";
+  // 기준점 = 마감(phase2) 전환 시각. phase2 가 아니면 null.
+  const cutoff = cfg?.phase2_started_at ?? null;
 
-  // 마지막 배차 이후 audit (배차 전이면 비움)
-  const auditRes = lastBatchAt
+  // 마감(phase2) 이후 audit (마감 전이면 비움)
+  const auditRes = cutoff
     ? await supabase
         .from("registration_audit")
         .select(
           "id, registration_id, created_at, change_type, before_value, after_value, changed_by"
         )
-        .gt("created_at", lastBatchAt)
+        .gt("created_at", cutoff)
         .order("created_at", { ascending: false })
         .limit(500)
     : { data: [] };
@@ -221,31 +223,24 @@ export default async function AdminChangesPage() {
       <div>
         <h2 className="text-xl font-semibold text-foreground">마감 후 변동</h2>
         <p className="text-sm text-muted mt-0.5">
-          마지막 배차 이후 추가·수정·제외된 순장/순원과, 그들의 배차 상태를 모아 봅니다.
+          마감(입력 마감 단계 전환) 이후 추가·수정·제외된 순장/순원과, 그들의 배차 상태를 모아 봅니다.
         </p>
       </div>
 
-      {!lastBatchAt && (
+      {!cutoff && (
         <Card className="p-5">
           <p className="text-sm text-muted">
-            아직 배차를 실행한 적이 없습니다. 배차를 한 번 실행하면, 그 이후의 변동이
-            여기에 모입니다.
+            아직 <b>마감 단계(phase2)</b>로 전환하기 전입니다. Phase 화면에서 마감으로
+            전환하면, 그 이후의 변동이 여기에 모입니다.
           </p>
         </Card>
       )}
 
-      {lastBatchAt && !phase2 && (
-        <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
-          현재 <b>입력 단계</b>입니다. 이 화면은 보통 <b>마감(배차) 이후</b> 들어오는 변동을
-          점검하는 용도예요.
-        </div>
-      )}
-
-      {lastBatchAt && (
+      {cutoff && (
         <>
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="text-muted">
-              마지막 배차 <b className="text-foreground">{fmt(lastBatchAt)}</b>
+              마감 시각 <b className="text-foreground">{fmt(cutoff)}</b>
             </span>
             <span className="text-muted">
               변동 인원 <b className="text-foreground tabular-nums">{rows.length}</b>
@@ -265,7 +260,7 @@ export default async function AdminChangesPage() {
             </div>
           )}
 
-          <Card title="변동 인원" subtitle="마지막 배차 이후 · 최신순">
+          <Card title="변동 인원" subtitle="마감 이후 · 최신순">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

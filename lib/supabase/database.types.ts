@@ -486,6 +486,7 @@ export type Database = {
           current_phase: Database["public"]["Enums"]["system_phase"]
           id: number
           last_batch_at: string | null
+          phase2_started_at: string | null
           updated_at: string
         }
         Insert: {
@@ -493,6 +494,7 @@ export type Database = {
           current_phase?: Database["public"]["Enums"]["system_phase"]
           id?: number
           last_batch_at?: string | null
+          phase2_started_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -500,6 +502,7 @@ export type Database = {
           current_phase?: Database["public"]["Enums"]["system_phase"]
           id?: number
           last_batch_at?: string | null
+          phase2_started_at?: string | null
           updated_at?: string
         }
         Relationships: []

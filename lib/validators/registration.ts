@@ -5,7 +5,7 @@ import { z } from "zod";
  * Zod 4 기준. 클라이언트·서버 공용 스키마.
  */
 
-export const STUDENT_ID_SPECIAL = ["간사", "외국인", "타지구"] as const;
+export const STUDENT_ID_SPECIAL = ["외국인", "타지구"] as const;
 export const DEPARTURE_DAYS = ["TUE", "WED"] as const;
 export const ATTENDANCE_TYPES = ["roundtrip", "oneway"] as const;
 
@@ -21,8 +21,7 @@ export const RegistrationSchema = z
         /^\d{2}$/.test(v) ||
         (STUDENT_ID_SPECIAL as readonly string[]).includes(v),
       {
-        message:
-          "학번 형식이 올바르지 않습니다 (예: 26 / 간사 / 외국인 / 타지구)",
+        message: "학번 형식이 올바르지 않습니다 (예: 26 / 외국인 / 타지구)",
       }
     ),
     attendance_type: z.enum(ATTENDANCE_TYPES, {

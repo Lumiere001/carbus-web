@@ -36,9 +36,9 @@ describe("RegistrationSchema (reference/validators.md §8)", () => {
     }
   });
 
-  it("3) 학번 특수값 '간사' → 통과", () => {
+  it("3) 학번 '간사' → 실패 (간사는 학번이 아님)", () => {
     const r = RegistrationSchema.safeParse(base({ student_id: "간사" }));
-    expect(r.success).toBe(true);
+    expect(r.success).toBe(false);
   });
 
   it("3b) 학번 '외국인' / '타지구' → 통과", () => {

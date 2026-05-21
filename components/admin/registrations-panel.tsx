@@ -38,6 +38,7 @@ export type AdminRegRow = {
   uses_return_bus: boolean;
   payment_status: PaymentStatus;
   roles: string[];
+  note: string | null;
   assigned_up_bus_id: number | null;
   assigned_down_bus_id: number | null;
 };
@@ -136,7 +137,7 @@ export function RegistrationsPanel({
     return m;
   }, [rows]);
 
-  const colCount = isMaster ? 7 : 6;
+  const colCount = isMaster ? 8 : 7;
 
   // 검색 중이면 캠퍼스 탭 무시하고 이름·학번으로 전체에서 찾음.
   const q = query.trim().toLowerCase();
@@ -253,6 +254,7 @@ export function RegistrationsPanel({
                 <th className="px-4 py-2.5">납부</th>
                 <th className="px-4 py-2.5">상행 배차</th>
                 <th className="px-4 py-2.5">하행 배차</th>
+                <th className="px-4 py-2.5">비고</th>
                 {isMaster && <th className="px-4 py-2.5">작업</th>}
               </tr>
             </thead>
@@ -500,6 +502,9 @@ function Row({
           : r.assigned_down_bus_id != null
             ? busName.get(r.assigned_down_bus_id) ?? "—"
             : "—"}
+      </td>
+      <td className="px-4 py-2.5 text-muted-2 max-w-[14rem] whitespace-pre-wrap break-words">
+        {r.note?.trim() ? r.note : "—"}
       </td>
       {isMaster && (
         <td className="px-4 py-2.5">

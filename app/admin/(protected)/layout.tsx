@@ -71,6 +71,9 @@ export default async function AdminProtectedLayout({
               <a href="/admin/leaders" className={navLink}>
                 리더
               </a>
+              <a href="/admin/partial" className={navLink}>
+                부분참
+              </a>
               <a href="/admin/payments" className={navLink}>
                 정산
               </a>
