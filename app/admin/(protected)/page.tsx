@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BusOccupancy, type BusOcc } from "@/components/admin/bus-occupancy";
+import { CapacityCard } from "@/components/admin/capacity-card";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,7 @@ export default async function AdminDashboardPage() {
   const supabase = await createClient();
   const since = since24hIso();
 
-  const [campusRes, dayRes, busRes, payRes, threeWayRes, cfgRes, auditRes, slotRes] =
+  const [campusRes, dayRes, busRes, payRes, threeWayRes, cfgRes, auditRes, slotRes, downCountRes] =
     await Promise.all([
       supabase
         .from("v_campus_stats")
@@ -103,6 +104,10 @@ export default async function AdminDashboardPage() {
         .select("id", { count: "exact", head: true })
         .gte("created_at", since),
       supabase.from("departure_slots").select("id, label").order("display_order"),
+      supabase
+        .from("registrations")
+        .select("id", { count: "exact", head: true })
+        .eq("uses_return_bus", true),
     ]);
 
   const campuses = campusRes.data ?? [];
@@ -113,6 +118,9 @@ export default async function AdminDashboardPage() {
   const threeWay = threeWayRes.data ?? [];
   const cfg = cfgRes.data;
   const audit24h = auditRes.count ?? 0;
+  // 하행: 슬롯 없는 단일 풀 — 전 호차 정원 합 vs 하행 이용 신청 인원.
+  const downPassengers = downCountRes.count ?? 0;
+  const downCapacity = buses.reduce((s, b) => s + (b.capacity ?? 0), 0);
 
   // ── KPI 집계 ────────────────────────────────────────────
   const totalPeople = campuses.reduce((s, c) => s + (c.total ?? 0), 0);
@@ -178,38 +186,12 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* B. 상행 슬롯별 */}
-        <Card title="상행 출발 슬롯별 정원" subtitle="출발 시간대별 좌석 사용">
-          <div className="p-5 space-y-4">
-            {days.map((row) => {
-              const cap = row.total_capacity ?? 0;
-              const pax = row.total_passengers ?? 0;
-              const remain = row.remaining_seats ?? cap - pax;
-              const tone =
-                remain <= 0 ? "danger" : remain < cap * 0.1 ? "warning" : "primary";
-              return (
-                <div key={row.slot_id ?? row.slot_key}>
-                  <div className="flex items-baseline justify-between mb-1.5">
-                    <span className="text-sm font-medium text-foreground">
-                      {row.slot_label} 상행
-                    </span>
-                    <span className="text-sm tabular-nums text-muted">
-                      {pax} / {cap}석
-                      <span
-                        className={`ml-2 font-medium ${
-                          remain <= 0 ? "text-danger" : "text-muted-2"
-                        }`}
-                      >
-                        잔여 {remain}
-                      </span>
-                    </span>
-                  </div>
-                  <ProgressBar value={pax} max={cap} tone={tone} />
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        {/* B. 출발 정원 — 상행(슬롯별)/하행(전 호차) 토글 */}
+        <CapacityCard
+          upRows={days}
+          downCapacity={downCapacity}
+          downPassengers={downPassengers}
+        />
 
         {/* D. 차량비 요약 */}
         <Card title="차량비 정산 요약" subtitle="납부 상태별 인원·금액">
