@@ -413,11 +413,11 @@ export function RegistrationGrid({
     };
   }, [rows]);
 
-  // 열 너비 (시안 §2): 학번 w-20, 참석/일정 w-36, 차량비 w-24.
+  // 열 너비 (시안 §2): 학번 w-20, 참석/일정 w-48(슬롯 라벨 길어짐), 차량비 w-24.
   const colClass: Record<string, string> = {
     name: "w-32",
     student_id: "w-20",
-    attendance: "w-36",
+    attendance: "w-48",
     note: "w-40",
     fee: "w-24 text-right",
     payment_status: "w-28",
@@ -491,7 +491,7 @@ export function RegistrationGrid({
       {/* Grid container — Card 비주얼 */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-1">
         <div className="max-h-[560px] overflow-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead className="sticky top-0 z-10 bg-surface-2/95 backdrop-blur">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id} className="text-left">
