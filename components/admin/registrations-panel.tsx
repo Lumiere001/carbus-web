@@ -255,9 +255,9 @@ export function RegistrationsPanel({
 
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="bg-surface-2 text-muted text-left">
+              <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
                 <th className="px-4 py-2.5">이름</th>
                 <th className="px-4 py-2.5">학번</th>
                 <th className="px-4 py-2.5">참석/일정</th>
@@ -501,7 +501,7 @@ function Row({
         </div>
       </td>
       <td className="px-4 py-2.5 text-muted-2">{r.student_id}</td>
-      <td className="px-4 py-2.5 text-foreground">{attendanceLabel(r, presets, slots)}</td>
+      <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{attendanceLabel(r, presets, slots)}</td>
       <td className="px-4 py-2.5">
         <Badge variant={PAY_VARIANT[r.payment_status]}>
           {PAYMENT_LABELS[r.payment_status]}

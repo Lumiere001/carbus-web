@@ -27,56 +27,56 @@ export default async function CampusLayout({
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-sm font-semibold text-foreground">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+          <div className="flex w-full flex-col items-start gap-2 md:w-auto md:flex-row md:items-center md:gap-4 min-w-0">
+            <h1 className="text-sm font-semibold text-foreground whitespace-nowrap shrink-0">
               임역원 · {profile.display_name ?? "(이름 없음)"}
             </h1>
-            <span className="text-border-2">|</span>
-            <nav className="flex gap-1 text-sm">
+            <span className="hidden md:inline text-border-2">|</span>
+            <nav className="flex w-full gap-1 overflow-x-auto whitespace-nowrap pb-1 text-sm md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
               <a
                 href="/campus"
-                className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >
                 순장/순원 입력
               </a>
               <a
                 href="/campus/import"
-                className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >
                 Import
               </a>
               <a
                 href="/campus/buses"
-                className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >
                 호차 조회
               </a>
               <a
                 href="/campus/partial"
-                className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >
                 부분 참석
               </a>
               <a
                 href="/campus/payments"
-                className="rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >
                 차량비
               </a>
             </nav>
           </div>
-          <form action={signOut}>
+          <form action={signOut} className="shrink-0">
             <button
               type="submit"
-              className="text-sm text-muted transition hover:text-foreground"
+              className="text-sm text-muted transition hover:text-foreground whitespace-nowrap"
             >
               로그아웃
             </button>
           </form>
         </div>
       </header>
-      <div className="mx-auto max-w-7xl p-6">{children}</div>
+      <div className="mx-auto max-w-7xl p-4 md:p-6">{children}</div>
     </div>
   );
 }

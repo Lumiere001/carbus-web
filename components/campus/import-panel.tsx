@@ -131,9 +131,9 @@ export function ImportPanel({
 
           {preview.successes.length > 0 && (
             <div className="overflow-x-auto bg-surface rounded-xl border border-border">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead>
-                  <tr className="bg-surface-2 text-muted text-left">
+                  <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
                     <th className="px-3 py-2">이름</th>
                     <th className="px-3 py-2">학번</th>
                     <th className="px-3 py-2">참석</th>
@@ -162,9 +162,9 @@ export function ImportPanel({
 
           {preview.failures.length > 0 && (
             <div className="overflow-x-auto bg-danger-bg rounded-xl border border-danger-border">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[480px] text-sm">
                 <thead>
-                  <tr className="text-danger text-left">
+                  <tr className="text-danger text-left [&>th]:whitespace-nowrap">
                     <th className="px-3 py-2">행</th>
                     <th className="px-3 py-2">원본</th>
                     <th className="px-3 py-2">사유</th>

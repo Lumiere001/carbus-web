@@ -111,9 +111,9 @@ export function PaymentsPanel({
 
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[820px] text-sm">
             <thead>
-              <tr className="bg-surface-2 text-muted text-left">
+              <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
                 <th className="px-4 py-2.5">캠퍼스</th>
                 <th className="px-4 py-2.5 text-right">걷어야 할</th>
                 <th className="px-4 py-2.5 text-right">걷힌(완납)</th>
@@ -127,7 +127,7 @@ export function PaymentsPanel({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.campus_id} className="border-t border-border">
-                  <td className="px-4 py-2.5 text-foreground">
+                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">
                     <span className="flex items-center gap-1.5">
                       {r.campus_name}
                       {(r.target ?? 0) > 0 && (r.unpaid_count ?? 0) === 0 && (

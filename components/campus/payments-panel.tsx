@@ -196,9 +196,9 @@ export function CampusPaymentsPanel({
       {/* 순장/순원 납부 현황 */}
       <Card title="순장/순원 납부 현황" subtitle={`${rows.length}명`}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[440px] text-sm">
             <thead>
-              <tr className="bg-surface-2 text-muted text-left">
+              <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
                 <th className="px-4 py-2">이름</th>
                 <th className="px-4 py-2">학번</th>
                 <th className="px-4 py-2 text-right">차량비</th>

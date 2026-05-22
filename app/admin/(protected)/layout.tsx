@@ -32,14 +32,14 @@ export default async function AdminProtectedLayout({
   const isMaster = role === "master";
 
   const navLink =
-    "text-sm text-primary-200 hover:text-white transition";
+    "text-sm text-primary-200 hover:text-white transition shrink-0";
 
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary-900 text-white">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="font-semibold flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3 w-full md:w-auto min-w-0">
+            <h1 className="font-semibold flex items-center gap-2 whitespace-nowrap shrink-0">
               운영자
               <span
                 className={
@@ -52,8 +52,8 @@ export default async function AdminProtectedLayout({
                 {role}
               </span>
             </h1>
-            <span className="text-xs text-primary-400">|</span>
-            <nav className="flex flex-wrap gap-3.5">
+            <span className="hidden md:inline text-xs text-primary-400">|</span>
+            <nav className="flex gap-3.5 w-full md:w-auto overflow-x-auto whitespace-nowrap pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
               <a href="/admin" className={navLink}>
                 대시보드
               </a>
@@ -101,17 +101,17 @@ export default async function AdminProtectedLayout({
               </a>
             </nav>
           </div>
-          <form action={signOut}>
+          <form action={signOut} className="shrink-0">
             <button
               type="submit"
-              className="text-sm text-primary-300 hover:text-white transition"
+              className="text-sm text-primary-300 hover:text-white transition whitespace-nowrap"
             >
               로그아웃
             </button>
           </form>
         </div>
       </header>
-      <div className="max-w-7xl mx-auto p-6">{children}</div>
+      <div className="max-w-7xl mx-auto p-4 md:p-6">{children}</div>
     </div>
   );
 }
