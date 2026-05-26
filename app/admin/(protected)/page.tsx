@@ -241,8 +241,11 @@ export default async function AdminDashboardPage() {
               <div className="flex-1">
                 <ProgressBar value={c.total ?? 0} max={maxCampus} />
               </div>
-              <span className="w-36 shrink-0 text-right text-xs tabular-nums text-muted">
+              <span className="w-44 shrink-0 text-right text-xs tabular-nums text-muted">
                 왕복 {c.roundtrip_count ?? 0} · 편도 {c.oneway_count ?? 0}
+                {(c.self_count ?? 0) > 0 && (
+                  <span className="ml-1 text-warning">· 미이용 {c.self_count}</span>
+                )}
                 <span className="ml-1.5 font-medium text-foreground">
                   계 {c.total ?? 0}
                 </span>
