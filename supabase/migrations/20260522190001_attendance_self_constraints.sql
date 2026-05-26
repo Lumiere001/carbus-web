@@ -3,6 +3,10 @@
 -- ============================================================
 -- 선행 마이그(20260522190000)에서 enum 'self' 값이 추가되어 있어야 함.
 -- 이 마이그는 'self' 의 데이터 형태 강제 + 차량비 0 + 결제 통계에서 self 제외.
+-- 라이브 데이터 안전: enum 추가/제약 추가는 비파괴, fee 는 GENERATED 라 재계산.
+-- 원자성 보장 위해 트랜잭션으로 래핑 — 중간 실패 시 전체 롤백.
+
+BEGIN;
 
 -- ------------------------------------------------------------
 -- 1. chk_self — 'self' 행은 슬롯 없음 + 하행 미이용을 강제
@@ -85,3 +89,5 @@ LEFT JOIN registrations r ON r.campus_id = c.id
 GROUP BY c.id, c.name
 ORDER BY c.display_order;
 ALTER VIEW v_campus_stats SET (security_invoker = on);
+
+COMMIT;

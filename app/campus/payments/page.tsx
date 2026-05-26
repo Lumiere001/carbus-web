@@ -29,6 +29,8 @@ export default async function CampusPaymentsPage() {
       .from("registrations")
       .select("id, name, student_id, attendance_type, fee, payment_status")
       .eq("campus_id", campusId)
+      // 버스 미이용(self)은 차량비 없음 → 정산 화면에서 제외 (전체는 /campus 그리드에서 봄)
+      .in("attendance_type", ["roundtrip", "oneway"])
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("name").eq("id", campusId).single(),
     supabase
