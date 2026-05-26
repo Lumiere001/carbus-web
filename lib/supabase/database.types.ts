@@ -578,6 +578,7 @@ export type Database = {
           campus_name: string | null
           oneway_count: number | null
           roundtrip_count: number | null
+          self_count: number | null
           total: number | null
         }
         Relationships: []
@@ -633,7 +634,7 @@ export type Database = {
       }
     }
     Enums: {
-      attendance_type: "roundtrip" | "oneway"
+      attendance_type: "roundtrip" | "oneway" | "self"
       payment_status: "unpaid" | "paid" | "waived"
       request_type: "insert" | "update" | "delete"
       system_phase: "phase1" | "phase2"
@@ -765,7 +766,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      attendance_type: ["roundtrip", "oneway"],
+      attendance_type: ["roundtrip", "oneway", "self"],
       payment_status: ["unpaid", "paid", "waived"],
       request_type: ["insert", "update", "delete"],
       system_phase: ["phase1", "phase2"],

@@ -95,6 +95,23 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
     expect(successes[0]).toMatchObject({ name: "탭철수", departure_slot_id: 2 });
   });
 
+  it("버스 미이용(self) — 슬롯 빈칸 + 하행 X + 비고에 수단 → 통과", () => {
+    const csv = [
+      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
+      "케이티엑스,26,버스 미이용,,X,KTX 자가 이동",
+      "차차,27,미이용,,X,자차",
+    ].join("\n");
+    const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
+    expect(failures).toHaveLength(0);
+    expect(successes).toHaveLength(2);
+    expect(successes[0]).toMatchObject({
+      attendance_type: "self",
+      departure_slot_id: null,
+      uses_return_bus: false,
+      note: "KTX 자가 이동",
+    });
+  });
+
   it("성공·실패 혼재 → 분리", () => {
     const csv = [
       "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",

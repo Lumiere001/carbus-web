@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 
 export const STUDENT_ID_SPECIAL = ["외국인", "타지구"] as const;
-export const ATTENDANCE_TYPES = ["roundtrip", "oneway"] as const;
+export const ATTENDANCE_TYPES = ["roundtrip", "oneway", "self"] as const;
 
 export const RegistrationSchema = z
   .object({
@@ -57,6 +57,17 @@ export const RegistrationSchema = z
     },
     {
       message: "편도는 상행 또는 하행 중 하나만 선택 가능합니다",
+      path: ["attendance_type"],
+    }
+  )
+  // 규칙 5: 미이용(self) 일관성 — 슬롯 없음 + 하행 미이용
+  .refine(
+    (data) =>
+      data.attendance_type !== "self" ||
+      (data.departure_slot_id === null && data.uses_return_bus === false),
+    {
+      message:
+        "버스 미이용은 상행 슬롯·하행 차량 모두 비워야 합니다 (한쪽만 이용하시면 '편도 상행/하행'을 선택)",
       path: ["attendance_type"],
     }
   );

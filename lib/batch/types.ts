@@ -5,7 +5,7 @@
  * 이 타입들만 받아 BatchResult 를 반환한다. (DB·fetch 의존 X)
  */
 
-export type AttendanceType = "roundtrip" | "oneway";
+export type AttendanceType = "roundtrip" | "oneway" | "self";
 
 /**
  * 신청자 (registrations Row → 순수 입력으로 투영).

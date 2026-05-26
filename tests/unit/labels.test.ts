@@ -17,8 +17,8 @@ const SLOTS = [
 const PRESETS = buildAttendancePresets(SLOTS);
 
 describe("buildAttendancePresets 일관성", () => {
-  it("슬롯 2개 → 2×2 + 편도하행 1 = 5개", () => {
-    expect(PRESETS).toHaveLength(5);
+  it("슬롯 2개 → 2×2 + 편도하행 1 + 미이용 1 = 6개", () => {
+    expect(PRESETS).toHaveLength(6);
   });
 
   it("비활성 슬롯은 제외", () => {
@@ -26,10 +26,10 @@ describe("buildAttendancePresets 일관성", () => {
       ...SLOTS,
       { id: 3, key: "wed_am", label: "수 오전", active: false, display_order: 30 },
     ]);
-    expect(presets).toHaveLength(5); // 비활성 wed_am 무시
+    expect(presets).toHaveLength(6); // 비활성 wed_am 무시 (2×2 + 하행 + 미이용)
   });
 
-  it("모든 preset이 왕복/편도 CHECK 일관성 만족", () => {
+  it("모든 preset이 왕복/편도/미이용 CHECK 일관성 만족", () => {
     for (const p of PRESETS) {
       const roundtripOk =
         p.attendance_type === "roundtrip" &&
@@ -43,7 +43,11 @@ describe("buildAttendancePresets 일관성", () => {
         p.attendance_type === "oneway" &&
         p.departure_slot_id === null &&
         p.uses_return_bus === true;
-      expect(roundtripOk || onewayUp || onewayDown).toBe(true);
+      const selfOk =
+        p.attendance_type === "self" &&
+        p.departure_slot_id === null &&
+        p.uses_return_bus === false;
+      expect(roundtripOk || onewayUp || onewayDown || selfOk).toBe(true);
     }
   });
 
@@ -114,6 +118,25 @@ describe("presetKeyOf / presetByKey", () => {
       attendance_type: "oneway",
       departure_slot_id: null,
       uses_return_bus: true,
+    });
+  });
+
+  it("미이용 → self", () => {
+    expect(
+      presetKeyOf(
+        { attendance_type: "self", departure_slot_id: null, uses_return_bus: false },
+        PRESETS
+      )
+    ).toBe("self");
+  });
+
+  it("presetByKey 미이용 복원", () => {
+    const p = presetByKey("self", PRESETS);
+    expect(p).toMatchObject({
+      attendance_type: "self",
+      departure_slot_id: null,
+      uses_return_bus: false,
+      label: "참석 (버스 미이용)",
     });
   });
 

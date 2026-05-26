@@ -128,6 +128,9 @@ export function RegForm({
                 </option>
               ))}
             </select>
+            <span className="block text-[11px] text-muted-2 leading-snug">
+              💡 「참석 (버스 미이용)」은 KTX·자차 등 버스를 <b>전혀</b> 이용하지 않는 분만. 한쪽만 이용하면 「편도 상행/하행」 선택.
+            </span>
           </label>
           <label className="text-xs text-muted space-y-1 block">
             납부
@@ -151,6 +154,11 @@ export function RegForm({
               onChange={(e) => setNote(e.target.value)}
               placeholder="예: 평창역 17:30 도착 / 금요일 저녁 KTX 귀가"
             />
+            {presetKey === "self" && !note.trim() && (
+              <span className="block text-[11px] text-warning leading-snug">
+                ⚠ 미이용 선택 시 이동 수단(KTX·자차 등)을 비고에 적어주세요.
+              </span>
+            )}
           </label>
         </div>
         <div className="flex gap-2 pt-1">

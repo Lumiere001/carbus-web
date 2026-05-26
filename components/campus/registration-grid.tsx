@@ -387,7 +387,13 @@ export function RegistrationGrid({
     let expected = 0; // 예상 수입 (면제 제외 전체 차량비)
     let received = 0; // 수령 (완납 합)
     let outstanding = 0; // 잔액 (미납 합)
+    let selfCount = 0; // 버스 미이용 (KTX·자차 등)
+    let selfMissingNote = 0; // 미이용인데 비고 비어있는 행
     for (const r of rows) {
+      if (r.attendance_type === "self") {
+        selfCount += 1;
+        if (!r.note?.trim()) selfMissingNote += 1;
+      }
       const fee = r.fee ?? 0;
       if (r.payment_status === "waived") {
         waivedCount += 1;
@@ -407,6 +413,8 @@ export function RegistrationGrid({
       paidCount,
       unpaidCount,
       waivedCount,
+      selfCount,
+      selfMissingNote,
       expected,
       received,
       outstanding,
@@ -487,6 +495,18 @@ export function RegistrationGrid({
           {toast.text}
         </div>
       )}
+
+      {/* 안내: 미이용 사용법 + 비고 비어있는 미이용 행 알림 (조건부) */}
+      <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-xs text-muted-2 space-y-1">
+        <p>
+          💡 <span className="font-medium text-muted">「참석 (버스 미이용)」 안내</span> — KTX·자차 등 버스를 <b>전혀</b> 이용하지 않는 분만 선택해주세요. 한쪽만 이용하시면 「편도 상행」 또는 「편도 하행」으로 골라주세요.
+        </p>
+        {stats.selfMissingNote > 0 && (
+          <p className="text-warning">
+            ⚠ 미이용 {stats.selfCount}명 중 비고가 비어있는 행 {stats.selfMissingNote}건 — 비고에 이동 수단(KTX·자차 등)을 적어주세요.
+          </p>
+        )}
+      </div>
 
       {/* Grid container — Card 비주얼 */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-1">

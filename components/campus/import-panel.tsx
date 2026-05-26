@@ -21,6 +21,7 @@ function buildTemplate(slots: SlotMini[]): string {
     `홍길동,26,왕복,${s0},O,`,
     `김영희,27,편도,${s1},X,상행만`,
     "이타지,타지구,편도,,O,하행만",
+    "박이동,26,버스 미이용,,X,KTX 자가 이동",
   ].join("\n");
 }
 
@@ -105,6 +106,10 @@ export function ImportPanel({
         형식(이름·학번·참석 유형·상행 출발·하행 차량 이용·비고)에 맞춰 작성해
         주세요.
       </p>
+      <p className="text-xs text-muted-2 leading-snug">
+        💡 참석 유형 = <b>왕복</b> / <b>편도</b> / <b>버스 미이용</b>(KTX·자차 등 전혀 버스를 안 타는 경우만).
+        한쪽만 이용하면 「편도」 + 상행/하행 구분으로 적어주세요. 미이용은 비고에 이동 수단을 적어주세요.
+      </p>
 
       {done && (
         <div className="text-sm rounded-lg px-3 py-2 border bg-success-bg border-success-border text-success">
@@ -143,8 +148,17 @@ export function ImportPanel({
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.successes.map((r, i) => (
-                    <tr key={i} className="border-t border-border">
+                  {preview.successes.map((r, i) => {
+                    const noteMissing =
+                      r.attendance_type === "self" && !r.note?.trim();
+                    return (
+                    <tr
+                      key={i}
+                      className={
+                        "border-t border-border " +
+                        (noteMissing ? "bg-warning-bg/40" : "")
+                      }
+                    >
                       <td className="px-3 py-2">{r.name}</td>
                       <td className="px-3 py-2">{r.student_id}</td>
                       <td className="px-3 py-2">
@@ -152,9 +166,15 @@ export function ImportPanel({
                       </td>
                       <td className="px-3 py-2">{slotLabel(r.departure_slot_id, slots)}</td>
                       <td className="px-3 py-2">{r.uses_return_bus ? "O" : "X"}</td>
-                      <td className="px-3 py-2 text-muted">{r.note ?? ""}</td>
+                      <td className="px-3 py-2 text-muted">
+                        {r.note ?? ""}
+                        {noteMissing && (
+                          <span className="ml-1 text-warning text-xs">⚠ 이동 수단</span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

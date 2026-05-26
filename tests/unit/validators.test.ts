@@ -109,4 +109,28 @@ describe("RegistrationSchema (reference/validators.md §8)", () => {
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.roles).toEqual([]);
   });
+
+  it("11) 미이용(self) — 슬롯X + 하행X → 통과", () => {
+    const r = RegistrationSchema.safeParse(
+      base({ attendance_type: "self", departure_slot_id: null, uses_return_bus: false })
+    );
+    expect(r.success).toBe(true);
+  });
+
+  it("12) 미이용인데 슬롯 지정 → 실패 (편도와 혼동 가드)", () => {
+    const r = RegistrationSchema.safeParse(
+      base({ attendance_type: "self", departure_slot_id: 1, uses_return_bus: false })
+    );
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(fieldErrors(r.error).attendance_type?.[0]).toContain("버스 미이용");
+    }
+  });
+
+  it("13) 미이용인데 하행 이용 → 실패", () => {
+    const r = RegistrationSchema.safeParse(
+      base({ attendance_type: "self", departure_slot_id: null, uses_return_bus: true })
+    );
+    expect(r.success).toBe(false);
+  });
 });

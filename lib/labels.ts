@@ -10,6 +10,7 @@ import type {
 export const ATTENDANCE_LABELS: Record<AttendanceType, string> = {
   roundtrip: "왕복",
   oneway: "편도",
+  self: "참석(버스X)",
 };
 
 /** 출발 슬롯 id → 한글 라벨. 미지정(하행편도)·미존재는 "—". */
@@ -33,6 +34,9 @@ export const PAYMENT_STATUSES: PaymentStatus[] = ["unpaid", "paid", "waived"];
 export const ATTENDANCE_FROM_KO: Record<string, AttendanceType> = {
   왕복: "roundtrip",
   편도: "oneway",
+  "버스 미이용": "self",
+  미이용: "self",
+  "참석(버스X)": "self",
 };
 
 export const BOOL_FROM_KO: Record<string, boolean> = {
@@ -61,6 +65,8 @@ export type AttendancePreset = {
 };
 
 export const OW_DOWN_KEY = "ow_down";
+/** 버스 미이용(KTX·자차 등 개인 이동) 공통 preset. 배차·정산 통계 모두에서 제외. */
+export const SELF_KEY = "self";
 
 /** 하행편도 공통 preset (슬롯 무관). */
 const OW_DOWN_PRESET: AttendancePreset = {
@@ -71,7 +77,16 @@ const OW_DOWN_PRESET: AttendancePreset = {
   uses_return_bus: true,
 };
 
-/** active 슬롯(display_order 순)으로 preset 목록 생성. */
+/** 버스 미이용 공통 preset (슬롯 무관, 하행 미이용). */
+const SELF_PRESET: AttendancePreset = {
+  key: SELF_KEY,
+  label: "참석 (버스 미이용)",
+  attendance_type: "self",
+  departure_slot_id: null,
+  uses_return_bus: false,
+};
+
+/** active 슬롯(display_order 순)으로 preset 목록 생성. 끝에 편도하행·미이용 공통 추가. */
 export function buildAttendancePresets(
   slots: Pick<DepartureSlot, "id" | "key" | "label" | "active" | "display_order">[]
 ): AttendancePreset[] {
@@ -96,6 +111,7 @@ export function buildAttendancePresets(
     });
   }
   out.push(OW_DOWN_PRESET);
+  out.push(SELF_PRESET);
   return out;
 }
 
