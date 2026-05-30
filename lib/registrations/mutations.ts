@@ -98,8 +98,12 @@ export async function updateCells(
   }
 
   // 값 기반 비교 (배열·null 안전). 참조 비교는 roles[] 등에서 오탐.
+  // 빈 문자열·null·undefined 는 모두 "값 없음"으로 동일 취급.
+  // (비고 셀은 화면에서 DB null 을 "" 로 강제 표시하므로, "" 와 DB null 을
+  //  같게 보지 않으면 빈 비고를 처음 입력할 때 가짜 충돌이 난다.)
+  const norm = (v: unknown) => (v == null || v === "" ? null : v);
   const sameValue = (a: unknown, b: unknown) =>
-    JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    JSON.stringify(norm(a)) === JSON.stringify(norm(b));
   const conflictFields = Object.keys(expected).filter(
     (k) =>
       !sameValue(

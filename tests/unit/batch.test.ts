@@ -199,6 +199,24 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(downBuses.size).toBe(1);
   });
 
+  it("10b) 하행 단독 실행(mode='down')은 리포팅도 하행 기준 ('배정 0명' 회귀 방지)", () => {
+    const buses = nineBuses();
+    const down = paxN(50, {
+      attendance_type: "oneway",
+      departure_slot_id: null,
+      uses_return_bus: true,
+      campus: "전남대",
+    });
+    const r = runBatch(down, buses, "down");
+    expect(r.errors).toEqual([]);
+    // 예전엔 up_bus_id 만 집계해 하행 실행이 항상 0명/396석으로 표시됐다.
+    expect(r.total_assigned).toBe(50);
+    const byBusTotal = Object.values(r.by_bus).reduce((s, n) => s + n, 0);
+    expect(byBusTotal).toBe(50);
+    const totalCap = buses.reduce((s, b) => s + b.capacity, 0);
+    expect(r.empty_seats).toBe(totalCap - 50);
+  });
+
   it("11) 완참: 상행·하행 모두 독립 배정 (둘 다 정의됨)", () => {
     const buses = [bus({ id: 1, departure_slot_id: AM })];
     const passengers = paxN(10, { attendance_type: "roundtrip" });

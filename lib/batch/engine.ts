@@ -245,23 +245,27 @@ export function runBatch(
   }
 
   // ════════════════════ 집계 ════════════════════
+  // 리포팅(by_bus·total_assigned·empty_seats) 기준 방향:
+  //   하행 단독 실행이면 하행, 그 외(상행 단독·both)는 상행.
+  //   (하행만 돌렸을 때 up_bus_id 가 전부 null 이라 "배정 0명"으로 잘못 표시되던 버그 수정.)
+  //   up_assignments·down_assignments 맵은 호출부의 DB 반영용이라 방향 무관하게 항상 채운다.
+  const reportDown = runDown && !runUp;
   const byBus: Record<number, number> = {};
   const upAssignments: Record<string, number> = {};
   const downAssignments: Record<string, number> = {};
   let totalAssigned = 0;
 
   for (const [id, a] of assignments) {
-    if (a.up_bus_id !== null) {
-      byBus[a.up_bus_id] = (byBus[a.up_bus_id] ?? 0) + 1;
-      upAssignments[id] = a.up_bus_id;
+    if (a.up_bus_id !== null) upAssignments[id] = a.up_bus_id;
+    if (a.down_bus_id !== null) downAssignments[id] = a.down_bus_id;
+    const busId = reportDown ? a.down_bus_id : a.up_bus_id;
+    if (busId !== null) {
+      byBus[busId] = (byBus[busId] ?? 0) + 1;
       totalAssigned += 1;
-    }
-    if (a.down_bus_id !== null) {
-      downAssignments[id] = a.down_bus_id;
     }
   }
 
-  // 상행 기준 빈 좌석 (보조석으로 정원 초과 시 음수가 되지 않게 0 클램프)
+  // 리포팅 방향 기준 빈 좌석 (보조석으로 정원 초과 시 음수가 되지 않게 0 클램프)
   const emptySeats = buses.reduce(
     (sum, b) => sum + Math.max(0, b.capacity - (byBus[b.id] ?? 0)),
     0
