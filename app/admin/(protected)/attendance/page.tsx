@@ -85,8 +85,14 @@ function Rate({
       <div className="flex items-baseline justify-between text-sm mb-1.5">
         <span className="text-muted">{label}</span>
         <span className="tabular-nums font-medium text-foreground">
-          {done} / {total}{" "}
-          <span className="text-muted-2 font-normal">({pct}%)</span>
+          {total > 0 ? (
+            <>
+              {done} / {total}{" "}
+              <span className="text-muted-2 font-normal">({pct}%)</span>
+            </>
+          ) : (
+            <span className="text-muted-2 font-normal">대상 없음</span>
+          )}
         </span>
       </div>
       <div className="h-2 w-full rounded-full bg-surface-2 overflow-hidden">

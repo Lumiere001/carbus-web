@@ -195,10 +195,16 @@ export default async function AdminDashboardPage() {
             <div className="flex items-baseline justify-between text-sm mb-1.5">
               <span className="text-muted">도착 (전원)</span>
               <span className="tabular-nums font-medium text-foreground">
-                {arrivedTotal} / {totalPeople}{" "}
-                <span className="text-muted-2 font-normal">
-                  ({totalPeople > 0 ? Math.round((arrivedTotal / totalPeople) * 100) : 0}%)
-                </span>
+                {totalPeople > 0 ? (
+                  <>
+                    {arrivedTotal} / {totalPeople}{" "}
+                    <span className="text-muted-2 font-normal">
+                      ({Math.round((arrivedTotal / totalPeople) * 100)}%)
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-2 font-normal">대상 없음</span>
+                )}
               </span>
             </div>
             <ProgressBar value={arrivedTotal} max={totalPeople} tone="success" />
@@ -207,10 +213,16 @@ export default async function AdminDashboardPage() {
             <div className="flex items-baseline justify-between text-sm mb-1.5">
               <span className="text-muted">귀가 (하행 대상)</span>
               <span className="tabular-nums font-medium text-foreground">
-                {returnedTotal} / {returnTarget}{" "}
-                <span className="text-muted-2 font-normal">
-                  ({returnTarget > 0 ? Math.round((returnedTotal / returnTarget) * 100) : 0}%)
-                </span>
+                {returnTarget > 0 ? (
+                  <>
+                    {returnedTotal} / {returnTarget}{" "}
+                    <span className="text-muted-2 font-normal">
+                      ({Math.round((returnedTotal / returnTarget) * 100)}%)
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-2 font-normal">대상 없음</span>
+                )}
               </span>
             </div>
             <ProgressBar value={returnedTotal} max={returnTarget} tone="primary" />
