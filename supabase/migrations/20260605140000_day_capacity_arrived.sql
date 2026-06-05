@@ -4,9 +4,12 @@
 -- 출발 시간대별(화 오전/화 오후/수 오후) 출석률 표시용.
 --   arrived = 해당 슬롯 신청자 중 도착(checked_in) 인원.
 -- 뷰만 재정의(비파괴). security_invoker 재적용.
+-- ⚠️ arrived 를 컬럼 중간에 추가 → CREATE OR REPLACE 는 컬럼 순서 변경을 거부하므로
+--    DROP + CREATE 로 처리(의존 뷰 없음). 향후 v_day_capacity 컬럼 순서 변경 시 동일 패턴.
 -- ============================================================
 
-CREATE OR REPLACE VIEW v_day_capacity AS
+DROP VIEW IF EXISTS v_day_capacity;
+CREATE VIEW v_day_capacity AS
 SELECT
   s.id    AS slot_id,
   s.key   AS slot_key,
