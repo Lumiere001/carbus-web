@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import { Bus, ArrowUp, ArrowDown, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { slotLabel } from "@/lib/labels";
 import type { AttendanceType, DepartureSlot } from "@/lib/supabase/types";
 import { sortRoster } from "@/lib/registrations/roster-sort";
+import { BusAttendance } from "@/components/campus/bus-attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,8 @@ type Reg = {
   uses_return_bus: boolean;
   assigned_up_bus_id: number | null;
   assigned_down_bus_id: number | null;
+  checked_in: boolean;
+  checked_out: boolean;
 };
 
 /** 호차별 그룹핑 (busId → 명단). */
@@ -35,60 +37,6 @@ function groupBy(regs: Reg[], key: (r: Reg) => number | null) {
   return [...m.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([busId, members]) => [busId, sortRoster(members)] as [number, Reg[]]);
-}
-
-function BusGroups({
-  groups,
-  busName,
-  slots,
-  accent,
-}: {
-  groups: [number, Reg[]][];
-  busName: Map<number, BusInfo>;
-  slots: SlotMini[];
-  accent: "up" | "down";
-}) {
-  return (
-    <div className="space-y-3">
-      {groups.map(([busId, members]) => {
-        const info = busName.get(busId);
-        return (
-          <Card key={busId}>
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-              <span className="flex items-center gap-2 font-semibold text-foreground">
-                <Bus size={18} className="text-primary-700" />
-                {info?.name ?? `${busId}호차`}
-                {accent === "up" && info && (
-                  <span className="text-xs font-normal text-muted-2">
-                    {slotLabel(info.departure_slot_id, slots)} 출발
-                  </span>
-                )}
-                {accent === "down" && (
-                  <span className="text-xs font-normal text-muted-2">
-                    토요일 하행
-                  </span>
-                )}
-              </span>
-              <Badge variant="primary" dot={false}>
-                {members.length}명
-              </Badge>
-            </div>
-            <ul className="divide-y divide-border">
-              {members.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-center justify-between px-5 py-2.5"
-                >
-                  <span className="text-base text-foreground">{m.name}</span>
-                  <span className="text-xs text-muted-2">{m.student_id}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        );
-      })}
-    </div>
-  );
 }
 
 export default async function CampusBusesPage() {
@@ -110,7 +58,7 @@ export default async function CampusBusesPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, name, student_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
       )
       .eq("campus_id", campusId)
       .order("name"),
@@ -121,12 +69,11 @@ export default async function CampusBusesPage() {
   const buses = (busRes.data ?? []) as BusInfo[];
   const regs = (regRes.data ?? []) as Reg[];
   const slots = (slotRes.data ?? []) as SlotMini[];
-  const busName = new Map(buses.map((b) => [b.id, b]));
 
   const upGroups = groupBy(regs, (r) => r.assigned_up_bus_id);
   const downGroups = groupBy(regs, (r) => r.assigned_down_bus_id);
 
-  // 배차 대기: 상행 필요(departure_day 있음)인데 미배정 / 하행 필요(uses_return_bus)인데 미배정
+  // 배차 대기: 상행 필요(슬롯 있음)인데 미배정 / 하행 필요(uses_return_bus)인데 미배정
   const waiting = regs
     .map((r) => {
       const upPending = r.departure_slot_id !== null && r.assigned_up_bus_id == null;
@@ -143,7 +90,7 @@ export default async function CampusBusesPage() {
       <div>
         <h2 className="text-lg font-semibold text-foreground">호차 조회</h2>
         <p className="text-sm text-muted mt-0.5">
-          우리 캠퍼스 순장/순원의 상행·하행 배차 결과
+          우리 캠퍼스 순장/순원의 상행·하행 배차 결과 · 현장에서 이름 탭으로 도착/귀가 체크
         </p>
       </div>
 
@@ -155,27 +102,16 @@ export default async function CampusBusesPage() {
         </Card>
       )}
 
-      {/* 상행 명단 */}
-      {upGroups.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted">
-            <ArrowUp size={15} className="text-primary-700" /> 상행 명단 (올라갈 때)
-          </h3>
-          <BusGroups groups={upGroups} busName={busName} slots={slots} accent="up" />
-        </section>
-      )}
+      {/* 상행·하행 명단 — 탭하면 도착/귀가 체크 (현장용) */}
+      <BusAttendance
+        campusId={campusId}
+        upGroups={upGroups}
+        downGroups={downGroups}
+        buses={buses}
+        slots={slots}
+      />
 
-      {/* 하행 명단 */}
-      {downGroups.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted">
-            <ArrowDown size={15} className="text-primary-700" /> 하행 명단 (내려올 때)
-          </h3>
-          <BusGroups groups={downGroups} busName={busName} slots={slots} accent="down" />
-        </section>
-      )}
-
-      {/* 배차 대기 */}
+      {/* 배차 대기 (읽기 전용) */}
       {waiting.length > 0 && (
         <section className="space-y-3">
           <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted">

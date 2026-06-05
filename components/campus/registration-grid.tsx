@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type CellContext,
 } from "@tanstack/react-table";
-import { Plus, Download, Upload, Trash2, Clock, Check } from "lucide-react";
+import { Plus, Download, Upload, Trash2, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   type RegistrationRow,
@@ -201,24 +201,6 @@ export function RegistrationGrid({
     replaceRow(res.row);
   }
 
-  // 현장 출석 토글 (도착=checked_in / 귀가=checked_out). boolean 1필드.
-  async function saveCheck(
-    row: RegistrationRow,
-    field: "checked_in" | "checked_out"
-  ) {
-    const res = await updateCells(
-      row.id,
-      { [field]: row[field] },
-      { [field]: !row[field] }
-    );
-    if (!res.ok) {
-      if (res.conflict) handleConflict(row.id, res);
-      else setToast({ type: "err", text: res.message });
-      return;
-    }
-    replaceRow(res.row);
-  }
-
   async function handleDelete(row: RegistrationRow) {
     if (!confirm(`${row.name} 순장/순원 신청을 취소(삭제)할까요?`)) return;
     const res = await deleteRegistration(row.id);
@@ -277,29 +259,6 @@ export function RegistrationGrid({
             conflict={isConflict(ctx.row.original.id, "name")}
             muted={ctx.row.original.payment_status === "waived"}
             onSave={saveText}
-          />
-        ),
-      }),
-      columnHelper.accessor("checked_in", {
-        header: "도착",
-        cell: (ctx) => (
-          <CheckCell
-            on={ctx.getValue() === true}
-            label="도착"
-            conflict={isConflict(ctx.row.original.id, "checked_in")}
-            onToggle={() => saveCheck(ctx.row.original, "checked_in")}
-          />
-        ),
-      }),
-      columnHelper.accessor("checked_out", {
-        header: "귀가",
-        cell: (ctx) => (
-          <CheckCell
-            on={ctx.getValue() === true}
-            label="귀가"
-            disabled={ctx.row.original.uses_return_bus !== true}
-            conflict={isConflict(ctx.row.original.id, "checked_out")}
-            onToggle={() => saveCheck(ctx.row.original, "checked_out")}
           />
         ),
       }),
@@ -430,18 +389,10 @@ export function RegistrationGrid({
     let outstanding = 0; // 잔액 (미납 합)
     let selfCount = 0; // 버스 미이용 (KTX·자차 등)
     let selfMissingNote = 0; // 미이용인데 비고 비어있는 행
-    let arrivedCount = 0; // 도착 체크 (전원 대상)
-    let returnTarget = 0; // 하행 이용자 (귀가 체크 대상)
-    let returnedCount = 0; // 귀가 체크
     for (const r of rows) {
       if (r.attendance_type === "self") {
         selfCount += 1;
         if (!r.note?.trim()) selfMissingNote += 1;
-      }
-      if (r.checked_in) arrivedCount += 1;
-      if (r.uses_return_bus) {
-        returnTarget += 1;
-        if (r.checked_out) returnedCount += 1;
       }
       const fee = r.fee ?? 0;
       if (r.payment_status === "waived") {
@@ -464,9 +415,6 @@ export function RegistrationGrid({
       waivedCount,
       selfCount,
       selfMissingNote,
-      arrivedCount,
-      returnTarget,
-      returnedCount,
       expected,
       received,
       outstanding,
@@ -476,8 +424,6 @@ export function RegistrationGrid({
   // 열 너비 (시안 §2): 학번 w-20, 참석/일정 w-48(슬롯 라벨 길어짐), 차량비 w-24.
   const colClass: Record<string, string> = {
     name: "w-32",
-    checked_in: "w-20",
-    checked_out: "w-20",
     student_id: "w-20",
     attendance: "w-48",
     note: "w-40",
@@ -509,21 +455,6 @@ export function RegistrationGrid({
             <StatDot color="bg-success" label="완납" value={stats.paidCount} />
             <StatDot color="bg-warning" label="미납" value={stats.unpaidCount} />
             <StatDot color="bg-muted" label="면제" value={stats.waivedCount} />
-            <span className="text-border-2">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              도착
-              <span className="tabular font-medium text-foreground">
-                {stats.arrivedCount}/{stats.total}
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary-800" />
-              귀가
-              <span className="tabular font-medium text-foreground">
-                {stats.returnedCount}/{stats.returnTarget}
-              </span>
-            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -607,10 +538,7 @@ export function RegistrationGrid({
               {table.getRowModel().rows.map((r) => (
                 <tr
                   key={r.id}
-                  className={cn(
-                    "group border-b border-border transition hover:bg-surface-2/60",
-                    r.original.checked_in && "bg-success-bg/40"
-                  )}
+                  className="group border-b border-border transition hover:bg-surface-2/60"
                 >
                   {r.getVisibleCells().map((c) => (
                     <td
@@ -639,8 +567,6 @@ export function RegistrationGrid({
                     className="w-full rounded-md border border-border bg-surface px-2 py-1 text-sm text-foreground placeholder:text-muted-2 focus:outline-none focus:border-primary-800"
                   />
                 </td>
-                <td className="px-3 py-2.5 text-center text-border-2">—</td>
-                <td className="px-3 py-2.5 text-center text-border-2">—</td>
                 <td className="px-3 py-2.5">
                   <input
                     value={draft.student_id}
@@ -798,45 +724,6 @@ function PaymentCell({
         ))}
       </select>
     </span>
-  );
-}
-
-/**
- * 출석 체크 셀 (도착/귀가). 한 번 탭 → 토글. on=초록, off=회색.
- * disabled(예: 하행 미이용자의 귀가)는 "—" 로 비활성.
- */
-function CheckCell({
-  on,
-  label,
-  conflict,
-  disabled = false,
-  onToggle,
-}: {
-  on: boolean;
-  label: string;
-  conflict: boolean;
-  disabled?: boolean;
-  onToggle: () => void;
-}) {
-  if (disabled) {
-    return <span className="text-border-2">—</span>;
-  }
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={on}
-      className={cn(
-        "inline-flex min-w-[3.25rem] items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition",
-        on
-          ? "bg-success text-white hover:bg-success/90"
-          : "bg-surface-2 text-muted-2 ring-1 ring-border hover:bg-surface-2/70",
-        conflict && "ring-2 ring-danger"
-      )}
-    >
-      {on && <Check className="h-3 w-3" />}
-      {on ? label : `미${label}`}
-    </button>
   );
 }
 
