@@ -15,6 +15,7 @@ type Member = {
   student_id: string;
   checked_in: boolean;
   checked_out: boolean;
+  campus?: string; // 관리자(전 캠퍼스) 뷰에서 소속 표시용
 };
 type BusInfo = { id: number; name: string; departure_slot_id: number };
 type Group = [number, Member[]];
@@ -23,9 +24,10 @@ type CheckField = "checked_in" | "checked_out";
 type CheckState = Record<string, { checked_in: boolean; checked_out: boolean }>;
 
 /**
- * 호차 조회 출석 체크 (현장용).
+ * 호차별 출석 체크 (현장용). 임역원(/campus/buses)·운영자(/admin/attendance) 공용.
  * 상행 명단 탭 → 도착(checked_in), 하행 명단 탭 → 귀가(checked_out). 탭하면 즉시 초록.
- * 낙관적 업데이트 + Realtime 으로 같은 캠퍼스 다른 기기에도 반영.
+ * editable=false 면 읽기 전용(viewer). 낙관적 업데이트 + Realtime 동기화.
+ * campusId 있으면 그 캠퍼스만, 없으면(관리자) 전 캠퍼스 변경을 구독.
  */
 export function BusAttendance({
   campusId,
@@ -33,12 +35,14 @@ export function BusAttendance({
   downGroups,
   buses,
   slots,
+  editable = true,
 }: {
-  campusId: string;
+  campusId?: string;
   upGroups: Group[];
   downGroups: Group[];
   buses: BusInfo[];
   slots: SlotMini[];
+  editable?: boolean;
 }) {
   const busName = useMemo(
     () => new Map(buses.map((b) => [b.id, b])),
@@ -59,17 +63,16 @@ export function BusAttendance({
   // Realtime: 같은 캠퍼스 다른 기기의 체크를 자동 반영 (본인 echo 도 idempotent).
   useEffect(() => {
     const supabase = createClient();
+    const sub: {
+      event: "UPDATE";
+      schema: string;
+      table: string;
+      filter?: string;
+    } = { event: "UPDATE", schema: "public", table: "registrations" };
+    if (campusId) sub.filter = `campus_id=eq.${campusId}`;
     const channel = supabase
-      .channel(`bus-attendance:${campusId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "registrations",
-          filter: `campus_id=eq.${campusId}`,
-        },
-        (payload) => {
+      .channel(`bus-attendance:${campusId ?? "all"}`)
+      .on("postgres_changes", sub, (payload) => {
           const r = payload.new as {
             id: string;
             checked_in: boolean;
@@ -92,6 +95,7 @@ export function BusAttendance({
   }, [campusId]);
 
   async function toggle(id: string, field: CheckField) {
+    if (!editable) return;
     const cur = state[id];
     if (!cur) return;
     const next = !cur[field];
@@ -130,7 +134,7 @@ export function BusAttendance({
         <h3 className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted">
           <Icon size={15} className="text-primary-700" /> {title}
           <span className="text-xs font-normal text-muted-2">
-            — 이름을 탭하면 {checkLabel} 체크
+            {editable ? `— 이름을 탭하면 ${checkLabel} 체크` : `— ${checkLabel} 현황`}
           </span>
         </h3>
         {groups.map(([busId, members]) => {
@@ -163,36 +167,53 @@ export function BusAttendance({
               <ul className="divide-y divide-border">
                 {members.map((m) => {
                   const on = state[m.id]?.[field] ?? false;
-                  return (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        onClick={() => toggle(m.id, field)}
-                        aria-pressed={on}
+                  const inner = (
+                    <>
+                      <span
                         className={cn(
-                          "flex w-full items-center justify-between px-5 py-3 text-left transition select-none",
-                          on ? "bg-success-bg" : "hover:bg-surface-2/60"
+                          "flex items-center gap-2.5 text-base",
+                          on ? "font-medium text-success" : "text-foreground"
                         )}
                       >
-                        <span
+                        {on ? (
+                          <Check size={18} className="text-success" />
+                        ) : (
+                          <span className="inline-block h-[18px] w-[18px] rounded-full border-2 border-border-2" />
+                        )}
+                        {m.name}
+                        {m.campus && (
+                          <span className="text-xs font-normal text-muted-2">
+                            {m.campus}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-muted-2">{m.student_id}</span>
+                    </>
+                  );
+                  return (
+                    <li key={m.id}>
+                      {editable ? (
+                        <button
+                          type="button"
+                          onClick={() => toggle(m.id, field)}
+                          aria-pressed={on}
                           className={cn(
-                            "flex items-center gap-2.5 text-base",
-                            on
-                              ? "font-medium text-success"
-                              : "text-foreground"
+                            "flex w-full items-center justify-between px-5 py-3 text-left transition select-none",
+                            on ? "bg-success-bg" : "hover:bg-surface-2/60"
                           )}
                         >
-                          {on ? (
-                            <Check size={18} className="text-success" />
-                          ) : (
-                            <span className="inline-block h-[18px] w-[18px] rounded-full border-2 border-border-2" />
+                          {inner}
+                        </button>
+                      ) : (
+                        <div
+                          className={cn(
+                            "flex w-full items-center justify-between px-5 py-3",
+                            on && "bg-success-bg"
                           )}
-                          {m.name}
-                        </span>
-                        <span className="text-xs text-muted-2">
-                          {m.student_id}
-                        </span>
-                      </button>
+                        >
+                          {inner}
+                        </div>
+                      )}
                     </li>
                   );
                 })}

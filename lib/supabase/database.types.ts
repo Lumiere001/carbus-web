@@ -584,6 +584,9 @@ export type Database = {
           campus_name: string | null
           oneway_count: number | null
           roundtrip_count: number | null
+          arrived_count: number | null
+          return_target: number | null
+          returned_count: number | null
           self_count: number | null
           total: number | null
         }

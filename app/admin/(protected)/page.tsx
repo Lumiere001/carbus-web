@@ -124,6 +124,9 @@ export default async function AdminDashboardPage() {
 
   // ── KPI 집계 ────────────────────────────────────────────
   const totalPeople = campuses.reduce((s, c) => s + (c.total ?? 0), 0);
+  const arrivedTotal = campuses.reduce((s, c) => s + (c.arrived_count ?? 0), 0);
+  const returnTarget = campuses.reduce((s, c) => s + (c.return_target ?? 0), 0);
+  const returnedTotal = campuses.reduce((s, c) => s + (c.returned_count ?? 0), 0);
   const dayCapacity = days.reduce((s, d) => s + (d.total_capacity ?? 0), 0);
   const dayPassengers = days.reduce((s, d) => s + (d.total_passengers ?? 0), 0);
   const paidCount = payment.reduce((s, p) => s + (p.paid_count ?? 0), 0);
@@ -184,6 +187,36 @@ export default async function AdminDashboardPage() {
           sub={`시스템 ${won(sysTotal)} 대비`}
         />
       </div>
+
+      {/* 출석 현황 — 도착·귀가 진행률 (master·viewer 공통) */}
+      <Card title="출석 현황" subtitle="현장 도착 · 귀가 진행률">
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <div className="flex items-baseline justify-between text-sm mb-1.5">
+              <span className="text-muted">도착 (전원)</span>
+              <span className="tabular-nums font-medium text-foreground">
+                {arrivedTotal} / {totalPeople}{" "}
+                <span className="text-muted-2 font-normal">
+                  ({totalPeople > 0 ? Math.round((arrivedTotal / totalPeople) * 100) : 0}%)
+                </span>
+              </span>
+            </div>
+            <ProgressBar value={arrivedTotal} max={totalPeople} tone="success" />
+          </div>
+          <div>
+            <div className="flex items-baseline justify-between text-sm mb-1.5">
+              <span className="text-muted">귀가 (하행 대상)</span>
+              <span className="tabular-nums font-medium text-foreground">
+                {returnedTotal} / {returnTarget}{" "}
+                <span className="text-muted-2 font-normal">
+                  ({returnTarget > 0 ? Math.round((returnedTotal / returnTarget) * 100) : 0}%)
+                </span>
+              </span>
+            </div>
+            <ProgressBar value={returnedTotal} max={returnTarget} tone="primary" />
+          </div>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* B. 출발 정원 — 상행(슬롯별)/하행(전 호차) 토글 */}
