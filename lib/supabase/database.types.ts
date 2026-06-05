@@ -594,6 +594,7 @@ export type Database = {
       }
       v_day_capacity: {
         Row: {
+          arrived: number | null
           display_order: number | null
           remaining_seats: number | null
           slot_id: number | null

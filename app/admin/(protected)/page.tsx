@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BusOccupancy, type BusOcc } from "@/components/admin/bus-occupancy";
 import { CapacityCard } from "@/components/admin/capacity-card";
+import { AttendanceRate } from "@/components/admin/attendance-rate";
 
 export const dynamic = "force-dynamic";
 
@@ -124,7 +125,6 @@ export default async function AdminDashboardPage() {
 
   // ── KPI 집계 ────────────────────────────────────────────
   const totalPeople = campuses.reduce((s, c) => s + (c.total ?? 0), 0);
-  const arrivedTotal = campuses.reduce((s, c) => s + (c.arrived_count ?? 0), 0);
   const returnTarget = campuses.reduce((s, c) => s + (c.return_target ?? 0), 0);
   const returnedTotal = campuses.reduce((s, c) => s + (c.returned_count ?? 0), 0);
   const dayCapacity = days.reduce((s, d) => s + (d.total_capacity ?? 0), 0);
@@ -188,45 +188,24 @@ export default async function AdminDashboardPage() {
         />
       </div>
 
-      {/* 출석 현황 — 도착·귀가 진행률 (master·viewer 공통) */}
-      <Card title="출석 현황" subtitle="현장 도착 · 귀가 진행률">
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <div className="flex items-baseline justify-between text-sm mb-1.5">
-              <span className="text-muted">도착 (전원)</span>
-              <span className="tabular-nums font-medium text-foreground">
-                {totalPeople > 0 ? (
-                  <>
-                    {arrivedTotal} / {totalPeople}{" "}
-                    <span className="text-muted-2 font-normal">
-                      ({Math.round((arrivedTotal / totalPeople) * 100)}%)
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-muted-2 font-normal">대상 없음</span>
-                )}
-              </span>
-            </div>
-            <ProgressBar value={arrivedTotal} max={totalPeople} tone="success" />
-          </div>
-          <div>
-            <div className="flex items-baseline justify-between text-sm mb-1.5">
-              <span className="text-muted">귀가 (하행 대상)</span>
-              <span className="tabular-nums font-medium text-foreground">
-                {returnTarget > 0 ? (
-                  <>
-                    {returnedTotal} / {returnTarget}{" "}
-                    <span className="text-muted-2 font-normal">
-                      ({Math.round((returnedTotal / returnTarget) * 100)}%)
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-muted-2 font-normal">대상 없음</span>
-                )}
-              </span>
-            </div>
-            <ProgressBar value={returnedTotal} max={returnTarget} tone="primary" />
-          </div>
+      {/* 출석 현황 — 출발 시간대별 도착 + 하행 귀가 (master·viewer 공통) */}
+      <Card title="출석 현황" subtitle="출발 시간대별 도착 · 하행 귀가 진행률">
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+          {days.map((d) => (
+            <AttendanceRate
+              key={d.slot_id}
+              label={`${d.slot_label} 도착`}
+              done={d.arrived ?? 0}
+              total={d.total_passengers ?? 0}
+              tone="success"
+            />
+          ))}
+          <AttendanceRate
+            label="하행 귀가"
+            done={returnedTotal}
+            total={returnTarget}
+            tone="primary"
+          />
         </div>
       </Card>
 
