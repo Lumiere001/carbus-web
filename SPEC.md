@@ -3,7 +3,7 @@ type: spec
 project: carbus-web
 version: v4.2
 created: 2026-05-20T01:00:00+09:00
-status: active
+status: superseded   # v1.1.1 departure_slots 모델 + 2026-06-05 11대·3슬롯 변동으로 본문 다수 stale. 상단 배너 참조.
 event: CCC 71기 광주지구 여름수련회
 tags:
   - carbus
@@ -13,6 +13,10 @@ sensitivity: sensitive
 ---
 
 # carbus-web 시스템 명세서 v4.2
+
+> ⚠️ **STALE — 설계 스냅샷(v4.2, 2026-05-20).** 본문은 옛 `departure_day` enum(`TUE`/`WED`) 모델 기준입니다.
+> v1.1.1(2026-05-22)부터 출발이 **`departure_slots` 데이터 테이블 모델**로 일반화됐고(코드 변경 없이 슬롯·버스 추가), 2026-06-05 운영 변동으로 **버스 11대 · 3슬롯**(화 오전 9대 / 화 오후 1대 / 수 오후 1대), `attendance_type`에 **`self`(버스 미이용)** 추가 등 본문과 어긋난 곳이 많습니다. (예: §1.4 호차표, §4 `departure_day` enum 섹션 전부.)
+> **현행 정본 도메인 모델:** `supabase/migrations/`(특히 `20260522090000_departure_slots` 이후) · `lib/labels.ts`(`buildAttendancePresets`) · `lib/batch/engine.ts` 코드, 그리고 운영 핸드오프(HANDOFF). 아래 본문은 **설계 당시 기록으로 보존**합니다.
 
 > CCC 71기 광주지구 여름수련회 차량 신청·배차·정산 웹앱. 노션 기반 v3.2 / Python mini v0.2 시스템을 자체 웹앱으로 전면 재구축.
 
