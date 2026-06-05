@@ -82,7 +82,7 @@ export default async function AdminBusesPage() {
       <div>
         <h2 className="text-xl font-semibold text-foreground">호차 배차 현황</h2>
         <p className="text-sm text-muted mt-0.5">
-          9대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행·하행 각각)" : " (보기 전용)"}
+          {buses.length}대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행·하행 각각)" : " (보기 전용)"}
         </p>
       </div>
       <BusesPanel buses={buses} candidates={candidates} slots={slotRes.data ?? []} isMaster={isMaster} />

@@ -63,7 +63,7 @@ export function BusOccupancy({
   return (
     <Card
       title="호차별 탑승 현황"
-      subtitle="9대 · 상행(올라갈 때)·하행(내려올 때) 좌석 사용"
+      subtitle={`${buses.length}대 · 상행(올라갈 때)·하행(내려올 때) 좌석 사용`}
       action={
         <div className="flex gap-1.5">
           {btn("both", "둘 다")}
