@@ -369,6 +369,8 @@ export type Database = {
           assigned_up_bus_id: number | null
           attendance_type: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
+          checked_in: boolean
+          checked_out: boolean
           created_at: string
           created_by: string | null
           departure_slot_id: number | null
@@ -388,6 +390,8 @@ export type Database = {
           assigned_up_bus_id?: number | null
           attendance_type: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
+          checked_in?: boolean
+          checked_out?: boolean
           created_at?: string
           created_by?: string | null
           departure_slot_id?: number | null
@@ -407,6 +411,8 @@ export type Database = {
           assigned_up_bus_id?: number | null
           attendance_type?: Database["public"]["Enums"]["attendance_type"]
           campus_id?: string
+          checked_in?: boolean
+          checked_out?: boolean
           created_at?: string
           created_by?: string | null
           departure_slot_id?: number | null
