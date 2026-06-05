@@ -189,12 +189,12 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* 출석 현황 — 출발 시간대별 도착 + 하행 귀가 (master·viewer 공통) */}
-      <Card title="출석 현황" subtitle="출발 시간대별 도착 · 하행 귀가 진행률">
+      <Card title="출석 현황" subtitle="출발 버스 탑승 · 하행 귀가 진행률">
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
           {days.map((d) => (
             <AttendanceRate
               key={d.slot_id}
-              label={`${d.slot_label} 도착`}
+              label={`${d.slot_label} 출발 버스`}
               done={d.arrived ?? 0}
               total={d.total_passengers ?? 0}
               tone="success"

@@ -90,7 +90,7 @@ export default async function CampusBusesPage() {
       <div>
         <h2 className="text-lg font-semibold text-foreground">호차 조회</h2>
         <p className="text-sm text-muted mt-0.5">
-          우리 캠퍼스 순장/순원의 상행·하행 배차 결과 · 현장에서 이름 탭으로 도착/귀가 체크
+          우리 캠퍼스 순장/순원의 상행·하행 배차 결과 · 현장에서 이름 탭으로 출발 버스/귀가 체크
         </p>
       </div>
 

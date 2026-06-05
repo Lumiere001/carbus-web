@@ -7,6 +7,7 @@ import { slotLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AttendanceRate } from "@/components/admin/attendance-rate";
 import type { DepartureSlot } from "@/lib/supabase/types";
 
 type Member = {
@@ -36,6 +37,7 @@ export function BusAttendance({
   buses,
   slots,
   editable = true,
+  summary,
 }: {
   campusId?: string;
   upGroups: Group[];
@@ -43,6 +45,10 @@ export function BusAttendance({
   buses: BusInfo[];
   slots: SlotMini[];
   editable?: boolean;
+  summary?: {
+    slots: { id: number; label: string; total: number }[];
+    returnTotal: number;
+  };
 }) {
   const busName = useMemo(
     () => new Map(buses.map((b) => [b.id, b])),
@@ -128,7 +134,7 @@ export function BusAttendance({
     const Icon = accent === "up" ? ArrowUp : ArrowDown;
     const title =
       accent === "up" ? "상행 명단 (올라갈 때)" : "하행 명단 (내려올 때)";
-    const checkLabel = accent === "up" ? "도착" : "귀가";
+    const checkLabel = accent === "up" ? "출발 버스" : "귀가";
     return (
       <section className="space-y-3">
         <h3 className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-muted">
@@ -225,8 +231,44 @@ export function BusAttendance({
     );
   }
 
+  // 요약 카드용 라이브 집계 (state 기반 → 토글/Realtime 즉시 반영)
+  const slotArrived = new Map<number, number>();
+  for (const [busId, members] of upGroups) {
+    const slotId = busName.get(busId)?.departure_slot_id;
+    if (slotId == null) continue;
+    let c = 0;
+    for (const m of members) if (state[m.id]?.checked_in) c += 1;
+    slotArrived.set(slotId, (slotArrived.get(slotId) ?? 0) + c);
+  }
+  const returnedLive = downGroups.reduce(
+    (acc, [, members]) =>
+      acc + members.filter((m) => state[m.id]?.checked_out).length,
+    0
+  );
+
   return (
     <div className="space-y-6">
+      {summary && (
+        <Card title="출석률" subtitle="출발 버스 탑승 · 하행 귀가">
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+            {summary.slots.map((s) => (
+              <AttendanceRate
+                key={s.id}
+                label={`${s.label} 출발 버스`}
+                done={slotArrived.get(s.id) ?? 0}
+                total={s.total}
+                tone="success"
+              />
+            ))}
+            <AttendanceRate
+              label="하행 귀가"
+              done={returnedLive}
+              total={summary.returnTotal}
+              tone="primary"
+            />
+          </div>
+        </Card>
+      )}
       {err && (
         <div className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
           {err}

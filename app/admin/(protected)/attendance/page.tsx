@@ -8,7 +8,6 @@ import type {
 import { sortRoster } from "@/lib/registrations/roster-sort";
 import { BusAttendance } from "@/components/campus/bus-attendance";
 import { Card } from "@/components/ui/card";
-import { AttendanceRate } from "@/components/admin/attendance-rate";
 
 export const dynamic = "force-dynamic";
 
@@ -112,60 +111,41 @@ export default async function AdminAttendancePage() {
   const downGroups = groupByBus(regs, campusName, (r) => r.assigned_down_bus_id);
 
   // 출석률 집계 — 출발 시간대별 도착 + 하행 귀가
+  // 출석률 카드 분모(신청 기준). numerator는 BusAttendance가 state로 라이브 집계.
   const slotStats = slots.map((s) => ({
     id: s.id,
     label: s.label,
     total: regs.filter((r) => r.departure_slot_id === s.id).length,
-    arrived: regs.filter((r) => r.departure_slot_id === s.id && r.checked_in)
-      .length,
   }));
   const returnTarget = regs.filter((r) => r.uses_return_bus).length;
-  const returned = regs.filter((r) => r.checked_out).length;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h2 className="text-xl font-semibold text-foreground">출석 현황</h2>
         <p className="text-sm text-muted mt-0.5">
-          전 캠퍼스 호차별 도착·귀가{" "}
+          전 캠퍼스 호차별 출발 버스·귀가{" "}
           {isMaster
             ? "· 이름을 탭해 직접 체크 가능"
             : "(보기 전용 — 체크는 임역원·총단)"}
         </p>
       </div>
 
-      <Card title="출석률" subtitle="출발 시간대별 도착 · 하행 귀가">
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-          {slotStats.map((ss) => (
-            <AttendanceRate
-              key={ss.id}
-              label={`${ss.label} 도착`}
-              done={ss.arrived}
-              total={ss.total}
-              tone="success"
-            />
-          ))}
-          <AttendanceRate
-            label="하행 귀가"
-            done={returned}
-            total={returnTarget}
-            tone="primary"
-          />
-        </div>
-      </Card>
+      <BusAttendance
+        upGroups={upGroups}
+        downGroups={downGroups}
+        buses={buses}
+        slots={slots}
+        editable={isMaster}
+        summary={{ slots: slotStats, returnTotal: returnTarget }}
+      />
 
-      {upGroups.length === 0 && downGroups.length === 0 ? (
+      {upGroups.length === 0 && downGroups.length === 0 && (
         <Card className="p-5">
-          <p className="text-sm text-muted">아직 배차된 명단이 없습니다.</p>
+          <p className="text-sm text-muted">
+            아직 배차된 명단이 없습니다. (출석률은 신청 기준)
+          </p>
         </Card>
-      ) : (
-        <BusAttendance
-          upGroups={upGroups}
-          downGroups={downGroups}
-          buses={buses}
-          slots={slots}
-          editable={isMaster}
-        />
       )}
     </div>
   );
