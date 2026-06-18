@@ -321,20 +321,78 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(Math.max(...Object.values(downCounts))).toBeLessThanOrEqual(44);
   });
 
-  it("17) 차량순장은 그 호차에 고정되되 캠퍼스를 끌어오지 않음", () => {
-    // 순장(전남대) 1호차 고정. 전남대 나머지는 응집 없이 best-fit 으로 배정.
+  it("17) 차량순장 캠퍼스 우선: 같은 캠퍼스를 순장 호차에 먼저 배정", () => {
+    // 순장(전남대) 2호차. 전남대 동료 10명이 순장 호차(2)로 우선 배정됨. (1호차는 예외라 회피)
     const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
     const mates = paxN(10, { campus: "전남대", departure_slot_id: AM });
     const buses = [
-      bus({ id: 1, departure_slot_id: AM, driver_registration_id: "drv" }),
-      bus({ id: 2, departure_slot_id: AM }),
+      bus({ id: 2, name: "2호차", departure_slot_id: AM, driver_registration_id: "drv" }),
+      bus({ id: 3, name: "3호차", departure_slot_id: AM }),
     ];
     const r = runBatch([drv, ...mates], buses);
-    // 순장은 1호차에 그대로
-    expect(r.up_assignments["drv"]).toBe(1);
-    // 나머지는 best-fit 으로 어딘가 배정됨 (응집 강제 X) — 미배정만 아니면 됨
-    for (const m of mates) expect(r.up_assignments[m.id]).toBeDefined();
+    expect(r.up_assignments["drv"]).toBe(2);
+    // 같은 캠퍼스 전원이 순장 호차(2)에 우선 배정
+    for (const m of mates) expect(r.up_assignments[m.id]).toBe(2);
     expect(r.errors).toEqual([]);
+  });
+
+  it("17b) 순장 캠퍼스 정원 초과: 정원(44)까지만 순장 호차, 나머지 일반 배차", () => {
+    // 순장(전남대) 2호차 + 전남대 50명. 2호차는 정원(순장1+43=44)까지, 7명은 3호차로.
+    // cohesion 없으면 best-fit 으로 3호차 44·2호차 7 이 되므로 이 테스트가 cohesion 을 검증.
+    const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
+    const mates = paxN(50, { campus: "전남대", departure_slot_id: AM });
+    const buses = [
+      bus({ id: 2, name: "2호차", departure_slot_id: AM, driver_registration_id: "drv" }),
+      bus({ id: 3, name: "3호차", departure_slot_id: AM }),
+    ];
+    const r = runBatch([drv, ...mates], buses);
+    expect(r.errors).toEqual([]);
+    expect(r.by_bus[2]).toBe(44); // 정원까지 (순장 + 43)
+    expect(r.by_bus[3]).toBe(7); // 넘친 7명
+  });
+
+  it("17d) 1호차는 예외: 순장 있어도 캠퍼스 우선 배치 안 함", () => {
+    // 1호차 순장(전남대) + 전남대 10명 + 더 큰 캠퍼스(조선대 44)를 2호차로.
+    // 1호차가 캠퍼스를 끌었다면 전남대가 1호차에 몰림. 예외라 best-fit 으로만 배치.
+    const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
+    const mates = paxN(10, { campus: "전남대", departure_slot_id: AM });
+    const big = paxN(43, { campus: "조선대", departure_slot_id: AM });
+    const buses = [
+      bus({ id: 1, name: "1호차", departure_slot_id: AM, driver_registration_id: "drv" }),
+      bus({ id: 2, name: "2호차", departure_slot_id: AM }),
+    ];
+    const r = runBatch([drv, ...mates, ...big], buses);
+    expect(r.errors).toEqual([]);
+    expect(r.up_assignments["drv"]).toBe(1); // 순장 고정은 유지
+    // 캠퍼스 우선이 적용됐다면 전남대 10명이 모두 1호차여야 하지만, 1호차 예외라
+    // best-fit 으로 흩어질 수 있음 — 전원 1호차 강제 배치가 아님을 확인.
+    const matesOn1 = mates.filter((m) => r.up_assignments[m.id] === 1).length;
+    expect(matesOn1).toBeLessThan(10);
+  });
+
+  it("17c) 하행도 차량순장 캠퍼스 우선 (상행과 독립)", () => {
+    const drv = pax({
+      id: "ddrv",
+      attendance_type: "oneway",
+      departure_slot_id: null,
+      uses_return_bus: true,
+      campus: "조선대",
+    });
+    const mates = paxN(10, {
+      attendance_type: "oneway",
+      departure_slot_id: null,
+      uses_return_bus: true,
+      campus: "조선대",
+    });
+    const buses = [
+      bus({ id: 2, name: "2호차", departure_slot_id: AM, down_driver_registration_id: "ddrv" }),
+      bus({ id: 3, name: "3호차", departure_slot_id: AM }),
+    ];
+    const r = runBatch([drv, ...mates], buses);
+    expect(r.errors).toEqual([]);
+    expect(r.down_assignments["ddrv"]).toBe(2);
+    // 같은 캠퍼스 전원이 하행 순장 호차(2)에 우선 배정
+    for (const m of mates) expect(r.down_assignments[m.id]).toBe(2);
   });
 
   it("18) 큰 캠퍼스 분할 최소화: 50명 → 정확히 2호차 (45+5)", () => {

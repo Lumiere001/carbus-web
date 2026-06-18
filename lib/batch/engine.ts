@@ -8,11 +8,15 @@
  *   2. 호차를 꽉(정원 44) 채움 — 빈 좌석·사용 호차 최소화. 보조석(45)은
  *      44×대수로 부족할 때만 마지막 수단.
  *   3. 같은 캠퍼스 묶음(soft) — 안 되면 찢어서라도 채움.
+ *      3-1. 차량순장 캠퍼스 우선 — 순장이 있는 호차에 같은 캠퍼스를 정원(44)까지
+ *           먼저 채운다(상·하행 각각). 넘치는 인원·남는 좌석은 아래 일반 배차가 처리.
+ *           단, 1호차는 예외(여러 캠퍼스 혼합) — COHESION_EXEMPT_BUS_NAMES.
  *   4. 혼자만 다른 캠퍼스 금지 — 분할 조각이 1명이 되지 않게.
  *   5. (상행만) 요일 분리 + 고정 배정(driver/fixed) 보존. 차량순장은 개별 배정.
  *
  * 알고리즘 (FFD — First-Fit Decreasing, 캠퍼스 단위):
- *   캠퍼스 큰 순으로, 각 캠퍼스를
+ *   ⓪ 차량순장 캠퍼스 우선: 순장 있는 호차에 같은 캠퍼스를 정원까지 먼저 배정.
+ *   그 뒤 남은 인원을 캠퍼스 큰 순으로, 각 캠퍼스를
  *     ① 통째로 들어가는 호차 중 잔여 최소(best-fit)에 배정 — 분할·빈자리 동시 최소화.
  *     ② 어느 호차에도 통째로 못 들어가면(캠퍼스 > 호차 잔여) 잔여 큰 호차부터 분할
  *        (조각 최소, 1명 조각 방지).
@@ -24,6 +28,12 @@
 import type { Assignment, BatchResult, Bus, Passenger } from "./types";
 
 export type BatchMode = "up" | "down" | "both";
+
+/**
+ * 차량순장 캠퍼스 우선 배치(3-1)에서 제외할 호차 (이름 기준).
+ * 1호차는 임원·총단 등 여러 캠퍼스가 섞이는 차라 순장 캠퍼스를 끌지 않고 일반 배차한다.
+ */
+const COHESION_EXEMPT_BUS_NAMES = new Set(["1호차"]);
 
 /** 작업용 호차: count = 현재 배정 인원. */
 interface BusWork extends Bus {
@@ -56,7 +66,8 @@ function fillBuses(
   group: Passenger[],
   buses: BusWork[],
   assign: (id: string, busId: number) => void,
-  errors: string[]
+  errors: string[],
+  driverCampusByBus?: Map<number, string>
 ): void {
   if (group.length === 0) return;
   if (buses.length === 0) {
@@ -64,7 +75,28 @@ function fillBuses(
     return;
   }
 
-  const campuses = campusesBySizeDesc(group);
+  let pool = group;
+
+  // ⓪ 차량순장 캠퍼스 우선 — 순장 있는 호차에 같은 캠퍼스를 정원(capacity)까지 먼저.
+  //    넘치는 인원·남는 좌석은 아래 일반 배차가 그대로 처리(미배정·빈좌석·1명조각 정책 유지).
+  if (driverCampusByBus && driverCampusByBus.size > 0) {
+    const taken = new Set<string>();
+    for (const b of buses) {
+      const campus = driverCampusByBus.get(b.id);
+      if (campus === undefined) continue;
+      const same = pool.filter((p) => p.campus === campus && !taken.has(p.id));
+      let take = Math.min(b.capacity - b.count, same.length);
+      if (same.length - take === 1 && take > 1) take--; // 흘리는 조각이 1명 되지 않게
+      for (const m of same.slice(0, take)) {
+        assign(m.id, b.id);
+        b.count++;
+        taken.add(m.id);
+      }
+    }
+    if (taken.size > 0) pool = pool.filter((p) => !taken.has(p.id));
+  }
+
+  const campuses = campusesBySizeDesc(pool);
   let unassigned = 0;
 
   for (const members of campuses) {
@@ -186,11 +218,20 @@ export function runBatch(
     const upParticipants = passengers.filter(
       (p) => p.departure_slot_id !== null && !pinned.has(p.id)
     );
+    // 차량순장 캠퍼스 우선용: 호차 id → 상행 순장의 캠퍼스. (1호차 등 예외 호차 제외)
+    const upDriverCampus = new Map<number, string>();
+    for (const b of buses) {
+      if (COHESION_EXEMPT_BUS_NAMES.has(b.name)) continue;
+      if (b.driver_registration_id) {
+        const d = byId.get(b.driver_registration_id);
+        if (d) upDriverCampus.set(b.id, d.campus);
+      }
+    }
     const slots = [...new Set(upBuses.map((b) => b.departure_slot_id))];
     for (const slotId of slots) {
       const slotBuses = upBuses.filter((b) => b.departure_slot_id === slotId);
       const grp = upParticipants.filter((p) => p.departure_slot_id === slotId);
-      fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors);
+      fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors, upDriverCampus);
     }
 
     // 운행 호차가 없는 슬롯의 신청자는 배정 불가 — 조용히 누락하지 않고 표면화.
@@ -241,7 +282,23 @@ export function runBatch(
     const downParticipants = passengers.filter(
       (p) => p.uses_return_bus === true && !pinnedDown.has(p.id)
     );
-    fillBuses("하행", downParticipants, downBuses, assignDown, errors);
+    // 차량순장 캠퍼스 우선용: 호차 id → 하행 순장의 캠퍼스. (1호차 등 예외 호차 제외)
+    const downDriverCampus = new Map<number, string>();
+    for (const b of buses) {
+      if (COHESION_EXEMPT_BUS_NAMES.has(b.name)) continue;
+      if (b.down_driver_registration_id) {
+        const d = byId.get(b.down_driver_registration_id);
+        if (d) downDriverCampus.set(b.id, d.campus);
+      }
+    }
+    fillBuses(
+      "하행",
+      downParticipants,
+      downBuses,
+      assignDown,
+      errors,
+      downDriverCampus
+    );
   }
 
   // ════════════════════ 집계 ════════════════════
