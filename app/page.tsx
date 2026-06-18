@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Bus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/app/logout/actions";
 import type { UserRole } from "@/lib/supabase/types";
+
+const logoutBtnClass =
+  "text-xs text-muted-2 underline hover:text-muted bg-transparent border-0 cursor-pointer p-0";
 
 export const dynamic = "force-dynamic";
 
@@ -86,12 +90,11 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
-            <Link
-              href="/logout"
-              className="inline-block text-xs text-muted-2 underline hover:text-muted"
-            >
-              로그아웃
-            </Link>
+            <form action={signOut}>
+              <button type="submit" className={logoutBtnClass}>
+                로그아웃
+              </button>
+            </form>
           </div>
         ) : (
           <div className="space-y-4">
@@ -102,12 +105,11 @@ export default async function HomePage() {
                 담당 호차를 배정하면 화면이 열립니다.
               </p>
             </div>
-            <Link
-              href="/logout"
-              className="inline-block text-xs text-muted-2 underline hover:text-muted"
-            >
-              로그아웃
-            </Link>
+            <form action={signOut}>
+              <button type="submit" className={logoutBtnClass}>
+                로그아웃
+              </button>
+            </form>
           </div>
         )}
 
