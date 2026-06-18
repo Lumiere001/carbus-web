@@ -6,26 +6,34 @@ import {
   assignCampusAdmin,
   revokeToGuest,
   changeCampus,
+  assignDriverBus,
+  clearDriverBus,
 } from "@/lib/admin/profiles";
 import { Button } from "@/components/ui/button";
 
 type Campus = { id: string; name: string };
+type BusOpt = { id: number; name: string };
 
 export function UsersPanel({
   profiles: initial,
   campuses,
+  buses,
 }: {
   profiles: ProfileRow[];
   campuses: Campus[];
+  buses: BusOpt[];
 }) {
   const [profiles, setProfiles] = useState<ProfileRow[]>(initial);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
     null
   );
   const [pick, setPick] = useState<Record<string, string>>({});
+  const [pickBus, setPickBus] = useState<Record<string, string>>({});
 
   const campusName = (id: string | null) =>
     id ? (campuses.find((c) => c.id === id)?.name ?? "—") : "—";
+  const busName = (id: number | null) =>
+    id != null ? (buses.find((b) => b.id === id)?.name ?? `${id}호차`) : "—";
 
   function replace(row: ProfileRow) {
     setProfiles((prev) => prev.map((p) => (p.id === row.id ? row : p)));
@@ -67,6 +75,28 @@ export function UsersPanel({
     if (!res.ok) return setMsg({ type: "err", text: res.message });
     replace(res.row);
     setMsg({ type: "ok", text: `${campusName(campusId)}(으)로 변경` });
+  }
+
+  async function handleAssignDriver(p: ProfileRow) {
+    const v = pickBus[p.id];
+    if (!v) {
+      setMsg({ type: "err", text: "호차를 선택하세요" });
+      return;
+    }
+    const res = await assignDriverBus(p.id, Number(v));
+    if (!res.ok) return setMsg({ type: "err", text: res.message });
+    replace(res.row);
+    setMsg({
+      type: "ok",
+      text: `${p.display_name ?? "사용자"} → ${busName(Number(v))} 차량 순장 배정`,
+    });
+  }
+
+  async function handleClearDriver(p: ProfileRow) {
+    const res = await clearDriverBus(p.id);
+    if (!res.ok) return setMsg({ type: "err", text: res.message });
+    replace(res.row);
+    setMsg({ type: "ok", text: "차량 순장 배정 해제" });
   }
 
   return (
@@ -187,6 +217,88 @@ export function UsersPanel({
                     >
                       권한 해제
                     </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* 차량 순장 배정 (role 과 독립 — 게스트·임역원 누구나) */}
+      <section>
+        <h3 className="text-sm font-medium text-muted mb-2">
+          차량 순장 배정 (호차) — {managed.filter((p) => p.driver_bus_id != null).length}명
+        </h3>
+        <p className="text-xs text-muted-2 mb-2">
+          호차를 배정하면 그 사람은 로그인 시 본인 호차 출석체크 화면에 들어갑니다.
+          (임역원이어도 배정 가능 — 출석체크는 차량 순장·총단만)
+        </p>
+        <div className="overflow-x-auto bg-surface rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-surface-2 text-muted text-left">
+                <th className="px-3 py-2">이름</th>
+                <th className="px-3 py-2">현재 역할</th>
+                <th className="px-3 py-2">담당 호차</th>
+                <th className="px-3 py-2">호차 배정</th>
+                <th className="px-3 py-2">액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              {managed.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted-2 py-6">
+                    로그인한 사용자가 없습니다.
+                  </td>
+                </tr>
+              )}
+              {managed.map((p) => (
+                <tr key={p.id} className="border-t border-border">
+                  <td className="px-3 py-2">{p.display_name ?? "(이름 없음)"}</td>
+                  <td className="px-3 py-2 text-muted-2">
+                    {p.role === "campus_admin"
+                      ? `임역원 (${campusName(p.campus_id)})`
+                      : "게스트"}
+                  </td>
+                  <td className="px-3 py-2">
+                    {p.driver_bus_id != null ? (
+                      <span className="font-medium text-foreground">
+                        {busName(p.driver_bus_id)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-2">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <select
+                      value={pickBus[p.id] ?? ""}
+                      onChange={(e) =>
+                        setPickBus((s) => ({ ...s, [p.id]: e.target.value }))
+                      }
+                      className="border border-border-2 rounded-md px-2 py-1 bg-surface"
+                    >
+                      <option value="">선택</option>
+                      {buses.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-3 py-2 space-x-1 whitespace-nowrap">
+                    <Button size="sm" onClick={() => handleAssignDriver(p)}>
+                      배정
+                    </Button>
+                    {p.driver_bus_id != null && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleClearDriver(p)}
+                      >
+                        해제
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -102,13 +102,14 @@ export default async function CampusBusesPage() {
         </Card>
       )}
 
-      {/* 상행·하행 명단 — 탭하면 도착/귀가 체크 (현장용) */}
+      {/* 상행·하행 명단 (읽기 전용) — 현장 출석체크는 차량 순장이 담당 */}
       <BusAttendance
         campusId={campusId}
         upGroups={upGroups}
         downGroups={downGroups}
         buses={buses}
         slots={slots}
+        editable={false}
       />
 
       {/* 배차 대기 (읽기 전용) */}

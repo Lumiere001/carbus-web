@@ -112,15 +112,15 @@ export function BusAttendance({
         : { checked_in: cur.checked_in, checked_out: next };
     setState((s) => ({ ...s, [id]: optimistic })); // 낙관적
     const supabase = createClient();
-    const { error } = await supabase
-      .from("registrations")
-      .update(
-        field === "checked_in" ? { checked_in: next } : { checked_out: next }
-      )
-      .eq("id", id);
+    // 출석 쓰기는 set_attendance RPC 경유 — master + 해당 호차 차량순장만 허용(서버 강제).
+    const { error } = await supabase.rpc("set_attendance", {
+      p_reg_id: id,
+      p_field: field,
+      p_value: next,
+    });
     if (error) {
       setState((s) => ({ ...s, [id]: cur })); // 롤백
-      setErr("저장 실패 — 다시 눌러주세요");
+      setErr("저장 실패 — 권한이 없거나 네트워크 오류");
       setTimeout(() => setErr(null), 2500);
     }
   }

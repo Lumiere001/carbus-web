@@ -271,6 +271,7 @@ export type Database = {
           campus_id: string | null
           created_at: string
           display_name: string | null
+          driver_bus_id: number | null
           id: string
           provider_id: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -280,6 +281,7 @@ export type Database = {
           campus_id?: string | null
           created_at?: string
           display_name?: string | null
+          driver_bus_id?: number | null
           id: string
           provider_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -289,6 +291,7 @@ export type Database = {
           campus_id?: string | null
           created_at?: string
           display_name?: string | null
+          driver_bus_id?: number | null
           id?: string
           provider_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -638,9 +641,14 @@ export type Database = {
       }
       campus_remit_delete: { Args: { p_id: string }; Returns: undefined }
       current_campus: { Args: never; Returns: string }
+      current_driver_bus: { Args: never; Returns: number }
       current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      set_attendance: {
+        Args: { p_reg_id: string; p_field: string; p_value: boolean }
+        Returns: undefined
       }
     }
     Enums: {

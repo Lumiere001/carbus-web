@@ -18,9 +18,10 @@ export default async function AdminUsersPage() {
     .single<{ role: UserRole }>();
   if (me?.role !== "master") redirect("/admin");
 
-  const [profilesRes, campusesRes] = await Promise.all([
+  const [profilesRes, campusesRes, busesRes] = await Promise.all([
     supabase.from("profiles").select("*").order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name").order("display_order"),
+    supabase.from("buses").select("id, name").order("id"),
   ]);
 
   return (
@@ -28,13 +29,14 @@ export default async function AdminUsersPage() {
       <div>
         <h2 className="text-xl font-semibold text-foreground">사용자 관리</h2>
         <p className="text-sm text-muted mt-0.5">
-          Google 로그인한 게스트에게 캠퍼스를 부여하면 임역원으로 활동할 수
-          있습니다. master만 접근 가능.
+          Google 로그인한 게스트에게 캠퍼스를 부여하면 임역원, 호차를 배정하면
+          차량 순장으로 활동합니다 (둘 다 가능). master만 접근 가능.
         </p>
       </div>
       <UsersPanel
         profiles={profilesRes.data ?? []}
         campuses={campusesRes.data ?? []}
+        buses={busesRes.data ?? []}
       />
     </div>
   );
