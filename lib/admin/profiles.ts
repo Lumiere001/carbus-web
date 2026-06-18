@@ -52,6 +52,35 @@ export async function changeCampus(
   return { ok: true, row: data };
 }
 
+/** 차량순장 호차 배정 (role 과 독립 — 임역원·게스트 누구나 배정 가능). master만. */
+export async function assignDriverBus(
+  id: string,
+  busId: number
+): Promise<Result> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ driver_bus_id: busId })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true, row: data };
+}
+
+/** 차량순장 호차 배정 해제. */
+export async function clearDriverBus(id: string): Promise<Result> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ driver_bus_id: null })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true, row: data };
+}
+
 function humanize(msg: string): string {
   if (msg.includes("row-level security") || msg.includes("policy")) {
     return "권한이 없습니다 (master만 사용자 권한을 변경할 수 있어요)";

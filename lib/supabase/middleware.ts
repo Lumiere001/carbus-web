@@ -65,26 +65,40 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 5. role 조회 (profiles)
+  // 5. role + 차량순장 호차 조회 (profiles)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, driver_bus_id")
     .eq("id", user.id)
     .single();
 
   const role: UserRole = (profile?.role ?? "guest") as UserRole;
+  const isDriver = profile?.driver_bus_id != null; // master가 호차 배정 → 차량순장
 
-  // 6. role 기반 라우트 분기
-  // /pending : guest 전용 (다른 role은 자기 페이지로)
+  // 역할별 기본 홈 (배차/캠퍼스 > 운영자 > 차량순장 > 대기)
+  const home = () => {
+    if (role === "campus_admin") return "/campus";
+    if (role === "viewer" || role === "master") return "/admin";
+    if (isDriver) return "/driver";
+    return "/pending";
+  };
+
+  // 6. 라우트 분기
+  // /pending : 아무 권한 없는 게스트 전용 (배정되면 자기 페이지로)
   if (pathname.startsWith("/pending")) {
-    if (role === "campus_admin") {
+    if (role !== "guest" || isDriver) {
       const url = request.nextUrl.clone();
-      url.pathname = "/campus";
+      url.pathname = home();
       return NextResponse.redirect(url);
     }
-    if (role === "viewer" || role === "master") {
+    return supabaseResponse;
+  }
+
+  // /driver : 차량순장(호차 배정된 사용자)만 — master 배정 전엔 진입 불가
+  if (pathname.startsWith("/driver")) {
+    if (!isDriver) {
       const url = request.nextUrl.clone();
-      url.pathname = "/admin";
+      url.pathname = home();
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
@@ -94,7 +108,7 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith("/campus")) {
     if (role !== "campus_admin") {
       const url = request.nextUrl.clone();
-      url.pathname = role === "guest" ? "/pending" : "/admin";
+      url.pathname = home();
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
@@ -104,7 +118,7 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     if (role !== "viewer" && role !== "master") {
       const url = request.nextUrl.clone();
-      url.pathname = role === "guest" ? "/pending" : "/campus";
+      url.pathname = home();
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
