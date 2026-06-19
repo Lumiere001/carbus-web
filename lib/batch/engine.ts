@@ -13,6 +13,9 @@
  *           단, 1호차는 예외(여러 캠퍼스 혼합) — COHESION_EXEMPT_BUS_NAMES.
  *   4. 혼자만 다른 캠퍼스 금지 — 분할 조각이 1명이 되지 않게.
  *   5. (상행만) 요일 분리 + 고정 배정(driver/fixed) 보존. 차량순장은 개별 배정.
+ *   6. (후순위) 1호차 빈자리 최대 — 1호차는 지구 짐을 함께 실어 인원을 최소화.
+ *      1~5를 모두 지킨 뒤, 빈자리 분배 단계에서만 1호차를 가장 나중에 채운다
+ *      (오버플로우 전용). 다른 호차로 충분하면 1호차는 비워진다. FILL_LAST_BUS_NAMES.
  *
  * 알고리즘 (FFD — First-Fit Decreasing, 캠퍼스 단위):
  *   ⓪ 차량순장 캠퍼스 우선: 순장 있는 호차에 같은 캠퍼스를 정원까지 먼저 배정.
@@ -21,6 +24,7 @@
  *     ② 어느 호차에도 통째로 못 들어가면(캠퍼스 > 호차 잔여) 잔여 큰 호차부터 분할
  *        (조각 최소, 1명 조각 방지).
  *     ③ 정원(44) 다 차면 보조석(45)까지 → 그래도 넘치면 미배정.
+ *   ①②③ 모두 같은 잔여 조건이면 1호차(FILL_LAST)를 후순위로 밀어 마지막에 채운다.
  *   순차 채움(next-fit) 대비 작은 캠퍼스의 불필요한 분할을 없애면서 빈좌석은
  *   동일하게 유지한다(파레토 개선). 순수 함수.
  */
@@ -39,6 +43,15 @@ const COHESION_EXEMPT_BUS_NAMES = new Set(["1호차"]);
 interface BusWork extends Bus {
   count: number;
 }
+
+/**
+ * 빈자리를 최대한 남길 호차 (이름 기준) — 모든 채움 단계에서 가장 나중에 채운다.
+ * 1호차는 지구 짐을 함께 실어 인원을 최소화(후순위). 다른 호차가 충분하면 1호차는 비워진다.
+ */
+const FILL_LAST_BUS_NAMES = new Set(["1호차"]);
+/** 후순위 정렬 키: FILL_LAST 호차는 1(뒤로), 그 외 0. */
+const fillLastRank = (b: BusWork): number =>
+  FILL_LAST_BUS_NAMES.has(b.name) ? 1 : 0;
 
 function groupByCampus(passengers: Passenger[]): Map<string, Passenger[]> {
   const m = new Map<string, Passenger[]>();
@@ -102,10 +115,15 @@ function fillBuses(
   for (const members of campuses) {
     let q = members;
 
-    // ① 통째로 들어가는 호차 중 잔여 최소(best-fit) — 분할·빈자리 동시 최소화
+    // ① 통째로 들어가는 호차 중 잔여 최소(best-fit) — 분할·빈자리 동시 최소화.
+    //    동률이면 1호차(FILL_LAST)를 뒤로 → 1호차 빈자리 최대(후순위).
     const whole = buses
       .filter((b) => b.capacity - b.count >= q.length)
-      .sort((a, b) => a.capacity - a.count - (b.capacity - b.count))[0];
+      .sort(
+        (a, b) =>
+          fillLastRank(a) - fillLastRank(b) ||
+          a.capacity - a.count - (b.capacity - b.count)
+      )[0];
     if (whole) {
       for (const m of q) {
         assign(m.id, whole.id);
@@ -114,11 +132,16 @@ function fillBuses(
       continue;
     }
 
-    // ② 통째로 못 들어감 → 잔여 큰 호차부터 분할 (조각 최소, 1명 조각 방지)
+    // ② 통째로 못 들어감 → 잔여 큰 호차부터 분할 (조각 최소, 1명 조각 방지).
+    //    1호차(FILL_LAST)는 후순위로 밀어 비-1호차부터 채운다.
     while (q.length > 0) {
       const b = buses
         .filter((x) => x.count < x.capacity)
-        .sort((a, b2) => b2.capacity - b2.count - (a.capacity - a.count))[0];
+        .sort(
+          (a, b2) =>
+            fillLastRank(a) - fillLastRank(b2) ||
+            b2.capacity - b2.count - (a.capacity - a.count)
+        )[0];
       if (!b) break;
       let take = Math.min(b.capacity - b.count, q.length);
       if (q.length - take === 1 && take > 1) take--; // 흘리는 조각이 1명 되지 않게
@@ -129,11 +152,15 @@ function fillBuses(
       q = q.slice(take);
     }
 
-    // ③ 정원(44) 다 참 → 보조석(hard_cap)까지, 잔여 큰 호차부터
+    // ③ 정원(44) 다 참 → 보조석(hard_cap)까지, 잔여 큰 호차부터 (1호차는 후순위)
     while (q.length > 0) {
       const b = buses
         .filter((x) => x.count < x.hard_cap)
-        .sort((a, b2) => b2.hard_cap - b2.count - (a.hard_cap - a.count))[0];
+        .sort(
+          (a, b2) =>
+            fillLastRank(a) - fillLastRank(b2) ||
+            b2.hard_cap - b2.count - (a.hard_cap - a.count)
+        )[0];
       if (!b) break;
       assign(q[0].id, b.id);
       b.count++;
