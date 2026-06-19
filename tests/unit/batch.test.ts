@@ -352,22 +352,49 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   });
 
   it("17d) 1호차는 예외: 순장 있어도 캠퍼스 우선 배치 안 함", () => {
-    // 1호차 순장(전남대) + 전남대 10명 + 더 큰 캠퍼스(조선대 44)를 2호차로.
-    // 1호차가 캠퍼스를 끌었다면 전남대가 1호차에 몰림. 예외라 best-fit 으로만 배치.
+    // 1호차 순장(전남대) + 전남대 10명, 비-1호차(2·3호차) 여유 있음.
+    // 응집이 적용됐다면 전남대가 순장 호차(1)로 몰리지만, 1호차는 예외라 비-1호차로 감.
     const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
     const mates = paxN(10, { campus: "전남대", departure_slot_id: AM });
-    const big = paxN(43, { campus: "조선대", departure_slot_id: AM });
     const buses = [
       bus({ id: 1, name: "1호차", departure_slot_id: AM, driver_registration_id: "drv" }),
       bus({ id: 2, name: "2호차", departure_slot_id: AM }),
+      bus({ id: 3, name: "3호차", departure_slot_id: AM }),
     ];
-    const r = runBatch([drv, ...mates, ...big], buses);
+    const r = runBatch([drv, ...mates], buses);
     expect(r.errors).toEqual([]);
     expect(r.up_assignments["drv"]).toBe(1); // 순장 고정은 유지
-    // 캠퍼스 우선이 적용됐다면 전남대 10명이 모두 1호차여야 하지만, 1호차 예외라
-    // best-fit 으로 흩어질 수 있음 — 전원 1호차 강제 배치가 아님을 확인.
+    // 전남대 동료는 1호차로 끌려가지 않음 (예외 + 1호차 빈자리 후순위) → 0명
     const matesOn1 = mates.filter((m) => r.up_assignments[m.id] === 1).length;
-    expect(matesOn1).toBeLessThan(10);
+    expect(matesOn1).toBe(0);
+  });
+
+  it("1호차 빈자리 최대화: 여유 있으면 1호차를 비워둠 (후순위)", () => {
+    // 80명, 2·3호차(88석)로 흡수 가능 → 1호차(짐차)는 0명.
+    const buses = [1, 2, 3].map((id) =>
+      bus({ id, name: `${id}호차`, departure_slot_id: AM })
+    );
+    const pax80 = Array.from({ length: 80 }, (_, i) =>
+      pax({ campus: `c${i % 8}` })
+    );
+    const r = runBatch(pax80, buses);
+    expect(r.errors).toEqual([]);
+    expect(r.total_assigned).toBe(80);
+    expect(r.by_bus[1] ?? 0).toBe(0); // 1호차 비움
+  });
+
+  it("1호차도 자리 부족하면 오버플로우로 채움 (미배정 0 유지)", () => {
+    // 120명 > 2·3호차(88) → 1호차로 넘침. 후순위라도 좌석 부족 시엔 사용.
+    const buses = [1, 2, 3].map((id) =>
+      bus({ id, name: `${id}호차`, departure_slot_id: AM })
+    );
+    const pax120 = Array.from({ length: 120 }, (_, i) =>
+      pax({ campus: `c${i % 12}` })
+    );
+    const r = runBatch(pax120, buses);
+    expect(r.errors).toEqual([]);
+    expect(r.total_assigned).toBe(120);
+    expect(r.by_bus[1] ?? 0).toBeGreaterThan(0); // 1호차도 사용
   });
 
   it("17c) 하행도 차량순장 캠퍼스 우선 (상행과 독립)", () => {
