@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runBatch } from "@/lib/batch/engine";
-import { lockExistingDownAssignments } from "@/lib/batch/locks";
 import type { Passenger, Bus } from "@/lib/batch/types";
 import type { UserRole } from "@/lib/supabase/types";
 
@@ -84,15 +83,9 @@ export async function runBatchAction(
   //   하행도 타면 하행 배차가 통째로 멈췄다(상행만 정상). 그 교차-방향 강제를 제거.
   // 실제 문제(좌석 부족·슬롯 불일치·중복 고정)는 엔진이 result.errors 로 표면화한다.
 
-  // 하행은 기존 수동 배정(전체 순장/순원 페이지의 assigned_down_bus_id)을 보존한다.
-  // 이미 배정된 사람은 그 호차에 잠그고, 미배정(null)인 하행 이용자만 새로 채운다.
-  // (상행은 기존 동작 유지 — 전체 재배차.)
-  const effectiveBuses =
-    mode === "down"
-      ? lockExistingDownAssignments(buses, regRes.data ?? [])
-      : buses;
-
-  const result = runBatch(passengers, effectiveBuses, mode);
+  // 상·하행 모두 전체 재배차: 기존 배정(assigned_*)을 초기화하고 새로 계산한다.
+  // (차량순장/고정탑승 바인딩만 엔진이 앵커로 존중하고, 그 외 인원은 재배치.)
+  const result = runBatch(passengers, buses, mode);
 
   // 해당 방향 컬럼만 그룹 업데이트 (배정 호차별 1회. 미배정은 null 그룹).
   const assignMap = mode === "up" ? result.up_assignments : result.down_assignments;
