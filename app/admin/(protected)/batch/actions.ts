@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runBatch } from "@/lib/batch/engine";
+import { lockExistingDownAssignments } from "@/lib/batch/locks";
 import type { Passenger, Bus } from "@/lib/batch/types";
 import type { UserRole } from "@/lib/supabase/types";
 
@@ -75,43 +76,23 @@ export async function runBatchAction(
     return { ok: false, message: "호차 시드가 없습니다 (buses 0건)" };
   }
 
-  // ── 선행조건: 차량순장/고정탑승(= 호차에 묶인 리더)은 타는 방향에도 호차가 있어야 함 ──
-  // 역할 = 호차 바인딩(단일 진실원). 어떤 방향에든 묶인 사람은 "리더"이고,
-  // 그 사람이 이 방향을 타는데 이 방향 호차가 없으면 배차를 멈추고 호차 지정을 요구.
-  {
-    const ridesDir = (r: { departure_slot_id: number | null; uses_return_bus: boolean }) =>
-      mode === "up" ? r.departure_slot_id !== null : r.uses_return_bus === true;
-    const dirDriver = new Set<string>(); // 이 방향 차량순장
-    const dirFixed = new Set<string>(); // 이 방향 고정
-    const anyLeader = new Set<string>(); // 어느 방향에든 묶인 사람(=리더)
-    for (const b of busRes.data ?? []) {
-      if (b.driver_registration_id) anyLeader.add(b.driver_registration_id);
-      if (b.down_driver_registration_id) anyLeader.add(b.down_driver_registration_id);
-      for (const id of b.fixed_passenger_ids ?? []) anyLeader.add(id);
-      for (const id of b.down_fixed_passenger_ids ?? []) anyLeader.add(id);
-      const drv = mode === "up" ? b.driver_registration_id : b.down_driver_registration_id;
-      const fxd = mode === "up" ? b.fixed_passenger_ids : b.down_fixed_passenger_ids;
-      if (drv) dirDriver.add(drv);
-      for (const id of fxd ?? []) dirFixed.add(id);
-    }
-    const missing: string[] = [];
-    for (const r of regRes.data ?? []) {
-      if (!anyLeader.has(r.id)) continue; // 리더 아님
-      if (!ridesDir(r)) continue; // 이 방향 안 탐
-      if (!dirDriver.has(r.id) && !dirFixed.has(r.id)) missing.push(r.name);
-    }
-    if (missing.length > 0) {
-      const dir = mode === "up" ? "상행" : "하행";
-      const head = missing.slice(0, 8).join(", ");
-      const more = missing.length > 8 ? ` 외 ${missing.length - 8}명` : "";
-      return {
-        ok: false,
-        message: `${dir}을 타지만 ${dir} 호차가 지정되지 않은 리더(차량순장/고정탑승)가 있습니다: ${head}${more}. '리더 관리' 화면에서 ${dir} 호차를 지정한 뒤 다시 실행하세요.`,
-      };
-    }
-  }
+  // ── 선행조건: 이 방향의 리더(차량순장/고정탑승)는 이 방향 호차가 지정돼 있어야 함 ──
+  // 역할 = 호차 바인딩(단일 진실원)이라, 이 방향 리더는 정의상 이 방향 호차를 갖는다.
+  // 따라서 "한 방향만 리더"인 사람(예: 상행 차량순장이지만 하행은 일반 탑승)은
+  // 다른 방향에선 일반 탑승자로 보고 엔진이 자동 배차한다.
+  //   ⚠️ 과거엔 '어느 방향에든 리더면 타는 모든 방향에 호차 필수'로 막아서, 상행 리더가
+  //   하행도 타면 하행 배차가 통째로 멈췄다(상행만 정상). 그 교차-방향 강제를 제거.
+  // 실제 문제(좌석 부족·슬롯 불일치·중복 고정)는 엔진이 result.errors 로 표면화한다.
 
-  const result = runBatch(passengers, buses, mode);
+  // 하행은 기존 수동 배정(전체 순장/순원 페이지의 assigned_down_bus_id)을 보존한다.
+  // 이미 배정된 사람은 그 호차에 잠그고, 미배정(null)인 하행 이용자만 새로 채운다.
+  // (상행은 기존 동작 유지 — 전체 재배차.)
+  const effectiveBuses =
+    mode === "down"
+      ? lockExistingDownAssignments(buses, regRes.data ?? [])
+      : buses;
+
+  const result = runBatch(passengers, effectiveBuses, mode);
 
   // 해당 방향 컬럼만 그룹 업데이트 (배정 호차별 1회. 미배정은 null 그룹).
   const assignMap = mode === "up" ? result.up_assignments : result.down_assignments;

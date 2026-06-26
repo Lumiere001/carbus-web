@@ -494,6 +494,35 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(r.down_assignments["both"]).toBe(2); // 하행 2호차
   });
 
+  it("22b) 상행 전용 리더는 하행에선 일반 자동배차 (하행 리더 아님)", () => {
+    // 왕복자 X: 상행 1호차 차량순장으로 고정 + 하행은 아무 바인딩 없음.
+    // 하행에선 일반 탑승자로 자동 배차돼야 한다(상행 리더라고 하행이 막히면 안 됨).
+    // → batch/actions.ts 의 과도한 '교차-방향 리더 호차 필수' 가드 제거를 엔진 레벨에서 못박음.
+    const x = pax({
+      id: "x",
+      attendance_type: "roundtrip",
+      departure_slot_id: AM,
+      uses_return_bus: true,
+      campus: "전남대",
+    });
+    const mates = paxN(5, {
+      attendance_type: "oneway",
+      departure_slot_id: null,
+      uses_return_bus: true,
+      campus: "전남대",
+    });
+    const buses = [
+      bus({ id: 1, departure_slot_id: AM, driver_registration_id: "x" }),
+      bus({ id: 2, departure_slot_id: AM }),
+    ];
+    const r = runBatch([x, ...mates], buses, "down");
+    expect(r.errors).toEqual([]);
+    // 상행 리더 X 도 하행 좌석을 자동으로 받음
+    expect(r.down_assignments["x"]).toBeDefined();
+    // 하행 이용자 전원 배정 (X + 동료 5명)
+    expect(Object.keys(r.down_assignments).length).toBe(6);
+  });
+
   it("23) 고정 정원 초과 방지: hard_cap(45) 넘는 고정은 차단+에러", () => {
     // 1대(hard_cap 45)에 46명 고정 시도 → 45명만 고정, 초과분 에러
     const fixed = paxN(46, { departure_slot_id: AM, campus: "전남대" });
