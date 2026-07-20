@@ -12,6 +12,8 @@ supabase start
 mkdir -p /tmp/hold && mv supabase/migrations/<새파일>.sql /tmp/hold/
 supabase db reset --no-seed
 python3 scripts/local-verify/load-backup.py      # 운영 백업 적재
+docker exec -i supabase_db_carbus-web psql -U postgres -d postgres \
+  -v ON_ERROR_STOP=1 -q < scripts/local-verify/post-load.sql   # 데이터 의존 backfill 재실행
 bash    scripts/local-verify/snapshot.sh > /tmp/before.txt
 
 # 2) 마이그레이션을 되돌려놓고 적용
@@ -35,7 +37,18 @@ bash scripts/local-verify/test-event-switch.sh
 - `buses.name` UNIQUE 를 행사 범위로 안 바꿔 차량 복제가 통째로 막히던 문제
 - `departure_slots.id` 가 GENERATED ALWAYS 라 직접 삽입이 불가능한 문제
 
+## post-load.sql 이 필요한 이유
+
+`supabase db reset` 은 마이그레이션을 **빈 DB 에** 먼저 적용한다. 그래서 데이터에 의존하는
+backfill(예: Phase 1 의 `home_unit_id` 매칭)은 0건을 처리하고 끝난다. 그 뒤 백업을 적재하면
+backfill 결과만 빠진 상태가 되어 로컬이 운영과 달라진다.
+
+→ 적재 직후 `post-load.sql` 을 한 번 돌려 맞춘다. 새 Phase 에서 데이터 의존 backfill 을
+추가하면 **그 마이그레이션과 post-load.sql 양쪽에** 넣어야 한다.
+
 ## 주의
 
 - `load-backup.py` 는 **로컬 전용**이다. 운영 실명이 로컬 DB 에 올라가므로 커밋·외부 전송 금지.
-- 백업 경로는 스크립트 상단 `BACKUP` 상수. 새 백업을 뜨면 그 경로로 바꾼다.
+- 백업 경로는 `load-backup.py` 상단 `BACKUP` 상수. 새 백업을 뜨면 그 경로로 바꾼다.
+- 로더는 **백업 JSON 에 실제로 있는 컬럼만** INSERT 한다. 백업 이후 추가된 컬럼을 목록에
+  넣으면 NULL 이 명시적으로 들어가 컬럼 DEFAULT 가 무력화되고 NOT NULL 위반이 난다.
