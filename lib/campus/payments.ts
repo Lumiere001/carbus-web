@@ -27,7 +27,9 @@ export async function addRemittance(
   const supabase = createClient();
   const { error } = await supabase.rpc("campus_remit_add", {
     p_amount: amount,
-    p_note: note,
+    // 메모가 없으면 인자를 생략한다 — SQL 쪽 기본값이 NULL 이라 결과는 같다.
+    // (생성된 타입이 p_note?: string 이라 null 을 직접 넘길 수 없다)
+    p_note: note ?? undefined,
   });
   if (error) return { ok: false, message: humanize(error.message) };
   return { ok: true };
