@@ -63,12 +63,15 @@ export default async function AdminLeadersPage() {
       ? supabase
           .from("registrations")
           .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, roles")
+          // 취소자는 리더 목록에서 제외 (좌석·차량순장은 DB 트리거가 이미 반납했다)
+          .neq("participation_status", "cancelled")
           .in("id", [...boundIds])
       : Promise.resolve({ data: [] as never[] }),
     plainLabels.length > 0
       ? supabase
           .from("registrations")
           .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, roles")
+          .neq("participation_status", "cancelled")
           .overlaps("roles", plainLabels)
       : Promise.resolve({ data: [] as never[] }),
   ]);

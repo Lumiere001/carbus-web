@@ -49,6 +49,8 @@ export default async function DriverPage() {
       .select(
         "id, name, student_id, campus_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
       )
+      // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
+      .neq("participation_status", "cancelled")
       .or(`assigned_up_bus_id.eq.${busId},assigned_down_bus_id.eq.${busId}`)
       .order("name"),
     supabase.from("buses").select("id, name, departure_slot_id").order("id"),

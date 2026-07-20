@@ -23,6 +23,8 @@ export default async function CampusPage() {
     supabase
       .from("registrations")
       .select("*")
+      // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
+      .neq("participation_status", "cancelled")
       .eq("campus_id", campusId)
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("name").eq("id", campusId).single(),

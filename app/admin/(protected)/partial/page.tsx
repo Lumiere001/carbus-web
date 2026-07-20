@@ -46,6 +46,8 @@ export default async function AdminPartialPage() {
       .select(
         "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, note"
       )
+      // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
+      .neq("participation_status", "cancelled")
       .in("attendance_type", ["oneway", "self"])
       .order("campus_id"),
     supabase.from("campuses").select("id, name, display_order"),

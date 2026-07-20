@@ -22,6 +22,7 @@ import type {
 import {
   setAssignment,
   excludeRegistration,
+  restoreRegistration,
   setRoles,
 } from "@/lib/admin/registrations";
 import { busSelectOptions } from "@/lib/admin/bus-options";
@@ -46,6 +47,9 @@ export type AdminRegRow = {
   note: string | null;
   assigned_up_bus_id: number | null;
   assigned_down_bus_id: number | null;
+  /** 'cancelled' 면 취소된 신청. 행은 남아 있고 좌석만 반납된 상태. */
+  participation_status: "registered" | "cancelled";
+  cancel_reason: string | null;
 };
 export type CampusInfo = { id: string; name: string; display_order: number };
 export type BusInfo = {
@@ -360,14 +364,15 @@ export function RegistrationsPanel({
       </Card>
       {isMaster && (
         <p className="text-xs text-muted-2">
-          상행·하행 호차를 직접 바꾸거나 제외(삭제)할 수 있습니다. 변경은 즉시 저장됩니다.
+          상행·하행 호차를 직접 바꾸거나 신청을 취소할 수 있습니다. 변경은 즉시 저장됩니다.
+          취소해도 기록은 남고 좌석만 반납됩니다.
         </p>
       )}
     </div>
   );
 }
 
-/** 학우 한 행. master 면 상행·하행 배정 select + 제외 버튼. */
+/** 학우 한 행. master 면 상행·하행 배정 select + 취소 버튼. */
 function Row({
   r,
   busName,
@@ -462,11 +467,37 @@ function Row({
   }
 
   function exclude() {
-    if (!confirm(`${r.name} 님을 전체 명단에서 제외(삭제)할까요?`)) return;
+    const reason = prompt(
+      `${r.name} 님의 신청을 취소할까요?\n` +
+        `좌석과 출석이 반납되고, 명단에서 빠집니다.\n` +
+        `기록은 남으므로 나중에 되돌릴 수 있습니다.\n\n` +
+        `취소 사유 (선택)`,
+      ""
+    );
+    if (reason === null) return; // 취소 버튼
     startTransition(async () => {
-      const res = await excludeRegistration(r.id);
+      const res = await excludeRegistration(r.id, reason);
       if (!res.ok) return onMsg({ type: "err", text: res.message });
-      onMsg({ type: "ok", text: `${r.name} 제외됨` });
+      onMsg({ type: "ok", text: `${r.name} 신청 취소됨 (좌석 반납)` });
+      router.refresh();
+    });
+  }
+
+  const cancelled = r.participation_status === "cancelled";
+
+  function restore() {
+    if (
+      !confirm(
+        `${r.name} 님의 취소를 되돌릴까요?\n` +
+          `좌석은 자동으로 복구되지 않습니다 — 다른 분이 이미 앉았을 수 있어서\n` +
+          `배차를 다시 돌리거나 직접 지정해 주세요.`
+      )
+    )
+      return;
+    startTransition(async () => {
+      const res = await restoreRegistration(r.id);
+      if (!res.ok) return onMsg({ type: "err", text: res.message });
+      onMsg({ type: "ok", text: `${r.name} 취소 되돌림 — 배차는 다시 지정해 주세요` });
       router.refresh();
     });
   }
@@ -498,10 +529,29 @@ function Row({
   };
 
   return (
-    <tr className="border-t border-border">
+    <tr
+      className={
+        "border-t border-border " +
+        // 취소된 신청은 눈에 띄게 죽여서 표시한다. 지우지 않고 남기는 이유는
+        // 납부·배차 기록을 보존하고 되돌릴 수 있게 하기 위해서다.
+        (cancelled ? "bg-surface-2/60 text-muted-2" : "")
+      }
+    >
       <td className="px-4 py-2.5 text-foreground">
         <div className="flex flex-col gap-1">
-          <span>{r.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className={cancelled ? "line-through text-muted-2" : ""}>
+              {r.name}
+            </span>
+            {cancelled && (
+              <Badge variant="danger" dot={false}>
+                취소
+              </Badge>
+            )}
+          </span>
+          {cancelled && r.cancel_reason && (
+            <span className="text-[11px] text-muted-2">{r.cancel_reason}</span>
+          )}
           {(displayRoles.length > 0 || isMaster) && (
             <span className="flex flex-wrap items-center gap-1">
               {displayRoles.map((role) => (
@@ -587,15 +637,26 @@ function Row({
             >
               <Pencil size={14} />
             </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={exclude}
-              className="text-muted-2 hover:text-danger"
-              aria-label="명단에서 제외"
-            >
-              <Trash2 size={14} />
-            </button>
+            {cancelled ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={restore}
+                className="text-xs text-primary hover:underline whitespace-nowrap"
+              >
+                되돌리기
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={exclude}
+                className="text-muted-2 hover:text-danger"
+                aria-label="신청 취소"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </div>
         </td>
       )}

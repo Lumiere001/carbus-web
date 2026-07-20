@@ -159,6 +159,13 @@ export type Database = {
             foreignKeyName: "buses_down_driver_registration_id_fkey"
             columns: ["down_driver_registration_id"]
             isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "buses_down_driver_registration_id_fkey"
+            columns: ["down_driver_registration_id"]
+            isOneToOne: false
             referencedRelation: "v_payment_balance"
             referencedColumns: ["registration_id"]
           },
@@ -168,6 +175,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registrations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_driver_registration_id_fkey"
+            columns: ["driver_registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
           },
           {
             foreignKeyName: "buses_driver_registration_id_fkey"
@@ -531,6 +545,13 @@ export type Database = {
             foreignKeyName: "payment_ledger_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
             referencedRelation: "v_payment_balance"
             referencedColumns: ["registration_id"]
           },
@@ -666,6 +687,9 @@ export type Database = {
           assigned_up_bus_id: number | null
           attendance_type: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           checked_in: boolean
           checked_out: boolean
           created_at: string
@@ -677,6 +701,7 @@ export type Database = {
           id: string
           name: string
           note: string | null
+          participation_status: Database["public"]["Enums"]["participation_status"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           roles: string[]
           student_id: string
@@ -689,6 +714,9 @@ export type Database = {
           assigned_up_bus_id?: number | null
           attendance_type: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           checked_in?: boolean
           checked_out?: boolean
           created_at?: string
@@ -700,6 +728,7 @@ export type Database = {
           id?: string
           name: string
           note?: string | null
+          participation_status?: Database["public"]["Enums"]["participation_status"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           roles?: string[]
           student_id: string
@@ -712,6 +741,9 @@ export type Database = {
           assigned_up_bus_id?: number | null
           attendance_type?: Database["public"]["Enums"]["attendance_type"]
           campus_id?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           checked_in?: boolean
           checked_out?: boolean
           created_at?: string
@@ -723,6 +755,7 @@ export type Database = {
           id?: string
           name?: string
           note?: string | null
+          participation_status?: Database["public"]["Enums"]["participation_status"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           roles?: string[]
           student_id?: string
@@ -786,6 +819,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_payment_summary"
             referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "registrations_created_by_fkey"
@@ -945,6 +985,50 @@ export type Database = {
         }
         Relationships: []
       }
+      v_cancelled: {
+        Row: {
+          balance: number | null
+          campus_id: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          fee: number | null
+          name: string | null
+          note: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          registration_id: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_campus_stats"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_3way_comparison"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_summary"
+            referencedColumns: ["campus_id"]
+          },
+        ]
+      }
       v_day_capacity: {
         Row: {
           arrived: number | null
@@ -1089,6 +1173,7 @@ export type Database = {
     }
     Enums: {
       attendance_type: "roundtrip" | "oneway" | "self"
+      participation_status: "registered" | "cancelled"
       payment_status: "unpaid" | "paid" | "waived"
       request_type: "insert" | "update" | "delete"
       system_phase: "phase1" | "phase2"
@@ -1224,6 +1309,7 @@ export const Constants = {
   public: {
     Enums: {
       attendance_type: ["roundtrip", "oneway", "self"],
+      participation_status: ["registered", "cancelled"],
       payment_status: ["unpaid", "paid", "waived"],
       request_type: ["insert", "update", "delete"],
       system_phase: ["phase1", "phase2"],
