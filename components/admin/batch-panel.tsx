@@ -104,7 +104,7 @@ export function BatchPanel({
         <h2 className="text-xl font-semibold text-foreground">배차 실행</h2>
         <p className="text-sm text-muted mt-0.5">
           버튼을 누르면 전체 인원을 호차에 자동으로 나눠 배정합니다. 같은 캠퍼스는
-          되도록 같은 호차로, 호차는 정원(44)까지 꽉 채워 미배정이 없게 합니다.
+          되도록 같은 호차로, 호차는 정원까지 꽉 채워 미배정이 없게 합니다.
           상행·하행은 따로 실행합니다.
         </p>
       </div>

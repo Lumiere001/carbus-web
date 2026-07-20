@@ -125,10 +125,21 @@ export default async function AdminDashboardPage() {
 
   // ── KPI 집계 ────────────────────────────────────────────
   const totalPeople = campuses.reduce((s, c) => s + (c.total ?? 0), 0);
-  const returnTarget = campuses.reduce((s, c) => s + (c.return_target ?? 0), 0);
   const returnedTotal = campuses.reduce((s, c) => s + (c.returned_count ?? 0), 0);
   const dayCapacity = days.reduce((s, d) => s + (d.total_capacity ?? 0), 0);
   const dayPassengers = days.reduce((s, d) => s + (d.total_passengers ?? 0), 0);
+  // 출석률 분모 — 슬롯별 "실제 배차된 인원". v_bus_occupancy(이미 조회 중)를 슬롯으로 합산.
+  // total_passengers(신청 기준)를 쓰면 미배차자(간사 차량·불참)가 분모에 남아 100%에 도달 못 한다.
+  // total_passengers 는 좌석 수요(잔여석) 지표라 그대로 두고, 출석률만 이 값을 쓴다.
+  const assignedBySlot = new Map<number, number>();
+  for (const b of buses) {
+    if (b.departure_slot_id == null) continue;
+    assignedBySlot.set(
+      b.departure_slot_id,
+      (assignedBySlot.get(b.departure_slot_id) ?? 0) + (b.up_passengers ?? 0)
+    );
+  }
+  const downAssigned = buses.reduce((s, b) => s + (b.down_passengers ?? 0), 0);
   const paidCount = payment.reduce((s, p) => s + (p.paid_count ?? 0), 0);
   const unpaidCount = payment.reduce((s, p) => s + (p.unpaid_count ?? 0), 0);
   const waivedCount = payment.reduce((s, p) => s + (p.waived_count ?? 0), 0);
@@ -189,21 +200,24 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* 출석 현황 — 출발 시간대별 도착 + 하행 귀가 (master·viewer 공통) */}
-      <Card title="출석 현황" subtitle="출발 버스 탑승 · 하행 귀가 진행률">
+      <Card
+        title="출석 현황"
+        subtitle="출발 버스 탑승 · 하행 귀가 진행률 — 분모는 배차된 인원(간사 차량·불참 제외)"
+      >
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
           {days.map((d) => (
             <AttendanceRate
               key={d.slot_id}
               label={`${d.slot_label} 출발 버스`}
               done={d.arrived ?? 0}
-              total={d.total_passengers ?? 0}
+              total={assignedBySlot.get(d.slot_id ?? -1) ?? 0}
               tone="success"
             />
           ))}
           <AttendanceRate
             label="하행 귀가"
             done={returnedTotal}
-            total={returnTarget}
+            total={downAssigned}
             tone="primary"
           />
         </div>

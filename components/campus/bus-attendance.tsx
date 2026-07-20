@@ -159,7 +159,7 @@ export function BusAttendance({
                   )}
                   {accent === "down" && (
                     <span className="text-xs font-normal text-muted-2">
-                      토요일 하행
+                      하행 (내려올 때)
                     </span>
                   )}
                 </span>
@@ -249,7 +249,10 @@ export function BusAttendance({
   return (
     <div className="space-y-6">
       {summary && (
-        <Card title="출석률" subtitle="출발 버스 탑승 · 하행 귀가">
+        <Card
+          title="출석률"
+          subtitle="출발 버스 탑승 · 하행 귀가 — 분모는 배차된 인원(간사 차량·불참 제외)"
+        >
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
             {summary.slots.map((s) => (
               <AttendanceRate

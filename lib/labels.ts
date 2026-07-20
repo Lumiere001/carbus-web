@@ -30,6 +30,24 @@ export const PAYMENT_LABELS: Record<PaymentStatus, string> = {
 
 export const PAYMENT_STATUSES: PaymentStatus[] = ["unpaid", "paid", "waived"];
 
+/**
+ * fee=0(버스 미이용 = attendance_type 'self') 행의 납부 상태 표시 규칙.
+ * fee 는 GENERATED 컬럼이라 왕복/편도 → 미이용으로 바꾸면 자동으로 0이 되지만
+ * payment_status 는 그대로 남는다. 그래서 두 가지가 섞여 있다.
+ *   - 비고에 '환불' 이 있으면 → 이미 낸 돈을 돌려줘야 하는 실제 채무. 감추면 안 됨.
+ *   - 그 외 → 애초에 부과 대상이 아니므로 '해당없음'.
+ * fee > 0 이면 null 을 돌려주고, 호출부는 기존 배지를 그대로 그린다.
+ */
+export function paymentDisplayOverride(
+  fee: number | null | undefined,
+  note: string | null | undefined
+): { label: string; variant: "warning" | "mute" } | null {
+  if ((fee ?? 0) > 0) return null;
+  if ((note ?? "").includes("환불"))
+    return { label: "환불 대기", variant: "warning" };
+  return { label: "해당없음", variant: "mute" };
+}
+
 /** CSV·폼 입력의 한글 → enum 역매핑. */
 export const ATTENDANCE_FROM_KO: Record<string, AttendanceType> = {
   왕복: "roundtrip",

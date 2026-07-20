@@ -111,13 +111,21 @@ export default async function AdminAttendancePage() {
   const downGroups = groupByBus(regs, campusName, (r) => r.assigned_down_bus_id);
 
   // 출석률 집계 — 출발 시간대별 도착 + 하행 귀가
-  // 출석률 카드 분모(신청 기준). numerator는 BusAttendance가 state로 라이브 집계.
+  // 출석률 카드 분모(배차 기준). numerator는 BusAttendance가 state로 라이브 집계.
+  // 분자가 배차된 인원만 세므로(미배차자는 명단에 안 뜨고 set_attendance도 거부),
+  // 분모도 배차 기준이어야 전원 탑승 시 100%에 도달한다. 간사 차량·불참자는 제외.
+  // 슬롯 귀속도 분자(bus-attendance)와 동일하게 "배정된 호차의 슬롯" 기준.
+  const busSlot = new Map(buses.map((b) => [b.id, b.departure_slot_id]));
   const slotStats = slots.map((s) => ({
     id: s.id,
     label: s.label,
-    total: regs.filter((r) => r.departure_slot_id === s.id).length,
+    total: regs.filter(
+      (r) =>
+        r.assigned_up_bus_id != null &&
+        busSlot.get(r.assigned_up_bus_id) === s.id
+    ).length,
   }));
-  const returnTarget = regs.filter((r) => r.uses_return_bus).length;
+  const returnTarget = regs.filter((r) => r.assigned_down_bus_id != null).length;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -143,7 +151,7 @@ export default async function AdminAttendancePage() {
       {upGroups.length === 0 && downGroups.length === 0 && (
         <Card className="p-5">
           <p className="text-sm text-muted">
-            아직 배차된 명단이 없습니다. (출석률은 신청 기준)
+            아직 배차된 명단이 없습니다. (출석률은 배차 기준)
           </p>
         </Card>
       )}

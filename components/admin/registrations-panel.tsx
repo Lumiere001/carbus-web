@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ATTENDANCE_LABELS,
   PAYMENT_LABELS,
+  paymentDisplayOverride,
   slotLabel,
   presetKeyOf,
   presetByKey,
@@ -23,6 +24,7 @@ import {
   excludeRegistration,
   setRoles,
 } from "@/lib/admin/registrations";
+import { busSelectOptions } from "@/lib/admin/bus-options";
 import { RegForm } from "@/components/admin/reg-form";
 import { Button } from "@/components/ui/button";
 import { Pencil, Plus } from "lucide-react";
@@ -37,6 +39,8 @@ export type AdminRegRow = {
   attendance_type: AttendanceType;
   departure_slot_id: number | null;
   uses_return_bus: boolean;
+  /** GENERATED 컬럼 — 미이용(self)은 0. 납부 배지 '해당없음/환불 대기' 판정에 씀. */
+  fee: number | null;
   payment_status: PaymentStatus;
   roles: string[];
   note: string | null;
@@ -44,7 +48,13 @@ export type AdminRegRow = {
   assigned_down_bus_id: number | null;
 };
 export type CampusInfo = { id: string; name: string; display_order: number };
-export type BusInfo = { id: number; name: string; departure_slot_id?: number };
+export type BusInfo = {
+  id: number;
+  name: string;
+  departure_slot_id?: number;
+  /** 정원(보조석 제외). 잔여석 표기 기준 — 배차 엔진·호차 화면과 동일하게 capacity 를 쓴다. */
+  capacity: number;
+};
 export type RoleLabel = { label: string; color: string | null };
 
 const ROLE_HEX: Record<string, string> = {
@@ -140,6 +150,21 @@ export function RegistrationsPanel({
     () => new Map(buses.map((b) => [b.id, b.name])),
     [buses]
   );
+  /** 호차별 배정 인원 (상·하행 별도) — 잔여석 표기용. rows 는 필터 전 전체 명단. */
+  const seatUsed = useMemo(() => {
+    const up = new Map<number, number>();
+    const down = new Map<number, number>();
+    for (const r of rows) {
+      if (r.assigned_up_bus_id != null)
+        up.set(r.assigned_up_bus_id, (up.get(r.assigned_up_bus_id) ?? 0) + 1);
+      if (r.assigned_down_bus_id != null)
+        down.set(
+          r.assigned_down_bus_id,
+          (down.get(r.assigned_down_bus_id) ?? 0) + 1
+        );
+    }
+    return { up, down };
+  }, [rows]);
   const countByCampus = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of rows) m.set(r.campus_id, (m.get(r.campus_id) ?? 0) + 1);
@@ -254,9 +279,9 @@ export function RegistrationsPanel({
       )}
 
       <Card>
-        <div className="overflow-x-auto">
+        <div className="max-h-[560px] overflow-auto rounded-xl">
           <table className="w-full min-w-[760px] text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
                 <th className="px-4 py-2.5">이름</th>
                 <th className="px-4 py-2.5">학번</th>
@@ -295,6 +320,8 @@ export function RegistrationsPanel({
                         r={r}
                         busName={busName}
                         buses={buses}
+                        upUsed={seatUsed.up}
+                        downUsed={seatUsed.down}
                         roleLabels={roleLabels}
                         isMaster={isMaster}
                         onMsg={setMsg}
@@ -314,6 +341,8 @@ export function RegistrationsPanel({
                     r={r}
                     busName={busName}
                     buses={buses}
+                    upUsed={seatUsed.up}
+                    downUsed={seatUsed.down}
                     roleLabels={roleLabels}
                     isMaster={isMaster}
                     onMsg={setMsg}
@@ -343,6 +372,8 @@ function Row({
   r,
   busName,
   buses,
+  upUsed,
+  downUsed,
   roleLabels,
   isMaster,
   onMsg,
@@ -355,6 +386,10 @@ function Row({
   r: AdminRegRow;
   busName: Map<number, string>;
   buses: BusInfo[];
+  /** 호차별 상행 배정 인원 — 잔여석 표기용. */
+  upUsed: Map<number, number>;
+  /** 호차별 하행 배정 인원 — 잔여석 표기용. */
+  downUsed: Map<number, number>;
   roleLabels: RoleLabel[];
   isMaster: boolean;
   onMsg: (m: Msg) => void;
@@ -436,21 +471,31 @@ function Row({
     });
   }
 
-  const busSelect = (which: "up" | "down", current: number | null) => (
-    <select
-      value={current ?? ""}
-      disabled={pending}
-      onChange={(e) => changeBus(which, e.target.value)}
-      className="text-xs border border-border-2 rounded-md px-1.5 py-1 bg-surface"
-    >
-      <option value="">미배정</option>
-      {buses.map((b) => (
-        <option key={b.id} value={b.id}>
-          {b.name}
-        </option>
-      ))}
-    </select>
-  );
+  /** 배차 select. 옵션 계산 규칙은 lib/admin/bus-options 참고(순수 함수 + 테스트). */
+  const busSelect = (which: "up" | "down", current: number | null) => {
+    const options = busSelectOptions(
+      buses,
+      which,
+      r.departure_slot_id,
+      current,
+      which === "up" ? upUsed : downUsed
+    );
+    return (
+      <select
+        value={current ?? ""}
+        disabled={pending}
+        onChange={(e) => changeBus(which, e.target.value)}
+        className="text-xs border border-border-2 rounded-md px-1.5 py-1 bg-surface"
+      >
+        <option value="">미배정</option>
+        {options.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name} (잔여 {b.seatsLeft})
+          </option>
+        ))}
+      </select>
+    );
+  };
 
   return (
     <tr className="border-t border-border">
@@ -503,9 +548,15 @@ function Row({
       <td className="px-4 py-2.5 text-muted-2">{r.student_id}</td>
       <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{attendanceLabel(r, presets, slots)}</td>
       <td className="px-4 py-2.5">
-        <Badge variant={PAY_VARIANT[r.payment_status]}>
-          {PAYMENT_LABELS[r.payment_status]}
-        </Badge>
+        {(() => {
+          // 차량비 0원(버스 미이용)이면 완납/미납 대신 '해당없음' — 환불 대기는 드러낸다.
+          const ov = paymentDisplayOverride(r.fee, r.note);
+          return (
+            <Badge variant={ov ? ov.variant : PAY_VARIANT[r.payment_status]}>
+              {ov ? ov.label : PAYMENT_LABELS[r.payment_status]}
+            </Badge>
+          );
+        })()}
       </td>
       <td className="px-4 py-2.5 text-muted">
         {isMaster

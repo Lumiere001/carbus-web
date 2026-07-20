@@ -62,6 +62,15 @@ export default async function AdminPartialPage() {
   const onewayByCampus = groupByCampus(oneway);
   const selfByCampus = groupByCampus(self);
 
+  // 칩 집계: 비고 텍스트 파싱 없이 컬럼값만으로 계산 (의미 분류는 스키마 생긴 뒤에).
+  const onewayUp = oneway.filter(
+    (r) => r.departure_slot_id !== null && !r.uses_return_bus
+  ).length;
+  const onewayDown = oneway.filter(
+    (r) => r.departure_slot_id === null && r.uses_return_bus
+  ).length;
+  const selfMissingNote = self.filter((r) => !r.note?.trim()).length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -75,13 +84,15 @@ export default async function AdminPartialPage() {
 
       {/* 섹션 1: 편도 (부분 참석) */}
       <section className="space-y-3">
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <h3 className="text-base font-semibold text-foreground">
             부분 참석자 (편도)
           </h3>
           <span className="text-sm text-muted">
             <b className="tabular-nums text-foreground">{oneway.length}</b>명
           </span>
+          <Badge variant="mute">상행만 {onewayUp}</Badge>
+          <Badge variant="mute">하행만 {onewayDown}</Badge>
         </div>
         {oneway.length === 0 ? (
           <Card className="p-5">
@@ -130,13 +141,16 @@ export default async function AdminPartialPage() {
 
       {/* 섹션 2: 미이용 (개인 이동) */}
       <section className="space-y-3">
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <h3 className="text-base font-semibold text-foreground">
             개인 이동 (버스 미이용)
           </h3>
           <span className="text-sm text-muted">
             <b className="tabular-nums text-foreground">{self.length}</b>명
           </span>
+          {selfMissingNote > 0 && (
+            <Badge variant="warning">비고 미기재 {selfMissingNote}</Badge>
+          )}
           <span className="text-xs text-muted-2">
             · KTX·자차 등 버스 안 타는 분 (전체 참석)
           </span>
