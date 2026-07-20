@@ -23,7 +23,10 @@ export async function setMasterReceived(
         master_received_note: note,
         master_received_at: new Date().toISOString(),
       },
-      { onConflict: "campus_id" }
+      // 정산 행의 키는 (event_id, campus_id) 다. campus_id 만 주면
+      // "ON CONFLICT 에 맞는 제약이 없다"로 실패한다.
+      // event_id 는 컬럼 기본값(활성 행사)이 채우므로 페이로드에 넣지 않는다.
+      { onConflict: "event_id,campus_id" }
     );
   if (error) {
     if (error.message.includes("row-level security") || error.message.includes("policy")) {
