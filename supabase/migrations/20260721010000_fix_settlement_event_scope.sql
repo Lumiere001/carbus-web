@@ -19,7 +19,7 @@
 --     송금액이 새 행사 정산에 섞인다.
 --   · campus_remit_delete 의 행사 범위 누락(보안). SECURITY DEFINER 라
 --     Phase 1 의 RESTRICTIVE 정책을 우회하는데 event_id 조건이 없어,
---     campus_admin 이 지난 행사 원장 행을 지울 수 있었다.
+--     campus_admin 이 지난 행사 장부 행을 지울 수 있었다.
 --
 -- 되돌리기: 이 파일의 두 함수를 20260520140000 의 원본 정의로 되돌리면 된다.
 --   단 그 상태는 PK 불일치로 다시 깨지므로, 되돌릴 이유는 사실상 없다.

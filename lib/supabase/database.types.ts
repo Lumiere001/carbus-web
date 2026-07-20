@@ -1051,6 +1051,8 @@ export type Database = {
           p_copy_trips?: boolean
           p_destination?: string
           p_ends_on?: string
+          p_fee_oneway?: number
+          p_fee_roundtrip?: number
           p_name: string
           p_origin?: string
           p_starts_on?: string
@@ -1074,6 +1076,14 @@ export type Database = {
       }
       set_attendance: {
         Args: { p_field: string; p_reg_id: string; p_value: boolean }
+        Returns: undefined
+      }
+      update_event_fares: {
+        Args: {
+          p_event_id: string
+          p_fee_oneway: number
+          p_fee_roundtrip: number
+        }
         Returns: undefined
       }
     }

@@ -27,7 +27,7 @@ export default async function AdminControlPage() {
       .maybeSingle(),
     supabase
       .from("events")
-      .select("id, name, subtitle, starts_on, ends_on, origin, destination, is_active, created_at")
+      .select("id, name, subtitle, starts_on, ends_on, origin, destination, fee_roundtrip, fee_oneway, is_active, created_at")
       .order("created_at", { ascending: false }),
     // 지난 행사 건수는 RLS 범위 밖이라 집계 전용 RPC 로 받는다.
     supabase.rpc("event_summary"),

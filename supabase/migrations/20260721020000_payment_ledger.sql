@@ -1,5 +1,5 @@
 -- ============================================================
--- Phase 2-A (1/2) — 결제 원장(payment_ledger)
+-- Phase 2-A (1/2) — 결제 장부(payment_ledger)
 -- ============================================================
 -- 왜?
 --   지금은 차량비를 얼마 청구했는지가 registrations.fee 한 칸에만 있고,
@@ -11,21 +11,21 @@
 --   "낸 돈 > 현재 청구액" 인 사람이 46명 / 1,350,000원이다.
 --   그중 28명은 비고에 아무 언급이 없어 아무도 모르고 있었다.
 --
---   → 돈이 오간 내역을 한 줄씩 쌓는 원장을 만든다. 참여 형태가 바뀌어도
+--   → 돈이 오간 내역을 한 줄씩 쌓는 장부을 만든다. 참여 형태가 바뀌어도
 --     과거 기록은 지워지지 않는다.
 --
--- 설계 결정: payment_status 는 그대로 둔다(원장에서 파생시키지 않는다).
---   · Postgres 생성컬럼은 다른 테이블을 참조할 수 없어 원장 합계를 넣을 수 없다.
+-- 설계 결정: payment_status 는 그대로 둔다(장부에서 파생시키지 않는다).
+--   · Postgres 생성컬럼은 다른 테이블을 참조할 수 없어 장부 합계를 넣을 수 없다.
 --   · 'waived'(면제) 24건은 금액이 없는 정책 판단이라 금액 행으로 표현 못 한다.
 --   · registrations 만 realtime publication 에 있어서, 파생으로 바꾸면
 --     납부 변경이 다른 임역원 화면에 실시간 반영되지 않는다(조용히 깨짐).
---   원장은 '기록'을, payment_status 는 '현재 상태'를 담당한다.
+--   장부은 '기록'을, payment_status 는 '현재 상태'를 담당한다.
 --
 -- 되돌리기: drop table payment_ledger; 그리고 fee 를 다시 GENERATED 로.
 --   (이 파일 하단 주석에 복원 SQL 을 적어둔다)
 -- ============================================================
 
--- ── 1. 원장 ──────────────────────────────────────────────────
+-- ── 1. 장부 ──────────────────────────────────────────────────
 create table if not exists public.payment_ledger (
   id              uuid primary key default gen_random_uuid(),
   event_id        uuid not null default public.active_event_id() references public.events(id),
@@ -47,7 +47,7 @@ create table if not exists public.payment_ledger (
 );
 
 comment on table public.payment_ledger is
-  '차량비 원장. 청구·수납·환불·면제를 한 줄씩 쌓는다. registrations.fee 가 바뀌어도 과거 기록은 남는다.';
+  '차량비 장부. 청구·수납·환불·면제를 한 줄씩 쌓는다. registrations.fee 가 바뀌어도 과거 기록은 남는다.';
 
 create index if not exists idx_ledger_reg   on public.payment_ledger (registration_id, occurred_at);
 create index if not exists idx_ledger_event on public.payment_ledger (event_id);
@@ -103,7 +103,7 @@ end $$;
 --   · 참여 형태가 바뀌면, **아직 안 낸 사람만** 청구액을 다시 계산한다.
 --     이미 낸 사람의 청구액은 건드리지 않는다 — 그 순간 받은 돈의 근거가
 --     사라지기 때문이다. 이게 지금까지 46명이 안 보이던 원인이다.
---     낸 사람의 금액을 바꿔야 하면 원장에 환불·조정을 남기면 된다.
+--     낸 사람의 금액을 바꿔야 하면 장부에 환불·조정을 남기면 된다.
 create or replace function public.apply_event_fare()
 returns trigger language plpgsql as $$
 declare

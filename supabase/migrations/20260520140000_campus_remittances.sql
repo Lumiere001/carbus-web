@@ -1,9 +1,9 @@
 -- ============================================================
--- campus_remittances — 캠퍼스 → 총단 송금 원장 (누적 로그)
+-- campus_remittances — 캠퍼스 → 총단 송금 장부 (누적 로그)
 -- ============================================================
 -- 왜? 송금은 여러 번 나눠 일어남 (걷힌 돈 일부만, 마감 맞춰 분할 송금).
 --     단일 합계(campus_payment_settlements.campus_remitted_total)로는
---     이력 추적 불가 → 항목 단위 원장 + 누계 동기화.
+--     이력 추적 불가 → 항목 단위 장부 + 누계 동기화.
 -- 모델: 걷어야 할(목표) / 걷힌(완납) / 총단 송금 누계 / 캠퍼스 보유 잔액.
 -- ============================================================
 
@@ -32,7 +32,7 @@ CREATE POLICY remit_master_all ON campus_remittances
   USING (public.current_role() = 'master')
   WITH CHECK (public.current_role() = 'master');
 
--- 원장 변경 시 campus_payment_settlements.campus_remitted_total = SUM 동기화
+-- 장부 변경 시 campus_payment_settlements.campus_remitted_total = SUM 동기화
 -- (3중 비교 뷰 v_payment_3way_comparison 가 campus_remitted_total 을 읽으므로 유지).
 CREATE OR REPLACE FUNCTION public.sync_campus_remitted_total()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -82,5 +82,5 @@ BEGIN
 END $$;
 GRANT EXECUTE ON FUNCTION public.campus_remit_delete(uuid) TO authenticated;
 
--- 구 campus_remit(총액 덮어쓰기) 폐기 — 이제 원장 항목 추가 방식 사용.
+-- 구 campus_remit(총액 덮어쓰기) 폐기 — 이제 장부 항목 추가 방식 사용.
 DROP FUNCTION IF EXISTS public.campus_remit(int, text);

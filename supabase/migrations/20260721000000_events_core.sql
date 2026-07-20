@@ -28,7 +28,7 @@ create table if not exists public.events (
   origin        text,                 -- 출발 지역 (예: 광주)
   destination   text,                 -- 도착 지역 (예: 평창)
   -- 요금은 지금 registrations.fee 가 GENERATED 로 하드코딩하고 있다.
-  -- 여기에 보관만 해두고 실제 전환은 Phase 2(원장 도입)에서 한다.
+  -- 여기에 보관만 해두고 실제 전환은 Phase 2(장부 도입)에서 한다.
   fee_roundtrip int         not null default 50000,
   fee_oneway    int         not null default 25000,
   is_active     boolean     not null default false,

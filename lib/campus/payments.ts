@@ -19,7 +19,7 @@ export async function setPaymentStatus(
   return { ok: true };
 }
 
-/** 송금 항목 추가 (campus_remit_add RPC — 본인 캠퍼스 원장에 누적). */
+/** 송금 항목 추가 (campus_remit_add RPC — 본인 캠퍼스 장부에 누적). */
 export async function addRemittance(
   amount: number,
   note: string | null

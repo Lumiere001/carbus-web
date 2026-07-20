@@ -10,6 +10,10 @@ export type EventRow = {
   ends_on: string | null;
   origin: string | null;
   destination: string | null;
+  /** 이 행사의 왕복 차량비. 신청자 청구액이 이 금액으로 매겨진다. */
+  fee_roundtrip: number;
+  /** 이 행사의 편도 차량비. */
+  fee_oneway: number;
   is_active: boolean;
   created_at: string;
 };
@@ -29,6 +33,10 @@ export type NewEventInput = {
   copyTrips: boolean;
   /** 차량(호차)을 지난 행사에서 복제. 차량순장·고정탑승은 비워진다. */
   copyBuses: boolean;
+  /** 왕복 차량비. 생략하면 직전 행사 금액을 이어받는다. */
+  feeRoundtrip?: number | null;
+  /** 편도 차량비. 생략하면 직전 행사 금액을 이어받는다. */
+  feeOneway?: number | null;
 };
 
 /**
@@ -46,9 +54,30 @@ export async function createEvent(input: NewEventInput): Promise<Result<string>>
     p_destination: input.destination ?? undefined,
     p_copy_trips: input.copyTrips,
     p_copy_buses: input.copyBuses,
+    p_fee_roundtrip: input.feeRoundtrip ?? undefined,
+    p_fee_oneway: input.feeOneway ?? undefined,
   });
   if (error) return { ok: false, message: humanize(error.message) };
   return { ok: true, value: data as string };
+}
+
+/**
+ * 진행 중인 행사의 차량비 변경.
+ * 이미 등록된 사람의 청구액은 바뀌지 않고, 이후 등록분부터 적용된다.
+ */
+export async function updateEventFares(
+  eventId: string,
+  feeRoundtrip: number,
+  feeOneway: number
+): Promise<Result> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("update_event_fares", {
+    p_event_id: eventId,
+    p_fee_roundtrip: feeRoundtrip,
+    p_fee_oneway: feeOneway,
+  });
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true, value: undefined };
 }
 
 /** 활성 행사를 바꾼다(잘못 전환했을 때 되돌리기 포함). */

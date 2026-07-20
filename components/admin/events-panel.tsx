@@ -6,7 +6,14 @@ import { CalendarPlus, RotateCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { createEvent, activateEvent, type EventRow } from "@/lib/admin/events";
+import {
+  createEvent,
+  activateEvent,
+  updateEventFares,
+  type EventRow,
+} from "@/lib/admin/events";
+
+const won = (n: number) => n.toLocaleString("ko-KR");
 
 /** 행사별 신청·배차 건수 (활성 행사 판단용 표시). */
 export type EventCounts = Record<string, { regs: number; batches: number }>;
@@ -35,6 +42,33 @@ export function EventsPanel({
   const active = events.find((e) => e.is_active) ?? null;
   const past = events.filter((e) => !e.is_active);
 
+  // 새 행사 차량비 — 기본값은 진행 중인 행사 금액(대개 비슷하므로)
+  const [feeRt, setFeeRt] = useState(String(active?.fee_roundtrip ?? 50000));
+  const [feeOw, setFeeOw] = useState(String(active?.fee_oneway ?? 25000));
+
+  // 진행 중인 행사 요금 수정
+  const [fareEdit, setFareEdit] = useState(false);
+  const [curRt, setCurRt] = useState(String(active?.fee_roundtrip ?? 50000));
+  const [curOw, setCurOw] = useState(String(active?.fee_oneway ?? 25000));
+
+  function saveFares() {
+    if (!active) return;
+    const rt = Number(curRt), ow = Number(curOw);
+    if (!Number.isFinite(rt) || !Number.isFinite(ow) || rt < 0 || ow < 0) {
+      return setMsg({ type: "err", text: "차량비는 0원 이상의 숫자로 입력해 주세요." });
+    }
+    startTransition(async () => {
+      const res = await updateEventFares(active.id, rt, ow);
+      if (!res.ok) return setMsg({ type: "err", text: res.message });
+      setFareEdit(false);
+      setMsg({
+        type: "ok",
+        text: `차량비를 왕복 ${won(rt)}원 · 편도 ${won(ow)}원으로 바꿨습니다. 이미 등록된 분의 금액은 그대로입니다.`,
+      });
+      router.refresh();
+    });
+  }
+
   function submit() {
     if (!name.trim()) return setMsg({ type: "err", text: "행사 이름을 입력해 주세요." });
     startTransition(async () => {
@@ -47,6 +81,8 @@ export function EventsPanel({
         destination: destination.trim() || null,
         copyTrips,
         copyBuses,
+        feeRoundtrip: Number(feeRt),
+        feeOneway: Number(feeOw),
       });
       if (!res.ok) return setMsg({ type: "err", text: res.message });
       setOpen(false);
@@ -98,6 +134,69 @@ export function EventsPanel({
                 신청 {counts[active.id]?.regs ?? 0}건
                 {period(active) ? ` · ${period(active)}` : ""}
               </span>
+            </div>
+          )}
+
+          {/* 진행 중인 행사의 차량비 */}
+          {active && (
+            <div className="rounded-lg border border-border px-3 py-2.5 space-y-2">
+              {!fareEdit ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-2 text-xs">차량비</span>
+                  <span className="text-foreground tabular-nums">
+                    왕복 {won(active.fee_roundtrip)}원
+                  </span>
+                  <span className="text-muted-2">·</span>
+                  <span className="text-foreground tabular-nums">
+                    편도 {won(active.fee_oneway)}원
+                  </span>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      setCurRt(String(active.fee_roundtrip));
+                      setCurOw(String(active.fee_oneway));
+                      setFareEdit(true);
+                    }}
+                    className="ml-auto text-xs text-primary hover:underline disabled:opacity-50"
+                  >
+                    금액 바꾸기
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="왕복">
+                      <input
+                        type="number" min="0" step="1000" autoFocus
+                        value={curRt}
+                        onChange={(e) => setCurRt(e.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="편도">
+                      <input
+                        type="number" min="0" step="1000"
+                        value={curOw}
+                        onChange={(e) => setCurOw(e.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+                  <p className="text-xs text-muted-2">
+                    <b className="text-foreground">이미 등록된 분의 금액은 바뀌지 않습니다.</b>{" "}
+                    앞으로 등록하는 분부터 적용됩니다.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button onClick={saveFares} disabled={pending}>
+                      {pending ? "저장 중…" : "저장"}
+                    </Button>
+                    <Button variant="secondary" onClick={() => setFareEdit(false)} disabled={pending}>
+                      취소
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -167,6 +266,26 @@ export function EventsPanel({
                   <input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="예: 무주" className={inputCls} />
                 </Field>
               </div>
+
+              <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
+                <Field label="왕복 차량비">
+                  <input
+                    type="number" min="0" step="1000"
+                    value={feeRt} onChange={(e) => setFeeRt(e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="편도 차량비">
+                  <input
+                    type="number" min="0" step="1000"
+                    value={feeOw} onChange={(e) => setFeeOw(e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+              <p className="text-xs text-muted-2 -mt-1">
+                이 행사에서 신청자에게 매길 차량비입니다. 나중에 바꿀 수 있습니다.
+              </p>
 
               <div className="space-y-1.5 border-t border-border pt-3">
                 <label className="flex items-center gap-2 text-sm text-muted">
