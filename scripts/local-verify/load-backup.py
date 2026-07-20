@@ -8,7 +8,7 @@
 """
 import json, subprocess, sys, pathlib
 
-BACKUP = pathlib.Path("/Users/east_star/Backups/carbus-web/2026-07-20_2150")
+BACKUP = pathlib.Path("/Users/east_star/Backups/carbus-web/2026-07-21_0038-pre-phase1")
 CONTAINER = "supabase_db_carbus-web"
 # FK 순서 무관(replica 모드)이지만 가독성을 위해 논리 순서대로
 TABLES = [
@@ -53,7 +53,12 @@ def main():
         if not rows:
             summary.append((t, 0))
             continue
-        cols = insertable_columns(t)
+        # 백업에 실제로 들어 있는 컬럼만 INSERT 한다.
+        # 백업을 뜬 뒤에 추가된 컬럼(예: Phase 1 의 event_id)을 목록에 넣으면
+        # jsonb 에 키가 없어 NULL 이 명시적으로 들어가고, 그 순간 컬럼 DEFAULT 가
+        # 무력화돼 NOT NULL 위반이 난다. DEFAULT 가 채우게 두려면 아예 빼야 한다.
+        present = set().union(*(r.keys() for r in rows))
+        cols = [c for c in insertable_columns(t) if c in present]
         collist = ", ".join(f'"{c}"' for c in cols)
         payload = json.dumps(rows, ensure_ascii=False).replace("'", "''")
         stmts.append(

@@ -156,11 +156,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "buses_down_driver_registration_id_fkey"
+            columns: ["down_driver_registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
             foreignKeyName: "buses_driver_registration_id_fkey"
             columns: ["driver_registration_id"]
             isOneToOne: false
             referencedRelation: "registrations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_driver_registration_id_fkey"
+            columns: ["driver_registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
           },
           {
             foreignKeyName: "buses_event_id_fkey"
@@ -453,6 +467,74 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      payment_ledger: {
+        Row: {
+          actor: string | null
+          amount: number
+          created_at: string
+          event_id: string
+          id: string
+          kind: string
+          occurred_at: string
+          reason: string | null
+          registration_id: string
+          source: string
+        }
+        Insert: {
+          actor?: string | null
+          amount: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          kind: string
+          occurred_at?: string
+          reason?: string | null
+          registration_id: string
+          source?: string
+        }
+        Update: {
+          actor?: string | null
+          amount?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          occurred_at?: string
+          reason?: string | null
+          registration_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_ledger_actor_fkey"
+            columns: ["actor"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -888,6 +970,59 @@ export type Database = {
           system_paid_total: number | null
         }
         Relationships: []
+      }
+      v_payment_balance: {
+        Row: {
+          balance: number | null
+          campus_id: string | null
+          charged_now: number | null
+          charged_total: number | null
+          event_id: string | null
+          name: string | null
+          note: string | null
+          paid_total: number | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          refunded_total: number | null
+          registration_id: string | null
+          waived_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_campus_stats"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_3way_comparison"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_summary"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_payment_summary: {
         Row: {

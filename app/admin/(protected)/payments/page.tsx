@@ -4,6 +4,7 @@ import {
   PaymentsPanel,
   type ThreeWayRow,
   type WaivedRow,
+  type BalanceRow,
 } from "@/components/admin/payments-panel";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function AdminPaymentsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [rowsRes, campusRes, summaryRes, waivedRes] = await Promise.all([
+  const [rowsRes, campusRes, summaryRes, waivedRes, balanceRes] = await Promise.all([
     supabase.from("v_payment_3way_comparison").select("*"),
     supabase.from("campuses").select("id, name, display_order"),
     supabase
@@ -32,6 +33,13 @@ export default async function AdminPaymentsPage() {
       .select("id, name, campus_id, note")
       .eq("payment_status", "waived")
       .order("name"),
+    // 낸 돈이 현재 청구액보다 많은 사람 (원장 계산). 참여형태를 바꾸면서
+    // 청구액이 줄었는데 이미 받은 돈은 그대로인 경우 — 환불 확인 대상.
+    supabase
+      .from("v_payment_balance")
+      .select("registration_id, name, campus_id, charged_now, paid_total, balance, note")
+      .gt("balance", 0)
+      .order("balance", { ascending: false }),
   ]);
 
   const orderOf = new Map(
@@ -66,6 +74,16 @@ export default async function AdminPaymentsPage() {
     note: r.note,
   }));
 
+  const balances: BalanceRow[] = (balanceRes.data ?? []).map((b) => ({
+    registration_id: b.registration_id as string,
+    name: (b.name as string) ?? "—",
+    campus_name: campusName.get(b.campus_id as string) ?? "—",
+    charged_now: b.charged_now ?? 0,
+    paid_total: b.paid_total ?? 0,
+    balance: b.balance ?? 0,
+    note: b.note ?? null,
+  }));
+
   return (
     <div className="space-y-5">
       <div>
@@ -79,6 +97,7 @@ export default async function AdminPaymentsPage() {
         rows={sorted as ThreeWayRow[]}
         isMaster={isMaster}
         waived={waived}
+        balances={balances}
       />
     </div>
   );

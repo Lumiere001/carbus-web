@@ -30,6 +30,17 @@ export type WaivedRow = {
   note: string | null;
 };
 
+/** 낸 돈이 청구액보다 많은 사람 (원장 계산). 확정 채무가 아니라 확인 대상. */
+export type BalanceRow = {
+  registration_id: string;
+  name: string;
+  campus_name: string;
+  charged_now: number;
+  paid_total: number;
+  balance: number;
+  note: string | null;
+};
+
 const won = (n: number) => n.toLocaleString("ko-KR");
 
 /** 차이 셀: 0이면 중립, 아니면 절댓값 기준 색상 강조. */
@@ -50,10 +61,12 @@ export function PaymentsPanel({
   rows,
   isMaster,
   waived,
+  balances,
 }: {
   rows: ThreeWayRow[];
   isMaster: boolean;
   waived: WaivedRow[];
+  balances: BalanceRow[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -221,6 +234,45 @@ export function PaymentsPanel({
       <p className="text-xs text-muted-2">
         차이 0이면 정상. 노랑(±5만 미만)·빨강(±5만 이상)은 점검 필요.
       </p>
+
+      {/* 낸 돈 > 청구액 — 원장 계산 결과 (master 전용) */}
+      {isMaster && balances.length > 0 && (
+        <Card
+          title="차액 확인 필요"
+          subtitle={`${balances.length}명 · 합계 ${won(
+            balances.reduce((s, b) => s + b.balance, 0)
+          )}원 — 낸 금액이 현재 청구액보다 많습니다`}
+        >
+          <div className="px-5 pt-4 text-xs text-muted leading-relaxed">
+            왕복으로 내고 나서 하행을 타지구 차량으로 바꾸거나 참석을 취소한 경우입니다.
+            <b className="text-foreground"> 현장에서 이미 돌려드렸을 수 있으니</b> 확인이
+            필요합니다. 비고에 환불이라고 적어두지 않은 분도 포함돼 있습니다.
+          </div>
+          <div className="mt-3 max-h-96 overflow-y-auto divide-y divide-border">
+            {balances.map((b) => (
+              <div key={b.registration_id} className="px-5 py-2.5">
+                <div className="flex items-center gap-2">
+                  <Badge variant="mute" dot={false}>
+                    {b.campus_name}
+                  </Badge>
+                  <span className="text-sm text-foreground">{b.name}</span>
+                  <span className="ml-auto text-sm font-medium text-warning tabular-nums">
+                    +{won(b.balance)}원
+                  </span>
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-2">
+                  <span className="tabular-nums">
+                    낸 돈 {won(b.paid_total)}원 · 현재 청구 {won(b.charged_now)}원
+                  </span>
+                  {b.note && (
+                    <span className="truncate max-w-full">· {b.note}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* 면제자 통합 명단 (master 전용) */}
       {isMaster && (
