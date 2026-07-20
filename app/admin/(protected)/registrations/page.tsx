@@ -27,14 +27,14 @@ export default async function AdminRegistrationsPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, payment_status, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
+        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, fee, payment_status, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
       )
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name, display_order"),
     supabase
       .from("buses")
       .select(
-        "id, name, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, departure_slot_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("role_labels").select("label, color").order("display_order"),

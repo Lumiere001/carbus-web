@@ -128,7 +128,7 @@ export function BusesPanel({
         : (
           <section>
             <h3 className="text-sm font-medium text-muted mb-3">
-              토요일 하행 · {buses.length}대 (상행과 독립 배차)
+              하행 (내려올 때) · {buses.length}대 (상행과 독립 배차)
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {[...buses]
@@ -141,7 +141,7 @@ export function BusesPanel({
                     passengers={b.downPassengers}
                     candidates={candidates}
                     buses={buses}
-                    dayText="토요일 하행"
+                    dayText="하행 (내려올 때)"
                     isMaster={isMaster}
                     onPatch={(f) => patch(b.id, f)}
                     onMsg={setMsg}

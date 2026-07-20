@@ -21,6 +21,7 @@ import {
   presetByKey,
   PAYMENT_LABELS,
   PAYMENT_STATUSES,
+  paymentDisplayOverride,
   type AttendancePreset,
 } from "@/lib/labels";
 import type { PaymentStatus } from "@/lib/supabase/types";
@@ -332,6 +333,8 @@ export function RegistrationGrid({
           return (
             <PaymentCell
               status={row.payment_status}
+              fee={row.fee}
+              note={row.note}
               conflict={conflict}
               onChange={(s) => savePayment(row, s)}
             />
@@ -696,20 +699,26 @@ function BusCell({ value, label }: { value: number | null; label: string }) {
 /** 납부 셀: Badge 비주얼 + 투명 select 오버레이(기존 select 동작 유지). */
 function PaymentCell({
   status,
+  fee,
+  note,
   conflict,
   onChange,
 }: {
   status: PaymentStatus;
+  fee: number | null;
+  note: string | null;
   conflict: boolean;
   onChange: (s: PaymentStatus) => void;
 }) {
+  // 차량비 0원(버스 미이용)이면 완납/미납 대신 '해당없음' — 단 환불 대기는 드러낸다.
+  const override = paymentDisplayOverride(fee, note);
   return (
     <span className="relative inline-flex">
       <Badge
-        variant={PAYMENT_VARIANT[status]}
+        variant={override ? override.variant : PAYMENT_VARIANT[status]}
         className={cn(conflict && "ring-2 ring-danger")}
       >
-        {PAYMENT_LABELS[status]}
+        {override ? override.label : PAYMENT_LABELS[status]}
       </Badge>
       <select
         value={status}

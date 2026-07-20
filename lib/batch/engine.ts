@@ -274,7 +274,7 @@ export function runBatch(
 
   // ════════════════════ 하행 (DOWN) — 독립 ════════════════════
   if (runDown) {
-    // 토요일 9대 모두 운행. 상행 호차 상속 X.
+    // 하행은 전 호차 운행(대수는 DB buses 기준). 상행 호차 상속 X.
     const downBuses: BusWork[] = buses.map((b) => ({ ...b, count: 0 }));
     const pinnedDown = new Set<string>();
 
