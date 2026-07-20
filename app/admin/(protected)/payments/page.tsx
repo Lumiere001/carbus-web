@@ -33,7 +33,7 @@ export default async function AdminPaymentsPage() {
       .select("id, name, campus_id, note")
       .eq("payment_status", "waived")
       .order("name"),
-    // 낸 돈이 현재 청구액보다 많은 사람 (원장 계산). 참여형태를 바꾸면서
+    // 낸 돈이 현재 청구액보다 많은 사람 (장부 계산). 참여형태를 바꾸면서
     // 청구액이 줄었는데 이미 받은 돈은 그대로인 경우 — 환불 확인 대상.
     supabase
       .from("v_payment_balance")

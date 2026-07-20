@@ -1,9 +1,9 @@
 -- ============================================================
--- Phase 2-A (2/2) — 현재 상태를 원장 초기 잔액으로 이관
+-- Phase 2-A (2/2) — 현재 상태를 장부 초기 잔액으로 이관
 -- ============================================================
 -- 원칙:
 --   1. registrations 를 UPDATE 하지 않는다. 감사로그에 "아무도 안 바꾼" 599건이
---      쌓이는 것을 막기 위해서다(Phase 1 에서 겪음). 원장에 INSERT 만 한다.
+--      쌓이는 것을 막기 위해서다(Phase 1 에서 겪음). 장부에 INSERT 만 한다.
 --   2. 비고 텍스트로 판정하지 않는다. "환불해야 할 것은 없음" 같은 부정문이
 --      '환불' 부분문자열에 걸리고, 반대로 아무 말 없이 차액이 생긴 28명은 놓친다.
 --      금액은 금액으로만 계산한다.
@@ -83,12 +83,12 @@ begin
 
   select count(*) into v_diff from v_payment_balance where balance > 0;
 
-  raise notice '원장 이관: 청구 %건 / 수납 %건 / 면제 %건 → 차액 발생 %명',
+  raise notice '장부 이관: 청구 %건 / 수납 %건 / 면제 %건 → 차액 발생 %명',
     v_charge, v_pay, v_waive, v_diff;
 end $$;
 
 -- ── 검증 ─────────────────────────────────────────────────────
--- 원장 합계가 기존 화면 숫자(v_payment_summary)와 어긋나면 중단한다.
+-- 장부 합계가 기존 화면 숫자(v_payment_summary)와 어긋나면 중단한다.
 do $$
 declare
   v_view_paid  bigint;
@@ -97,17 +97,17 @@ begin
   select coalesce(sum(paid_total), 0) into v_view_paid from v_payment_summary;
 
   -- 뷰는 self 를 제외하고 '현재 청구액' 기준으로 합산한다.
-  -- 원장의 수납은 '납부 시점 청구액'이라 더 클 수 있다(그 차이가 곧 환불 대상).
+  -- 장부의 수납은 '납부 시점 청구액'이라 더 클 수 있다(그 차이가 곧 환불 대상).
   select coalesce(sum(amount), 0) into v_ledger_pay
     from payment_ledger l
     join registrations r on r.id = l.registration_id
    where l.kind = 'payment' and r.attendance_type in ('roundtrip','oneway');
 
   if v_ledger_pay < v_view_paid then
-    raise exception '원장 수납합(%)이 기존 집계(%)보다 작습니다 — 이관 누락',
+    raise exception '장부 수납합(%)이 기존 집계(%)보다 작습니다 — 이관 누락',
       v_ledger_pay, v_view_paid;
   end if;
 
-  raise notice '검증: 기존 집계 %원 / 원장 수납 %원 (차 %원 = 참여형태 변경분)',
+  raise notice '검증: 기존 집계 %원 / 장부 수납 %원 (차 %원 = 참여형태 변경분)',
     v_view_paid, v_ledger_pay, v_ledger_pay - v_view_paid;
 end $$;

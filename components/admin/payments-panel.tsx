@@ -30,7 +30,7 @@ export type WaivedRow = {
   note: string | null;
 };
 
-/** 낸 돈이 청구액보다 많은 사람 (원장 계산). 확정 채무가 아니라 확인 대상. */
+/** 낸 돈이 청구액보다 많은 사람 (장부 계산). 확정 채무가 아니라 확인 대상. */
 export type BalanceRow = {
   registration_id: string;
   name: string;
@@ -235,7 +235,7 @@ export function PaymentsPanel({
         차이 0이면 정상. 노랑(±5만 미만)·빨강(±5만 이상)은 점검 필요.
       </p>
 
-      {/* 낸 돈 > 청구액 — 원장 계산 결과 (master 전용) */}
+      {/* 낸 돈 > 청구액 — 장부 계산 결과 (master 전용) */}
       {isMaster && balances.length > 0 && (
         <Card
           title="차액 확인 필요"
