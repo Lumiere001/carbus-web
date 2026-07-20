@@ -27,7 +27,7 @@ export default async function AdminRegistrationsPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, fee, payment_status, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
+        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, fee, payment_status, participation_status, cancel_reason, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
       )
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name, display_order"),

@@ -28,6 +28,8 @@ export default async function CampusPaymentsPage() {
     supabase
       .from("registrations")
       .select("id, name, student_id, attendance_type, fee, payment_status")
+      // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
+      .neq("participation_status", "cancelled")
       .eq("campus_id", campusId)
       // 버스 미이용(self)은 차량비 없음 → 정산 화면에서 제외 (전체는 /campus 그리드에서 봄)
       .in("attendance_type", ["roundtrip", "oneway"])

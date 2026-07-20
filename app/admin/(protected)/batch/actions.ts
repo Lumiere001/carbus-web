@@ -50,7 +50,9 @@ export async function runBatchAction(
       .from("registrations")
       .select(
         "id, name, campus_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, roles"
-      ),
+      )
+      // 취소자는 배차 대상이 아니다. 빼지 않으면 좌석을 차지하는 유령 승객이 된다.
+      .neq("participation_status", "cancelled"),
     supabase
       .from("buses")
       .select(

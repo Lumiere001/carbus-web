@@ -60,6 +60,8 @@ export default async function CampusBusesPage() {
       .select(
         "id, name, student_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
       )
+      // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
+      .neq("participation_status", "cancelled")
       .eq("campus_id", campusId)
       .order("name"),
     supabase.from("buses").select("id, name, departure_slot_id").order("id"),

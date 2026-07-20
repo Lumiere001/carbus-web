@@ -162,10 +162,39 @@ export async function setRoles(id: string, roles: string[]): Promise<Result> {
   return { ok: true };
 }
 
-/** 전체 명단에서 제외 (등록 삭제). master 전용. audit 자동 기록. */
-export async function excludeRegistration(id: string): Promise<Result> {
+/**
+ * 신청 취소. master 전용. audit 자동 기록.
+ *
+ * 행을 지우지 않고 상태만 바꾼다. 예전엔 삭제였는데 그 방식으로 81건이
+ * 사라졌고, 그중 10건(225,000원)은 이미 돈을 받은 사람이었다. 납부·배차
+ * 기록이 함께 사라져 되돌릴 수 없었다. 지금은 DB 트리거가 앱에서 오는
+ * 삭제를 막는다.
+ *
+ * 취소하면 좌석·출석·차량순장·고정탑승이 자동으로 반납된다.
+ */
+export async function excludeRegistration(
+  id: string,
+  reason?: string | null
+): Promise<Result> {
   const supabase = createClient();
-  const { error } = await supabase.from("registrations").delete().eq("id", id);
+  const { error } = await supabase
+    .from("registrations")
+    .update({
+      participation_status: "cancelled",
+      cancel_reason: reason?.trim() || null,
+    })
+    .eq("id", id);
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true };
+}
+
+/** 취소 되돌리기. 좌석은 자동 복구하지 않는다(다른 사람이 이미 앉았을 수 있다). */
+export async function restoreRegistration(id: string): Promise<Result> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("registrations")
+    .update({ participation_status: "registered" })
+    .eq("id", id);
   if (error) return { ok: false, message: humanize(error.message) };
   return { ok: true };
 }
