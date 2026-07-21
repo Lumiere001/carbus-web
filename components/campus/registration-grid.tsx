@@ -17,14 +17,13 @@ import {
   deleteRegistration,
 } from "@/lib/registrations/mutations";
 import {
-  presetKeyOf,
-  presetByKey,
   PAYMENT_LABELS,
   PAYMENT_STATUSES,
   paymentDisplayOverride,
-  type AttendancePreset,
+  tripOptions,
+  type TripOption,
 } from "@/lib/labels";
-import type { PaymentStatus } from "@/lib/supabase/types";
+import type { PaymentStatus, EventTrip } from "@/lib/supabase/types";
 import { sortRegistrations, conflictRowIdsOf } from "@/lib/registrations/sort";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,11 +32,12 @@ import { cn } from "@/lib/utils";
 type Bus = { id: number; name: string };
 type Toast = { type: "ok" | "err"; text: string };
 
-/** 빈 행(추가용) draft. 참석/일정 기본값은 첫 active 슬롯의 왕복 preset. */
+/** 빈 행(추가용) draft. 상·하행 편을 각각 고른다(참여 형태는 DB 가 파생). */
 type Draft = {
   name: string;
   student_id: string;
-  presetKey: string;
+  upTripId: number | null;
+  downTripId: number | null;
   note: string;
 };
 
@@ -56,18 +56,19 @@ export function RegistrationGrid({
   campusName,
   initialRows,
   buses,
-  presets,
+  trips,
 }: {
   campusId: string;
   campusName: string;
   initialRows: RegistrationRow[];
   buses: Bus[];
-  presets: AttendancePreset[];
+  trips: EventTrip[];
 }) {
   const emptyDraft: Draft = {
     name: "",
     student_id: "",
-    presetKey: presets[0]?.key ?? "",
+    upTripId: null as number | null,
+    downTripId: null as number | null,
     note: "",
   };
   const [rows, setRows] = useState<RegistrationRow[]>(initialRows);
@@ -162,22 +163,22 @@ export function RegistrationGrid({
     replaceRow(res.row);
   }
 
-  // 참석/일정 preset 변경 (3필드 동시).
-  async function savePreset(row: RegistrationRow, key: string) {
-    const preset = presetByKey(key, presets);
-    if (!preset) return;
+  /**
+   * 상행·하행 편 변경.
+   *
+   * 두 개의 독립 select 로 보이지만 **DB write 는 반드시 한 번**이다.
+   * 따로 보내면 (a) version 이 두 번 튀어 다른 임역원에게 충돌이 두 번 뜨고,
+   * (b) 중간 상태(둘 다 null = 버스 미이용)가 잠깐 저장되면서 요금 트리거가
+   * 0원을 찍는다. attendance_type 은 DB 파생이라 보내지 않는다.
+   */
+  async function saveTrips(
+    row: RegistrationRow,
+    patch: { up_trip_id?: number | null; down_trip_id?: number | null }
+  ) {
     const res = await updateCells(
       row.id,
-      {
-        attendance_type: row.attendance_type,
-        departure_slot_id: row.departure_slot_id,
-        uses_return_bus: row.uses_return_bus,
-      },
-      {
-        attendance_type: preset.attendance_type,
-        departure_slot_id: preset.departure_slot_id,
-        uses_return_bus: preset.uses_return_bus,
-      }
+      { up_trip_id: row.up_trip_id, down_trip_id: row.down_trip_id },
+      { up_trip_id: row.up_trip_id, down_trip_id: row.down_trip_id, ...patch }
     );
     if (!res.ok) {
       if (res.conflict) handleConflict(row.id, res);
@@ -219,18 +220,13 @@ export function RegistrationGrid({
       setToast({ type: "err", text: "이름과 학번을 입력하세요" });
       return;
     }
-    const preset = presetByKey(draft.presetKey, presets);
-    if (!preset) {
-      setToast({ type: "err", text: "참석/일정을 선택하세요" });
-      return;
-    }
+    // attendance_type 은 보내지 않는다 — DB 트리거가 두 편에서 파생한다.
     const res = await insertRegistration({
       campus_id: campusId,
       name: draft.name.trim(),
       student_id: draft.student_id.trim(),
-      attendance_type: preset.attendance_type,
-      departure_slot_id: preset.departure_slot_id,
-      uses_return_bus: preset.uses_return_bus,
+      up_trip_id: draft.upTripId,
+      down_trip_id: draft.downTripId,
       note: draft.note.trim() || null,
     });
     if (!res.ok) {
@@ -273,25 +269,24 @@ export function RegistrationGrid({
         cell: (ctx) => {
           const row = ctx.row.original;
           const conflict =
-            isConflict(row.id, "attendance_type") ||
-            isConflict(row.id, "departure_slot_id") ||
-            isConflict(row.id, "uses_return_bus");
+            isConflict(row.id, "up_trip_id") || isConflict(row.id, "down_trip_id");
           return (
-            <select
-              value={presetKeyOf(row, presets) ?? ""}
-              onChange={(e) => savePreset(row, e.target.value)}
-              className={cn(
-                "w-full rounded-md border bg-surface px-2 py-1 text-[13px] text-foreground transition focus:outline-none focus:border-primary-800",
-                conflict ? "border-danger ring-1 ring-danger" : "border-border"
-              )}
-            >
-              {presetKeyOf(row, presets) == null && <option value="">(직접조합)</option>}
-              {presets.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+            <div className={cn("flex flex-col gap-1", conflict && "rounded ring-1 ring-danger")}>
+              <TripCell
+                label="상행"
+                value={row.up_trip_id}
+                // 현재 값이 비활성 편이어도 목록에 남긴다 — 사라지면 다른 편으로
+                // 조용히 덮어써진다(admin reg-form 에서 실제로 났던 사고).
+                options={tripOptions(trips, "up", row.up_trip_id)}
+                onChange={(v) => saveTrips(row, { up_trip_id: v })}
+              />
+              <TripCell
+                label="하행"
+                value={row.down_trip_id}
+                options={tripOptions(trips, "down", row.down_trip_id)}
+                onChange={(v) => saveTrips(row, { down_trip_id: v })}
+              />
+            </div>
           );
         },
       }),
@@ -581,19 +576,20 @@ export function RegistrationGrid({
                   />
                 </td>
                 <td className="px-3 py-2.5">
-                  <select
-                    value={draft.presetKey}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, presetKey: e.target.value }))
-                    }
-                    className="w-full rounded-md border border-border bg-surface px-2 py-1 text-[13px] text-foreground focus:outline-none focus:border-primary-800"
-                  >
-                    {presets.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col gap-1">
+                    <TripCell
+                      label="상행"
+                      value={draft.upTripId}
+                      options={tripOptions(trips, "up")}
+                      onChange={(v) => setDraft((d) => ({ ...d, upTripId: v }))}
+                    />
+                    <TripCell
+                      label="하행"
+                      value={draft.downTripId}
+                      options={tripOptions(trips, "down")}
+                      onChange={(v) => setDraft((d) => ({ ...d, downTripId: v }))}
+                    />
+                  </div>
                 </td>
                 <td className="px-3 py-2.5">
                   <input
@@ -805,5 +801,35 @@ function TextCell({
       }}
       className="w-full rounded-md border-2 border-primary-800 bg-surface px-2 py-1 text-sm text-foreground focus:outline-none"
     />
+  );
+}
+
+/** 방향 하나의 편 선택 셀. 상·하행이 같은 모양이라 한 컴포넌트로 쓴다. */
+function TripCell({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  options: TripOption[];
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <label className="flex items-center gap-1 text-[11px] text-muted-2">
+      <span className="w-6 shrink-0">{label}</span>
+      <select
+        value={value === null ? "" : String(value)}
+        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+        className="w-full rounded-md border border-border bg-surface px-2 py-1 text-[13px] text-foreground focus:outline-none focus:border-primary-800"
+      >
+        {options.map((o) => (
+          <option key={o.id ?? "none"} value={o.id === null ? "" : String(o.id)}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

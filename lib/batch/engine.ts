@@ -272,14 +272,14 @@ export function runBatch(
           continue;
         }
         const reg = byId.get(rid);
-        if (!reg || reg.departure_slot_id === null) continue;
+        if (!reg || reg.up_trip_id === null) continue;
         if (bus.up_trip_id === null) {
           errors.push(`${bus.name}는 상행을 운행하지 않는데 고정 배정됨: ${reg.name}`);
           continue;
         }
-        if (reg.departure_slot_id !== bus.up_trip_id) {
+        if (reg.up_trip_id !== bus.up_trip_id) {
           errors.push(
-            `고정 배정 슬롯 불일치: ${reg.name} (slot ${reg.departure_slot_id} → ${bus.name})`
+            `고정 배정 편 불일치: ${reg.name} (편 ${reg.up_trip_id} → ${bus.name})`
           );
           continue;
         }
@@ -296,7 +296,7 @@ export function runBatch(
     // Step 2. 편별로 채움. 운행 편 = buses 에 존재하는 distinct up_trip_id.
     //   (요일 enum 하드코딩 제거 → 슬롯 추가는 buses 행 추가만으로 자동 반영)
     const upParticipants = passengers.filter(
-      (p) => p.departure_slot_id !== null && !pinned.has(p.id)
+      (p) => p.up_trip_id !== null && !pinned.has(p.id)
     );
     // 차량순장 캠퍼스 우선용: 호차 id → 상행 순장의 캠퍼스. (응집 면제 호차 제외)
     const upDriverCampus = new Map<number, string>();
@@ -314,13 +314,13 @@ export function runBatch(
     ];
     for (const slotId of slots) {
       const slotBuses = upBuses.filter((b) => b.up_trip_id === slotId);
-      const grp = upParticipants.filter((p) => p.departure_slot_id === slotId);
+      const grp = upParticipants.filter((p) => p.up_trip_id === slotId);
       fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors, upDriverCampus);
     }
 
     // 운행 호차가 없는 슬롯의 신청자는 배정 불가 — 조용히 누락하지 않고 표면화.
     const orphan = upParticipants.filter(
-      (p) => !slots.includes(p.departure_slot_id as number)
+      (p) => !slots.includes(p.up_trip_id as number)
     );
     if (orphan.length > 0) {
       errors.push(
@@ -337,9 +337,8 @@ export function runBatch(
     // down_trip_id 를 가지므로 "이 차량은 하행을 운행하지 않는다"(NULL)를 표현할 수 있다.
     // 현재 데이터는 전 차량이 하행 편을 갖고 있어 동작은 그대로다.
     //
-    // ⚠️ 아직 신청(registrations)에는 하행 편 개념이 없어(uses_return_bus 불린) 편별
-    //    그룹 배차는 하지 않는다. 하행 편이 둘 이상으로 갈리는 건 신청 쪽이 대칭
-    //    승격된 뒤에 의미가 생긴다. 그때 상행의 편별 루프와 같은 구조로 맞춘다.
+    // 신청도 down_trip_id 를 갖게 되면서(3-C) 하행도 상행과 **같은 편별 그룹 배차**를 한다.
+    // 아래 Step 2 가 상행의 편 루프와 문자 그대로 같은 모양이다 — "용어만 하행으로 바뀔 뿐".
     const downBuses: BusWork[] = buses
       .filter((b) => b.down_trip_id !== null)
       .map((b) => ({ ...b, count: 0 }));
@@ -361,7 +360,19 @@ export function runBatch(
           continue;
         }
         const reg = byId.get(rid);
-        if (!reg || reg.uses_return_bus !== true) continue; // 하행 미이용자는 고정 불가
+        if (!reg || reg.down_trip_id === null) continue; // 하행 미이용자는 고정 불가
+        // 상행과 대칭: 신청한 편과 다른 편을 운행하는 차량에는 고정할 수 없다.
+        // 예전엔 "하행은 전 호차 운행"이라 이 검사가 아예 없었다.
+        if (bus.down_trip_id === null) {
+          errors.push(`${bus.name}는 하행을 운행하지 않는데 고정 배정됨: ${reg.name}`);
+          continue;
+        }
+        if (reg.down_trip_id !== bus.down_trip_id) {
+          errors.push(
+            `하행 고정 배정 편 불일치: ${reg.name} (편 ${reg.down_trip_id} → ${bus.name})`
+          );
+          continue;
+        }
         if (bus.count >= bus.hard_cap) {
           errors.push(`${bus.name} 정원 초과로 하행 고정 배정 실패: ${reg.name}`);
           continue;
@@ -372,9 +383,9 @@ export function runBatch(
       }
     }
 
-    // Step 2. 나머지 하행 이용자만 채움 (고정자 제외).
+    // Step 2. 편별로 채움 — 상행 Step 2 와 같은 구조.
     const downParticipants = passengers.filter(
-      (p) => p.uses_return_bus === true && !pinnedDown.has(p.id)
+      (p) => p.down_trip_id !== null && !pinnedDown.has(p.id)
     );
     // 차량순장 캠퍼스 우선용: 호차 id → 하행 순장의 캠퍼스. (응집 면제 호차 제외)
     const downDriverCampus = new Map<number, string>();
@@ -385,14 +396,28 @@ export function runBatch(
         if (d) downDriverCampus.set(b.id, d.campus);
       }
     }
-    fillBuses(
-      "하행",
-      downParticipants,
-      downBuses,
-      assignDown,
-      errors,
-      downDriverCampus
+    // 상행과 같은 편별 루프. 하행 편이 하나뿐이면 이 루프는 1회 돌고, 결과는
+    // 예전의 "전 호차 대상 1회 호출"과 동일하다 — 골든 스냅샷이 그걸 고정한다.
+    const downTrips = [
+      ...new Set(
+        downBuses.map((b) => b.down_trip_id).filter((id): id is number => id !== null)
+      ),
+    ];
+    for (const tripId of downTrips) {
+      const tripBuses = downBuses.filter((b) => b.down_trip_id === tripId);
+      const grp = downParticipants.filter((p) => p.down_trip_id === tripId);
+      fillBuses(`하행 편 ${tripId}`, grp, tripBuses, assignDown, errors, downDriverCampus);
+    }
+
+    // 운행 차량이 없는 하행 편의 신청자 — 조용히 누락하지 않고 표면화(상행과 대칭).
+    const downOrphan = downParticipants.filter(
+      (p) => !downTrips.includes(p.down_trip_id as number)
     );
+    if (downOrphan.length > 0) {
+      errors.push(
+        `미배정: 운행 호차 없는 하행 편 ${downOrphan.length}명 (호차 배정 필요)`
+      );
+    }
   }
 
   // ════════════════════ 집계 ════════════════════

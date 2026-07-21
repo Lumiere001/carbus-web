@@ -19,8 +19,8 @@ type Reg = {
   student_id: string;
   campus_id: string;
   attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   assigned_up_bus_id: number | null;
   assigned_down_bus_id: number | null;
   checked_in: boolean;
@@ -89,7 +89,7 @@ export default async function AdminAttendancePage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
+        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")

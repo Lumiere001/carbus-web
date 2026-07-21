@@ -41,8 +41,8 @@ describe("배차 골든 스냅샷 (운영 형상)", () => {
     // fixture 가 조용히 축소·교체되면 이 테스트 전체가 무의미해지므로 먼저 못 박는다.
     expect(passengers).toHaveLength(599);
     expect(buses).toHaveLength(11);
-    expect(passengers.filter((p) => p.departure_slot_id !== null)).toHaveLength(459);
-    expect(passengers.filter((p) => p.uses_return_bus)).toHaveLength(459);
+    expect(passengers.filter((p) => p.up_trip_id !== null)).toHaveLength(459);
+    expect(passengers.filter((p) => p.down_trip_id !== null)).toHaveLength(459);
   });
 
   it("상행(up): 호차별 인원·미배정·오류가 고정된다", () => {

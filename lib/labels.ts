@@ -4,6 +4,7 @@
 import type {
   AttendanceType,
   DepartureSlot,
+  EventTrip,
   PaymentStatus,
 } from "@/lib/supabase/types";
 
@@ -156,4 +157,81 @@ export function presetByKey(
   presets: AttendancePreset[]
 ): AttendancePreset | undefined {
   return presets.find((p) => p.key === key);
+}
+
+
+// ── 운행편 선택 (Phase 3-C) ────────────────────────────────────
+// preset(조합 셀)을 대체한다. 왜 바꾸나:
+//   조합 셀은 상행 N편 × 하행 M편이면 항목이 N×M+N+M+1 개로 곱해진다.
+//   상행 3 × 하행 3 이면 드롭다운 하나에 16개. 사용자가 원한 건
+//   "상행 편 / 하행 편 두 개의 독립 선택"이고, 그게 대칭 모델과도 맞는다.
+//   참여 형태(attendance_type)는 두 선택의 조합으로 DB 가 파생하므로 입력이 아니다.
+
+export type TripOption = {
+  /** null = 그 방향을 이용하지 않음. */
+  id: number | null;
+  label: string;
+  active: boolean;
+};
+
+/**
+ * 한 방향의 선택지. 맨 앞에 "이용 안 함"(null)이 온다.
+ *
+ * `current` 를 주면 비활성 편이라도 목록에 남긴다 — 지난 행사 데이터나
+ * 관리자가 편을 내린 뒤의 기존 신청이 화면에서 사라지지 않게 하기 위해서다.
+ * (사라지면 다른 값으로 조용히 덮어쓰는 사고가 난다)
+ */
+export function tripOptions(
+  trips: Pick<EventTrip, "id" | "label" | "direction" | "active" | "display_order">[],
+  direction: "up" | "down",
+  current?: number | null
+): TripOption[] {
+  const mine = trips
+    .filter((t) => t.direction === direction)
+    .sort((a, b) => a.display_order - b.display_order || a.id - b.id);
+
+  const out: TripOption[] = [{ id: null, label: "이용 안 함", active: true }];
+  for (const t of mine) {
+    if (t.active || t.id === current) {
+      out.push({ id: t.id, label: t.active ? t.label : `${t.label} (비활성)`, active: t.active });
+    }
+  }
+  return out;
+}
+
+/** 운행편 id → 라벨. 미지정·미존재는 "—". */
+export function tripLabel(
+  tripId: number | null | undefined,
+  trips: Pick<EventTrip, "id" | "label">[]
+): string {
+  if (tripId == null) return "—";
+  return trips.find((t) => t.id === tripId)?.label ?? "—";
+}
+
+/**
+ * (상행 편, 하행 편) → 참여 형태.
+ * DB 의 derive_attendance() 와 **같은 규칙**이어야 한다 — 화면 표시용 사본이다.
+ * 저장 값은 DB 트리거가 만든다(화면이 보낸 attendance_type 은 무시된다).
+ */
+export function deriveAttendance(
+  upTripId: number | null,
+  downTripId: number | null
+): AttendanceType {
+  if (upTripId !== null && downTripId !== null) return "roundtrip";
+  if (upTripId === null && downTripId === null) return "self";
+  return "oneway";
+}
+
+/** 참여 형태를 사람이 읽는 한 줄로. 편 라벨까지 붙인다. */
+export function attendanceSummary(
+  upTripId: number | null,
+  downTripId: number | null,
+  trips: Pick<EventTrip, "id" | "label">[]
+): string {
+  if (upTripId === null && downTripId === null) return "버스 미이용";
+  const up = upTripId !== null ? tripLabel(upTripId, trips) : null;
+  const down = downTripId !== null ? tripLabel(downTripId, trips) : null;
+  if (up && down) return `왕복 (${up} / ${down})`;
+  if (up) return `편도 상행 (${up})`;
+  return `편도 하행 (${down})`;
 }

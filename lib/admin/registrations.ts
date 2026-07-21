@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import type { AttendanceType, PaymentStatus } from "@/lib/supabase/types";
+import type { PaymentStatus } from "@/lib/supabase/types";
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -10,11 +10,14 @@ export type RegFormFields = {
   name: string;
   student_id: string;
   campus_id: string;
-  attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  /** 신청한 상행 편. null = 상행 미이용. */
+  up_trip_id: number | null;
+  /** 신청한 하행 편. null = 하행 미이용. */
+  down_trip_id: number | null;
   payment_status: PaymentStatus;
   note: string | null;
+  // attendance_type 은 없다 — DB 트리거가 두 편에서 파생한다.
+  // 화면이 보내면 조합과 어긋난 값이 들어올 수 있고, 그게 예전 사고의 원인이었다.
 };
 
 /** 학번 형식: 두 자리 숫자 또는 외국인/타지구. */
@@ -57,9 +60,10 @@ export async function updateRegistrationFields(
 type Client = ReturnType<typeof createClient>;
 
 /**
- * 수동 배정 검증 (B/C/F):
- *  - 상행: 학우가 상행 대상(departure_slot_id 있음) + 호차 슬롯 일치
- *  - 하행: 학우가 하행 이용자(uses_return_bus)
+ * 수동 배정 검증 — 상·하행 대칭.
+ *  - 그 방향 신청자인가 (up_trip_id / down_trip_id 가 있는가)
+ *  - 차량이 그 방향을 운행하는가
+ *  - 신청한 편과 차량의 편이 같은가  ← 하행에는 예전에 이 검사가 아예 없었다
  *  - 정원: 보조석(hard_cap) 초과 차단
  */
 async function validateAssign(
@@ -67,36 +71,53 @@ async function validateAssign(
   mode: "up" | "down",
   regId: string,
   busId: number,
-  reg: { departure_slot_id: number | null; uses_return_bus: boolean }
+  reg: { up_trip_id: number | null; down_trip_id: number | null }
 ): Promise<Result> {
   const { data: bus } = await supabase
     .from("buses")
-    .select("name, up_trip_id, hard_cap")
+    .select("name, up_trip_id, down_trip_id, hard_cap")
     .eq("id", busId)
     .single();
   if (!bus) return { ok: false, message: "호차를 찾을 수 없습니다" };
 
   if (mode === "up") {
-    if (reg.departure_slot_id == null)
+    if (reg.up_trip_id == null)
       return { ok: false, message: "상행 대상이 아닙니다 (하행 편도 신청자)" };
     // up_trip_id 가 nullable 이 되면서 "상행을 운행하지 않는 차량"이 표현 가능해졌다.
     if (bus.up_trip_id == null)
       return { ok: false, message: `${bus.name}는 상행을 운행하지 않습니다` };
-    if (reg.departure_slot_id !== bus.up_trip_id) {
+    if (reg.up_trip_id !== bus.up_trip_id) {
       const upTripId = bus.up_trip_id;
       const { data: slots } = await supabase
         .from("event_trips")
         .select("id, label")
-        .in("id", [reg.departure_slot_id, upTripId]);
+        .in("id", [reg.up_trip_id, upTripId]);
       const lbl = (sid: number) =>
         slots?.find((s) => s.id === sid)?.label ?? `slot ${sid}`;
       return {
         ok: false,
-        message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(upTripId)})`,
+        message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.up_trip_id)} ≠ ${bus.name} ${lbl(upTripId)})`,
       };
     }
-  } else if (reg.uses_return_bus !== true) {
-    return { ok: false, message: "하행 대상이 아닙니다 (하행 미이용 신청자)" };
+  } else {
+    // 하행도 상행과 대칭 — 신청한 편과 차량의 편이 같아야 한다.
+    if (reg.down_trip_id == null)
+      return { ok: false, message: "하행 대상이 아닙니다 (하행 미이용 신청자)" };
+    if (bus.down_trip_id == null)
+      return { ok: false, message: `${bus.name}는 하행을 운행하지 않습니다` };
+    if (reg.down_trip_id !== bus.down_trip_id) {
+      const downTripId = bus.down_trip_id;
+      const { data: trips } = await supabase
+        .from("event_trips")
+        .select("id, label")
+        .in("id", [reg.down_trip_id, downTripId]);
+      const lbl = (tid: number) =>
+        trips?.find((t) => t.id === tid)?.label ?? `편 ${tid}`;
+      return {
+        ok: false,
+        message: `귀가 시간대가 다릅니다 (신청 ${lbl(reg.down_trip_id)} ≠ ${bus.name} ${lbl(downTripId)})`,
+      };
+    }
   }
 
   const col = mode === "up" ? "assigned_up_bus_id" : "assigned_down_bus_id";
@@ -127,7 +148,7 @@ export async function setAssignment(
   if (upBus != null || downBus != null) {
     const { data: reg, error: regErr } = await supabase
       .from("registrations")
-      .select("departure_slot_id, uses_return_bus")
+      .select("up_trip_id, down_trip_id")
       .eq("id", id)
       .single();
     if (regErr || !reg)

@@ -10,9 +10,10 @@ export type AttendanceType = "roundtrip" | "oneway" | "self";
 /**
  * 신청자 (registrations Row → 순수 입력으로 투영).
  *
- * - roundtrip + departure_slot_id(상행 슬롯) + uses_return_bus=true : 완참
- * - oneway + departure_slot_id(상행 슬롯) + uses_return_bus=false  : 편도-상행
- * - oneway + departure_slot_id=null + uses_return_bus=true          : 편도-하행
+ * 참여 형태는 두 편의 조합으로 **완전히 결정된다**(attendance_type 은 파생값):
+ * - up_trip_id O + down_trip_id O : 왕복
+ * - 정확히 하나만 O               : 편도(상행 또는 하행)
+ * - 둘 다 X                       : 버스 미이용
  */
 export interface Passenger {
   id: string;
@@ -20,10 +21,14 @@ export interface Passenger {
   /** 캠퍼스 식별자 (UUID 또는 라벨). 같은 값끼리 같은 호차 우선 묶음. */
   campus: string;
   attendance_type: AttendanceType;
-  /** 상행 출발 슬롯 id. 편도-하행은 null. */
-  departure_slot_id: number | null;
-  /** 하행 차량 이용 여부. */
-  uses_return_bus: boolean;
+  /** 신청한 **상행 편** id. NULL = 상행 미이용. (옛 departure_slot_id) */
+  up_trip_id: number | null;
+  /**
+   * 신청한 **하행 편** id. NULL = 하행 미이용.
+   * 예전엔 uses_return_bus 불린이라 "탄다/안 탄다"만 말할 수 있었고,
+   * 그래서 하행을 여러 편으로 나눠도 신청자가 편을 고를 수 없었다.
+   */
+  down_trip_id: number | null;
   /**
    * 고정 상행 호차 id. driver_registration_id / fixed_passenger_ids 에서 유도.
    * null 이면 자유 배정 대상.
@@ -34,7 +39,7 @@ export interface Passenger {
 /**
  * 호차 (buses Row → 순수 입력으로 투영).
  *
- * 상행은 호차별 출발 슬롯(departure_slot_id)으로 운행. 하행은 슬롯 무관 전 호차 운행.
+ * 차량은 상·하행 편을 각각 갖는다. NULL 이면 그 방향을 운행하지 않는다.
  */
 export interface Bus {
   id: number;

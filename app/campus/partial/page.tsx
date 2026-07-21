@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { slotLabel } from "@/lib/labels";
+import { attendanceSummary } from "@/lib/labels";
 import type { DepartureSlot } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -12,15 +12,14 @@ type Reg = {
   id: string;
   name: string;
   student_id: string;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   note: string | null;
 };
 
 function partialLabel(r: Reg, slots: SlotMini[]): string {
-  if (r.departure_slot_id !== null && !r.uses_return_bus)
-    return `편도 상행 (${slotLabel(r.departure_slot_id, slots)})`;
-  if (r.departure_slot_id === null && r.uses_return_bus) return "편도 하행";
+  // 하행도 편 이름을 보여준다 — 여러 편으로 나뉘면 어느 편인지가 중요해진다.
+  return attendanceSummary(r.up_trip_id, r.down_trip_id, slots);
   return "편도";
 }
 
@@ -41,13 +40,13 @@ export default async function CampusPartialPage() {
   const [{ data }, { data: slotData }] = await Promise.all([
     supabase
       .from("registrations")
-      .select("id, name, student_id, departure_slot_id, uses_return_bus, note")
+      .select("id, name, student_id, up_trip_id, down_trip_id, note")
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
       .eq("campus_id", profile.campus_id)
       .eq("attendance_type", "oneway")
       .order("name"),
-    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
+    supabase.from("event_trips").select("id, label").order("direction").order("display_order"),
   ]);
   const regs = (data ?? []) as Reg[];
   const slots = (slotData ?? []) as SlotMini[];

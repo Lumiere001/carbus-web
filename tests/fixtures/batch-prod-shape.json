@@ -7,8 +7,8 @@
    "name": "r0001",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -16,8 +16,8 @@
    "name": "r0002",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -25,8 +25,8 @@
    "name": "r0003",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -34,8 +34,8 @@
    "name": "r0004",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -43,8 +43,8 @@
    "name": "r0005",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -52,8 +52,8 @@
    "name": "r0006",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -61,8 +61,8 @@
    "name": "r0007",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -70,8 +70,8 @@
    "name": "r0008",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -79,8 +79,8 @@
    "name": "r0009",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -88,8 +88,8 @@
    "name": "r0010",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -97,8 +97,8 @@
    "name": "r0011",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -106,8 +106,8 @@
    "name": "r0012",
    "campus": "C05",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -115,8 +115,8 @@
    "name": "r0013",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -124,8 +124,8 @@
    "name": "r0014",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -133,8 +133,8 @@
    "name": "r0015",
    "campus": "C08",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -142,8 +142,8 @@
    "name": "r0016",
    "campus": "C09",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -151,8 +151,8 @@
    "name": "r0017",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -160,8 +160,8 @@
    "name": "r0018",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -169,8 +169,8 @@
    "name": "r0019",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -178,8 +178,8 @@
    "name": "r0020",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -187,8 +187,8 @@
    "name": "r0021",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -196,8 +196,8 @@
    "name": "r0022",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -205,8 +205,8 @@
    "name": "r0023",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -214,8 +214,8 @@
    "name": "r0024",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -223,8 +223,8 @@
    "name": "r0025",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -232,8 +232,8 @@
    "name": "r0026",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -241,8 +241,8 @@
    "name": "r0027",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -250,8 +250,8 @@
    "name": "r0028",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -259,8 +259,8 @@
    "name": "r0029",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -268,8 +268,8 @@
    "name": "r0030",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -277,8 +277,8 @@
    "name": "r0031",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -286,8 +286,8 @@
    "name": "r0032",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -295,8 +295,8 @@
    "name": "r0033",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -304,8 +304,8 @@
    "name": "r0034",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -313,8 +313,8 @@
    "name": "r0035",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -322,8 +322,8 @@
    "name": "r0036",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -331,8 +331,8 @@
    "name": "r0037",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -340,8 +340,8 @@
    "name": "r0038",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -349,8 +349,8 @@
    "name": "r0039",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -358,8 +358,8 @@
    "name": "r0040",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -367,8 +367,8 @@
    "name": "r0041",
    "campus": "C06",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -376,8 +376,8 @@
    "name": "r0042",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -385,8 +385,8 @@
    "name": "r0043",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -394,8 +394,8 @@
    "name": "r0044",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -403,8 +403,8 @@
    "name": "r0045",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -412,8 +412,8 @@
    "name": "r0046",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -421,8 +421,8 @@
    "name": "r0047",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -430,8 +430,8 @@
    "name": "r0048",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -439,8 +439,8 @@
    "name": "r0049",
    "campus": "C11",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -448,8 +448,8 @@
    "name": "r0050",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -457,8 +457,8 @@
    "name": "r0051",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -466,8 +466,8 @@
    "name": "r0052",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -475,8 +475,8 @@
    "name": "r0053",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -484,8 +484,8 @@
    "name": "r0054",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -493,8 +493,8 @@
    "name": "r0055",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -502,8 +502,8 @@
    "name": "r0056",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -511,8 +511,8 @@
    "name": "r0057",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -520,8 +520,8 @@
    "name": "r0058",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -529,8 +529,8 @@
    "name": "r0059",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -538,8 +538,8 @@
    "name": "r0060",
    "campus": "C08",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -547,8 +547,8 @@
    "name": "r0061",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -556,8 +556,8 @@
    "name": "r0062",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -565,8 +565,8 @@
    "name": "r0063",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -574,8 +574,8 @@
    "name": "r0064",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -583,8 +583,8 @@
    "name": "r0065",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -592,8 +592,8 @@
    "name": "r0066",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -601,8 +601,8 @@
    "name": "r0067",
    "campus": "C11",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -610,8 +610,8 @@
    "name": "r0068",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -619,8 +619,8 @@
    "name": "r0069",
    "campus": "C14",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -628,8 +628,8 @@
    "name": "r0070",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -637,8 +637,8 @@
    "name": "r0071",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -646,8 +646,8 @@
    "name": "r0072",
    "campus": "C11",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -655,8 +655,8 @@
    "name": "r0073",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -664,8 +664,8 @@
    "name": "r0074",
    "campus": "C10",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -673,8 +673,8 @@
    "name": "r0075",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -682,8 +682,8 @@
    "name": "r0076",
    "campus": "C16",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -691,8 +691,8 @@
    "name": "r0077",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -700,8 +700,8 @@
    "name": "r0078",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -709,8 +709,8 @@
    "name": "r0079",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -718,8 +718,8 @@
    "name": "r0080",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -727,8 +727,8 @@
    "name": "r0081",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -736,8 +736,8 @@
    "name": "r0082",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -745,8 +745,8 @@
    "name": "r0083",
    "campus": "C03",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -754,8 +754,8 @@
    "name": "r0084",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -763,8 +763,8 @@
    "name": "r0085",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -772,8 +772,8 @@
    "name": "r0086",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -781,8 +781,8 @@
    "name": "r0087",
    "campus": "C03",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -790,8 +790,8 @@
    "name": "r0088",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -799,8 +799,8 @@
    "name": "r0089",
    "campus": "C16",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -808,8 +808,8 @@
    "name": "r0090",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -817,8 +817,8 @@
    "name": "r0091",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -826,8 +826,8 @@
    "name": "r0092",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -835,8 +835,8 @@
    "name": "r0093",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -844,8 +844,8 @@
    "name": "r0094",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -853,8 +853,8 @@
    "name": "r0095",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -862,8 +862,8 @@
    "name": "r0096",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -871,8 +871,8 @@
    "name": "r0097",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -880,8 +880,8 @@
    "name": "r0098",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -889,8 +889,8 @@
    "name": "r0099",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -898,8 +898,8 @@
    "name": "r0100",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -907,8 +907,8 @@
    "name": "r0101",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -916,8 +916,8 @@
    "name": "r0102",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -925,8 +925,8 @@
    "name": "r0103",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -934,8 +934,8 @@
    "name": "r0104",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -943,8 +943,8 @@
    "name": "r0105",
    "campus": "C03",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -952,8 +952,8 @@
    "name": "r0106",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -961,8 +961,8 @@
    "name": "r0107",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -970,8 +970,8 @@
    "name": "r0108",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -979,8 +979,8 @@
    "name": "r0109",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -988,8 +988,8 @@
    "name": "r0110",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -997,8 +997,8 @@
    "name": "r0111",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1006,8 +1006,8 @@
    "name": "r0112",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1015,8 +1015,8 @@
    "name": "r0113",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1024,8 +1024,8 @@
    "name": "r0114",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1033,8 +1033,8 @@
    "name": "r0115",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1042,8 +1042,8 @@
    "name": "r0116",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1051,8 +1051,8 @@
    "name": "r0117",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1060,8 +1060,8 @@
    "name": "r0118",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1069,8 +1069,8 @@
    "name": "r0119",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1078,8 +1078,8 @@
    "name": "r0120",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1087,8 +1087,8 @@
    "name": "r0121",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1096,8 +1096,8 @@
    "name": "r0122",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1105,8 +1105,8 @@
    "name": "r0123",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1114,8 +1114,8 @@
    "name": "r0124",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1123,8 +1123,8 @@
    "name": "r0125",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1132,8 +1132,8 @@
    "name": "r0126",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1141,8 +1141,8 @@
    "name": "r0127",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1150,8 +1150,8 @@
    "name": "r0128",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1159,8 +1159,8 @@
    "name": "r0129",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1168,8 +1168,8 @@
    "name": "r0130",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1177,8 +1177,8 @@
    "name": "r0131",
    "campus": "C05",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1186,8 +1186,8 @@
    "name": "r0132",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1195,8 +1195,8 @@
    "name": "r0133",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1204,8 +1204,8 @@
    "name": "r0134",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1213,8 +1213,8 @@
    "name": "r0135",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1222,8 +1222,8 @@
    "name": "r0136",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1231,8 +1231,8 @@
    "name": "r0137",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1240,8 +1240,8 @@
    "name": "r0138",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1249,8 +1249,8 @@
    "name": "r0139",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1258,8 +1258,8 @@
    "name": "r0140",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1267,8 +1267,8 @@
    "name": "r0141",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1276,8 +1276,8 @@
    "name": "r0142",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1285,8 +1285,8 @@
    "name": "r0143",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1294,8 +1294,8 @@
    "name": "r0144",
    "campus": "C03",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1303,8 +1303,8 @@
    "name": "r0145",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1312,8 +1312,8 @@
    "name": "r0146",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1321,8 +1321,8 @@
    "name": "r0147",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1330,8 +1330,8 @@
    "name": "r0148",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1339,8 +1339,8 @@
    "name": "r0149",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1348,8 +1348,8 @@
    "name": "r0150",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1357,8 +1357,8 @@
    "name": "r0151",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1366,8 +1366,8 @@
    "name": "r0152",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1375,8 +1375,8 @@
    "name": "r0153",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1384,8 +1384,8 @@
    "name": "r0154",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1393,8 +1393,8 @@
    "name": "r0155",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1402,8 +1402,8 @@
    "name": "r0156",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1411,8 +1411,8 @@
    "name": "r0157",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1420,8 +1420,8 @@
    "name": "r0158",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1429,8 +1429,8 @@
    "name": "r0159",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1438,8 +1438,8 @@
    "name": "r0160",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1447,8 +1447,8 @@
    "name": "r0161",
    "campus": "C04",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1456,8 +1456,8 @@
    "name": "r0162",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1465,8 +1465,8 @@
    "name": "r0163",
    "campus": "C13",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1474,8 +1474,8 @@
    "name": "r0164",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1483,8 +1483,8 @@
    "name": "r0165",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1492,8 +1492,8 @@
    "name": "r0166",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1501,8 +1501,8 @@
    "name": "r0167",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1510,8 +1510,8 @@
    "name": "r0168",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1519,8 +1519,8 @@
    "name": "r0169",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1528,8 +1528,8 @@
    "name": "r0170",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1537,8 +1537,8 @@
    "name": "r0171",
    "campus": "C10",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1546,8 +1546,8 @@
    "name": "r0172",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1555,8 +1555,8 @@
    "name": "r0173",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1564,8 +1564,8 @@
    "name": "r0174",
    "campus": "C07",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1573,8 +1573,8 @@
    "name": "r0175",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1582,8 +1582,8 @@
    "name": "r0176",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1591,8 +1591,8 @@
    "name": "r0177",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1600,8 +1600,8 @@
    "name": "r0178",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1609,8 +1609,8 @@
    "name": "r0179",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1618,8 +1618,8 @@
    "name": "r0180",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1627,8 +1627,8 @@
    "name": "r0181",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1636,8 +1636,8 @@
    "name": "r0182",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1645,8 +1645,8 @@
    "name": "r0183",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1654,8 +1654,8 @@
    "name": "r0184",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1663,8 +1663,8 @@
    "name": "r0185",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1672,8 +1672,8 @@
    "name": "r0186",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1681,8 +1681,8 @@
    "name": "r0187",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1690,8 +1690,8 @@
    "name": "r0188",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1699,8 +1699,8 @@
    "name": "r0189",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1708,8 +1708,8 @@
    "name": "r0190",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1717,8 +1717,8 @@
    "name": "r0191",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1726,8 +1726,8 @@
    "name": "r0192",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1735,8 +1735,8 @@
    "name": "r0193",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1744,8 +1744,8 @@
    "name": "r0194",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1753,8 +1753,8 @@
    "name": "r0195",
    "campus": "C14",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1762,8 +1762,8 @@
    "name": "r0196",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1771,8 +1771,8 @@
    "name": "r0197",
    "campus": "C06",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1780,8 +1780,8 @@
    "name": "r0198",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1789,8 +1789,8 @@
    "name": "r0199",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1798,8 +1798,8 @@
    "name": "r0200",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1807,8 +1807,8 @@
    "name": "r0201",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1816,8 +1816,8 @@
    "name": "r0202",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1825,8 +1825,8 @@
    "name": "r0203",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1834,8 +1834,8 @@
    "name": "r0204",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1843,8 +1843,8 @@
    "name": "r0205",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1852,8 +1852,8 @@
    "name": "r0206",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1861,8 +1861,8 @@
    "name": "r0207",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1870,8 +1870,8 @@
    "name": "r0208",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1879,8 +1879,8 @@
    "name": "r0209",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1888,8 +1888,8 @@
    "name": "r0210",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1897,8 +1897,8 @@
    "name": "r0211",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1906,8 +1906,8 @@
    "name": "r0212",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1915,8 +1915,8 @@
    "name": "r0213",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1924,8 +1924,8 @@
    "name": "r0214",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1933,8 +1933,8 @@
    "name": "r0215",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1942,8 +1942,8 @@
    "name": "r0216",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -1951,8 +1951,8 @@
    "name": "r0217",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1960,8 +1960,8 @@
    "name": "r0218",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1969,8 +1969,8 @@
    "name": "r0219",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1978,8 +1978,8 @@
    "name": "r0220",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1987,8 +1987,8 @@
    "name": "r0221",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -1996,8 +1996,8 @@
    "name": "r0222",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2005,8 +2005,8 @@
    "name": "r0223",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2014,8 +2014,8 @@
    "name": "r0224",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2023,8 +2023,8 @@
    "name": "r0225",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2032,8 +2032,8 @@
    "name": "r0226",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2041,8 +2041,8 @@
    "name": "r0227",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2050,8 +2050,8 @@
    "name": "r0228",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2059,8 +2059,8 @@
    "name": "r0229",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2068,8 +2068,8 @@
    "name": "r0230",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2077,8 +2077,8 @@
    "name": "r0231",
    "campus": "C07",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2086,8 +2086,8 @@
    "name": "r0232",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2095,8 +2095,8 @@
    "name": "r0233",
    "campus": "C13",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2104,8 +2104,8 @@
    "name": "r0234",
    "campus": "C13",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2113,8 +2113,8 @@
    "name": "r0235",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2122,8 +2122,8 @@
    "name": "r0236",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2131,8 +2131,8 @@
    "name": "r0237",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2140,8 +2140,8 @@
    "name": "r0238",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2149,8 +2149,8 @@
    "name": "r0239",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2158,8 +2158,8 @@
    "name": "r0240",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2167,8 +2167,8 @@
    "name": "r0241",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2176,8 +2176,8 @@
    "name": "r0242",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2185,8 +2185,8 @@
    "name": "r0243",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2194,8 +2194,8 @@
    "name": "r0244",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2203,8 +2203,8 @@
    "name": "r0245",
    "campus": "C16",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2212,8 +2212,8 @@
    "name": "r0246",
    "campus": "C13",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2221,8 +2221,8 @@
    "name": "r0247",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2230,8 +2230,8 @@
    "name": "r0248",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2239,8 +2239,8 @@
    "name": "r0249",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2248,8 +2248,8 @@
    "name": "r0250",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2257,8 +2257,8 @@
    "name": "r0251",
    "campus": "C16",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2266,8 +2266,8 @@
    "name": "r0252",
    "campus": "C04",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2275,8 +2275,8 @@
    "name": "r0253",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2284,8 +2284,8 @@
    "name": "r0254",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2293,8 +2293,8 @@
    "name": "r0255",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2302,8 +2302,8 @@
    "name": "r0256",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2311,8 +2311,8 @@
    "name": "r0257",
    "campus": "C16",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2320,8 +2320,8 @@
    "name": "r0258",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2329,8 +2329,8 @@
    "name": "r0259",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2338,8 +2338,8 @@
    "name": "r0260",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2347,8 +2347,8 @@
    "name": "r0261",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2356,8 +2356,8 @@
    "name": "r0262",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2365,8 +2365,8 @@
    "name": "r0263",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2374,8 +2374,8 @@
    "name": "r0264",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2383,8 +2383,8 @@
    "name": "r0265",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2392,8 +2392,8 @@
    "name": "r0266",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2401,8 +2401,8 @@
    "name": "r0267",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2410,8 +2410,8 @@
    "name": "r0268",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2419,8 +2419,8 @@
    "name": "r0269",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2428,8 +2428,8 @@
    "name": "r0270",
    "campus": "C12",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2437,8 +2437,8 @@
    "name": "r0271",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2446,8 +2446,8 @@
    "name": "r0272",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2455,8 +2455,8 @@
    "name": "r0273",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2464,8 +2464,8 @@
    "name": "r0274",
    "campus": "C07",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2473,8 +2473,8 @@
    "name": "r0275",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2482,8 +2482,8 @@
    "name": "r0276",
    "campus": "C16",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2491,8 +2491,8 @@
    "name": "r0277",
    "campus": "C14",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2500,8 +2500,8 @@
    "name": "r0278",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2509,8 +2509,8 @@
    "name": "r0279",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2518,8 +2518,8 @@
    "name": "r0280",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2527,8 +2527,8 @@
    "name": "r0281",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2536,8 +2536,8 @@
    "name": "r0282",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2545,8 +2545,8 @@
    "name": "r0283",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2554,8 +2554,8 @@
    "name": "r0284",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2563,8 +2563,8 @@
    "name": "r0285",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2572,8 +2572,8 @@
    "name": "r0286",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2581,8 +2581,8 @@
    "name": "r0287",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2590,8 +2590,8 @@
    "name": "r0288",
    "campus": "C06",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2599,8 +2599,8 @@
    "name": "r0289",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2608,8 +2608,8 @@
    "name": "r0290",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2617,8 +2617,8 @@
    "name": "r0291",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2626,8 +2626,8 @@
    "name": "r0292",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2635,8 +2635,8 @@
    "name": "r0293",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2644,8 +2644,8 @@
    "name": "r0294",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2653,8 +2653,8 @@
    "name": "r0295",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2662,8 +2662,8 @@
    "name": "r0296",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2671,8 +2671,8 @@
    "name": "r0297",
    "campus": "C06",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2680,8 +2680,8 @@
    "name": "r0298",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2689,8 +2689,8 @@
    "name": "r0299",
    "campus": "C11",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2698,8 +2698,8 @@
    "name": "r0300",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2707,8 +2707,8 @@
    "name": "r0301",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2716,8 +2716,8 @@
    "name": "r0302",
    "campus": "C11",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2725,8 +2725,8 @@
    "name": "r0303",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2734,8 +2734,8 @@
    "name": "r0304",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2743,8 +2743,8 @@
    "name": "r0305",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2752,8 +2752,8 @@
    "name": "r0306",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2761,8 +2761,8 @@
    "name": "r0307",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2770,8 +2770,8 @@
    "name": "r0308",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2779,8 +2779,8 @@
    "name": "r0309",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2788,8 +2788,8 @@
    "name": "r0310",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2797,8 +2797,8 @@
    "name": "r0311",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2806,8 +2806,8 @@
    "name": "r0312",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2815,8 +2815,8 @@
    "name": "r0313",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2824,8 +2824,8 @@
    "name": "r0314",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2833,8 +2833,8 @@
    "name": "r0315",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2842,8 +2842,8 @@
    "name": "r0316",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2851,8 +2851,8 @@
    "name": "r0317",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2860,8 +2860,8 @@
    "name": "r0318",
    "campus": "C09",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2869,8 +2869,8 @@
    "name": "r0319",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2878,8 +2878,8 @@
    "name": "r0320",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2887,8 +2887,8 @@
    "name": "r0321",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2896,8 +2896,8 @@
    "name": "r0322",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2905,8 +2905,8 @@
    "name": "r0323",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2914,8 +2914,8 @@
    "name": "r0324",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2923,8 +2923,8 @@
    "name": "r0325",
    "campus": "C09",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2932,8 +2932,8 @@
    "name": "r0326",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2941,8 +2941,8 @@
    "name": "r0327",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2950,8 +2950,8 @@
    "name": "r0328",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2959,8 +2959,8 @@
    "name": "r0329",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2968,8 +2968,8 @@
    "name": "r0330",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2977,8 +2977,8 @@
    "name": "r0331",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -2986,8 +2986,8 @@
    "name": "r0332",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -2995,8 +2995,8 @@
    "name": "r0333",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3004,8 +3004,8 @@
    "name": "r0334",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3013,8 +3013,8 @@
    "name": "r0335",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3022,8 +3022,8 @@
    "name": "r0336",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3031,8 +3031,8 @@
    "name": "r0337",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3040,8 +3040,8 @@
    "name": "r0338",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3049,8 +3049,8 @@
    "name": "r0339",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3058,8 +3058,8 @@
    "name": "r0340",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3067,8 +3067,8 @@
    "name": "r0341",
    "campus": "C16",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3076,8 +3076,8 @@
    "name": "r0342",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3085,8 +3085,8 @@
    "name": "r0343",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3094,8 +3094,8 @@
    "name": "r0344",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3103,8 +3103,8 @@
    "name": "r0345",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3112,8 +3112,8 @@
    "name": "r0346",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3121,8 +3121,8 @@
    "name": "r0347",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3130,8 +3130,8 @@
    "name": "r0348",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3139,8 +3139,8 @@
    "name": "r0349",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3148,8 +3148,8 @@
    "name": "r0350",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3157,8 +3157,8 @@
    "name": "r0351",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3166,8 +3166,8 @@
    "name": "r0352",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3175,8 +3175,8 @@
    "name": "r0353",
    "campus": "C10",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3184,8 +3184,8 @@
    "name": "r0354",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3193,8 +3193,8 @@
    "name": "r0355",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3202,8 +3202,8 @@
    "name": "r0356",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3211,8 +3211,8 @@
    "name": "r0357",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3220,8 +3220,8 @@
    "name": "r0358",
    "campus": "C16",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3229,8 +3229,8 @@
    "name": "r0359",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3238,8 +3238,8 @@
    "name": "r0360",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3247,8 +3247,8 @@
    "name": "r0361",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3256,8 +3256,8 @@
    "name": "r0362",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3265,8 +3265,8 @@
    "name": "r0363",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3274,8 +3274,8 @@
    "name": "r0364",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3283,8 +3283,8 @@
    "name": "r0365",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3292,8 +3292,8 @@
    "name": "r0366",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3301,8 +3301,8 @@
    "name": "r0367",
    "campus": "C04",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3310,8 +3310,8 @@
    "name": "r0368",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3319,8 +3319,8 @@
    "name": "r0369",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3328,8 +3328,8 @@
    "name": "r0370",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3337,8 +3337,8 @@
    "name": "r0371",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3346,8 +3346,8 @@
    "name": "r0372",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3355,8 +3355,8 @@
    "name": "r0373",
    "campus": "C11",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3364,8 +3364,8 @@
    "name": "r0374",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3373,8 +3373,8 @@
    "name": "r0375",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3382,8 +3382,8 @@
    "name": "r0376",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3391,8 +3391,8 @@
    "name": "r0377",
    "campus": "C16",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3400,8 +3400,8 @@
    "name": "r0378",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3409,8 +3409,8 @@
    "name": "r0379",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3418,8 +3418,8 @@
    "name": "r0380",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3427,8 +3427,8 @@
    "name": "r0381",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3436,8 +3436,8 @@
    "name": "r0382",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3445,8 +3445,8 @@
    "name": "r0383",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3454,8 +3454,8 @@
    "name": "r0384",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3463,8 +3463,8 @@
    "name": "r0385",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3472,8 +3472,8 @@
    "name": "r0386",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3481,8 +3481,8 @@
    "name": "r0387",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3490,8 +3490,8 @@
    "name": "r0388",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3499,8 +3499,8 @@
    "name": "r0389",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3508,8 +3508,8 @@
    "name": "r0390",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3517,8 +3517,8 @@
    "name": "r0391",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3526,8 +3526,8 @@
    "name": "r0392",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3535,8 +3535,8 @@
    "name": "r0393",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3544,8 +3544,8 @@
    "name": "r0394",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3553,8 +3553,8 @@
    "name": "r0395",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3562,8 +3562,8 @@
    "name": "r0396",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3571,8 +3571,8 @@
    "name": "r0397",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3580,8 +3580,8 @@
    "name": "r0398",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3589,8 +3589,8 @@
    "name": "r0399",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3598,8 +3598,8 @@
    "name": "r0400",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3607,8 +3607,8 @@
    "name": "r0401",
    "campus": "C08",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3616,8 +3616,8 @@
    "name": "r0402",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3625,8 +3625,8 @@
    "name": "r0403",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3634,8 +3634,8 @@
    "name": "r0404",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3643,8 +3643,8 @@
    "name": "r0405",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3652,8 +3652,8 @@
    "name": "r0406",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3661,8 +3661,8 @@
    "name": "r0407",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3670,8 +3670,8 @@
    "name": "r0408",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3679,8 +3679,8 @@
    "name": "r0409",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3688,8 +3688,8 @@
    "name": "r0410",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3697,8 +3697,8 @@
    "name": "r0411",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3706,8 +3706,8 @@
    "name": "r0412",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3715,8 +3715,8 @@
    "name": "r0413",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3724,8 +3724,8 @@
    "name": "r0414",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3733,8 +3733,8 @@
    "name": "r0415",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3742,8 +3742,8 @@
    "name": "r0416",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3751,8 +3751,8 @@
    "name": "r0417",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3760,8 +3760,8 @@
    "name": "r0418",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3769,8 +3769,8 @@
    "name": "r0419",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3778,8 +3778,8 @@
    "name": "r0420",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3787,8 +3787,8 @@
    "name": "r0421",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3796,8 +3796,8 @@
    "name": "r0422",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3805,8 +3805,8 @@
    "name": "r0423",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3814,8 +3814,8 @@
    "name": "r0424",
    "campus": "C11",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3823,8 +3823,8 @@
    "name": "r0425",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3832,8 +3832,8 @@
    "name": "r0426",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3841,8 +3841,8 @@
    "name": "r0427",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3850,8 +3850,8 @@
    "name": "r0428",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3859,8 +3859,8 @@
    "name": "r0429",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3868,8 +3868,8 @@
    "name": "r0430",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3877,8 +3877,8 @@
    "name": "r0431",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3886,8 +3886,8 @@
    "name": "r0432",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3895,8 +3895,8 @@
    "name": "r0433",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3904,8 +3904,8 @@
    "name": "r0434",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3913,8 +3913,8 @@
    "name": "r0435",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3922,8 +3922,8 @@
    "name": "r0436",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3931,8 +3931,8 @@
    "name": "r0437",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3940,8 +3940,8 @@
    "name": "r0438",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3949,8 +3949,8 @@
    "name": "r0439",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3958,8 +3958,8 @@
    "name": "r0440",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -3967,8 +3967,8 @@
    "name": "r0441",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3976,8 +3976,8 @@
    "name": "r0442",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3985,8 +3985,8 @@
    "name": "r0443",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -3994,8 +3994,8 @@
    "name": "r0444",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4003,8 +4003,8 @@
    "name": "r0445",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4012,8 +4012,8 @@
    "name": "r0446",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4021,8 +4021,8 @@
    "name": "r0447",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4030,8 +4030,8 @@
    "name": "r0448",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4039,8 +4039,8 @@
    "name": "r0449",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4048,8 +4048,8 @@
    "name": "r0450",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4057,8 +4057,8 @@
    "name": "r0451",
    "campus": "C13",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4066,8 +4066,8 @@
    "name": "r0452",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4075,8 +4075,8 @@
    "name": "r0453",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4084,8 +4084,8 @@
    "name": "r0454",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4093,8 +4093,8 @@
    "name": "r0455",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4102,8 +4102,8 @@
    "name": "r0456",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4111,8 +4111,8 @@
    "name": "r0457",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4120,8 +4120,8 @@
    "name": "r0458",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4129,8 +4129,8 @@
    "name": "r0459",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4138,8 +4138,8 @@
    "name": "r0460",
    "campus": "C13",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4147,8 +4147,8 @@
    "name": "r0461",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4156,8 +4156,8 @@
    "name": "r0462",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4165,8 +4165,8 @@
    "name": "r0463",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4174,8 +4174,8 @@
    "name": "r0464",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4183,8 +4183,8 @@
    "name": "r0465",
    "campus": "C14",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4192,8 +4192,8 @@
    "name": "r0466",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4201,8 +4201,8 @@
    "name": "r0467",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4210,8 +4210,8 @@
    "name": "r0468",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4219,8 +4219,8 @@
    "name": "r0469",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4228,8 +4228,8 @@
    "name": "r0470",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4237,8 +4237,8 @@
    "name": "r0471",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4246,8 +4246,8 @@
    "name": "r0472",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4255,8 +4255,8 @@
    "name": "r0473",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4264,8 +4264,8 @@
    "name": "r0474",
    "campus": "C10",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4273,8 +4273,8 @@
    "name": "r0475",
    "campus": "C11",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4282,8 +4282,8 @@
    "name": "r0476",
    "campus": "C11",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4291,8 +4291,8 @@
    "name": "r0477",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4300,8 +4300,8 @@
    "name": "r0478",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4309,8 +4309,8 @@
    "name": "r0479",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4318,8 +4318,8 @@
    "name": "r0480",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4327,8 +4327,8 @@
    "name": "r0481",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4336,8 +4336,8 @@
    "name": "r0482",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4345,8 +4345,8 @@
    "name": "r0483",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4354,8 +4354,8 @@
    "name": "r0484",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4363,8 +4363,8 @@
    "name": "r0485",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4372,8 +4372,8 @@
    "name": "r0486",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4381,8 +4381,8 @@
    "name": "r0487",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4390,8 +4390,8 @@
    "name": "r0488",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4399,8 +4399,8 @@
    "name": "r0489",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4408,8 +4408,8 @@
    "name": "r0490",
    "campus": "C10",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4417,8 +4417,8 @@
    "name": "r0491",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": 3,
-   "uses_return_bus": false,
+   "up_trip_id": 3,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4426,8 +4426,8 @@
    "name": "r0492",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4435,8 +4435,8 @@
    "name": "r0493",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4444,8 +4444,8 @@
    "name": "r0494",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4453,8 +4453,8 @@
    "name": "r0495",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4462,8 +4462,8 @@
    "name": "r0496",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4471,8 +4471,8 @@
    "name": "r0497",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4480,8 +4480,8 @@
    "name": "r0498",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4489,8 +4489,8 @@
    "name": "r0499",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4498,8 +4498,8 @@
    "name": "r0500",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4507,8 +4507,8 @@
    "name": "r0501",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4516,8 +4516,8 @@
    "name": "r0502",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4525,8 +4525,8 @@
    "name": "r0503",
    "campus": "C04",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4534,8 +4534,8 @@
    "name": "r0504",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4543,8 +4543,8 @@
    "name": "r0505",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4552,8 +4552,8 @@
    "name": "r0506",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4561,8 +4561,8 @@
    "name": "r0507",
    "campus": "C09",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4570,8 +4570,8 @@
    "name": "r0508",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4579,8 +4579,8 @@
    "name": "r0509",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4588,8 +4588,8 @@
    "name": "r0510",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4597,8 +4597,8 @@
    "name": "r0511",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4606,8 +4606,8 @@
    "name": "r0512",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4615,8 +4615,8 @@
    "name": "r0513",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4624,8 +4624,8 @@
    "name": "r0514",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4633,8 +4633,8 @@
    "name": "r0515",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4642,8 +4642,8 @@
    "name": "r0516",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4651,8 +4651,8 @@
    "name": "r0517",
    "campus": "C08",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4660,8 +4660,8 @@
    "name": "r0518",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4669,8 +4669,8 @@
    "name": "r0519",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4678,8 +4678,8 @@
    "name": "r0520",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4687,8 +4687,8 @@
    "name": "r0521",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4696,8 +4696,8 @@
    "name": "r0522",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4705,8 +4705,8 @@
    "name": "r0523",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4714,8 +4714,8 @@
    "name": "r0524",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4723,8 +4723,8 @@
    "name": "r0525",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4732,8 +4732,8 @@
    "name": "r0526",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4741,8 +4741,8 @@
    "name": "r0527",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4750,8 +4750,8 @@
    "name": "r0528",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4759,8 +4759,8 @@
    "name": "r0529",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4768,8 +4768,8 @@
    "name": "r0530",
    "campus": "C04",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4777,8 +4777,8 @@
    "name": "r0531",
    "campus": "C11",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4786,8 +4786,8 @@
    "name": "r0532",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4795,8 +4795,8 @@
    "name": "r0533",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4804,8 +4804,8 @@
    "name": "r0534",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4813,8 +4813,8 @@
    "name": "r0535",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4822,8 +4822,8 @@
    "name": "r0536",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4831,8 +4831,8 @@
    "name": "r0537",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4840,8 +4840,8 @@
    "name": "r0538",
    "campus": "C16",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4849,8 +4849,8 @@
    "name": "r0539",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4858,8 +4858,8 @@
    "name": "r0540",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4867,8 +4867,8 @@
    "name": "r0541",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4876,8 +4876,8 @@
    "name": "r0542",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4885,8 +4885,8 @@
    "name": "r0543",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4894,8 +4894,8 @@
    "name": "r0544",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4903,8 +4903,8 @@
    "name": "r0545",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4912,8 +4912,8 @@
    "name": "r0546",
    "campus": "C16",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4921,8 +4921,8 @@
    "name": "r0547",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4930,8 +4930,8 @@
    "name": "r0548",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4939,8 +4939,8 @@
    "name": "r0549",
    "campus": "C07",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4948,8 +4948,8 @@
    "name": "r0550",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4957,8 +4957,8 @@
    "name": "r0551",
    "campus": "C16",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -4966,8 +4966,8 @@
    "name": "r0552",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4975,8 +4975,8 @@
    "name": "r0553",
    "campus": "C15",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4984,8 +4984,8 @@
    "name": "r0554",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -4993,8 +4993,8 @@
    "name": "r0555",
    "campus": "C02",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5002,8 +5002,8 @@
    "name": "r0556",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5011,8 +5011,8 @@
    "name": "r0557",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5020,8 +5020,8 @@
    "name": "r0558",
    "campus": "C14",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5029,8 +5029,8 @@
    "name": "r0559",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5038,8 +5038,8 @@
    "name": "r0560",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5047,8 +5047,8 @@
    "name": "r0561",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5056,8 +5056,8 @@
    "name": "r0562",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5065,8 +5065,8 @@
    "name": "r0563",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5074,8 +5074,8 @@
    "name": "r0564",
    "campus": "C05",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5083,8 +5083,8 @@
    "name": "r0565",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5092,8 +5092,8 @@
    "name": "r0566",
    "campus": "C03",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5101,8 +5101,8 @@
    "name": "r0567",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5110,8 +5110,8 @@
    "name": "r0568",
    "campus": "C07",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5119,8 +5119,8 @@
    "name": "r0569",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5128,8 +5128,8 @@
    "name": "r0570",
    "campus": "C13",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5137,8 +5137,8 @@
    "name": "r0571",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5146,8 +5146,8 @@
    "name": "r0572",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5155,8 +5155,8 @@
    "name": "r0573",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5164,8 +5164,8 @@
    "name": "r0574",
    "campus": "C10",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5173,8 +5173,8 @@
    "name": "r0575",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5182,8 +5182,8 @@
    "name": "r0576",
    "campus": "C13",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5191,8 +5191,8 @@
    "name": "r0577",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5200,8 +5200,8 @@
    "name": "r0578",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5209,8 +5209,8 @@
    "name": "r0579",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5218,8 +5218,8 @@
    "name": "r0580",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5227,8 +5227,8 @@
    "name": "r0581",
    "campus": "C07",
    "attendance_type": "oneway",
-   "departure_slot_id": 1,
-   "uses_return_bus": false,
+   "up_trip_id": 1,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5236,8 +5236,8 @@
    "name": "r0582",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5245,8 +5245,8 @@
    "name": "r0583",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5254,8 +5254,8 @@
    "name": "r0584",
    "campus": "C02",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5263,8 +5263,8 @@
    "name": "r0585",
    "campus": "C12",
    "attendance_type": "oneway",
-   "departure_slot_id": null,
-   "uses_return_bus": true,
+   "up_trip_id": null,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5272,8 +5272,8 @@
    "name": "r0586",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5281,8 +5281,8 @@
    "name": "r0587",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5290,8 +5290,8 @@
    "name": "r0588",
    "campus": "C03",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5299,8 +5299,8 @@
    "name": "r0589",
    "campus": "C12",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5308,8 +5308,8 @@
    "name": "r0590",
    "campus": "C06",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 2,
-   "uses_return_bus": true,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5317,8 +5317,8 @@
    "name": "r0591",
    "campus": "C08",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5326,8 +5326,8 @@
    "name": "r0592",
    "campus": "C01",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5335,8 +5335,8 @@
    "name": "r0593",
    "campus": "C01",
    "attendance_type": "self",
-   "departure_slot_id": null,
-   "uses_return_bus": false,
+   "up_trip_id": null,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5344,8 +5344,8 @@
    "name": "r0594",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5353,8 +5353,8 @@
    "name": "r0595",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5362,8 +5362,8 @@
    "name": "r0596",
    "campus": "C15",
    "attendance_type": "oneway",
-   "departure_slot_id": 2,
-   "uses_return_bus": false,
+   "up_trip_id": 2,
+   "down_trip_id": null,
    "fixed_up_bus_id": null
   },
   {
@@ -5371,8 +5371,8 @@
    "name": "r0597",
    "campus": "C02",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5380,8 +5380,8 @@
    "name": "r0598",
    "campus": "C01",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 3,
-   "uses_return_bus": true,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   },
   {
@@ -5389,8 +5389,8 @@
    "name": "r0599",
    "campus": "C05",
    "attendance_type": "roundtrip",
-   "departure_slot_id": 1,
-   "uses_return_bus": true,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "fixed_up_bus_id": null
   }
  ],

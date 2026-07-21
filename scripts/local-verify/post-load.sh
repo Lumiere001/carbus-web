@@ -72,11 +72,30 @@ begin
   -- 신청의 상행 편이 실제 운행편을 가리키는가
   select count(*) into v_bad
     from registrations r
-   where r.departure_slot_id is not null
+   where r.up_trip_id is not null
      and not exists (select 1 from event_trips t
-                      where t.id = r.departure_slot_id and t.direction = 'up');
+                      where t.id = r.up_trip_id and t.direction = 'up');
   if v_bad > 0 then
     raise exception '존재하지 않는 상행 편을 가리키는 신청 %건', v_bad;
+  end if;
+
+  select count(*) into v_bad
+    from registrations r
+   where r.down_trip_id is not null
+     and not exists (select 1 from event_trips t
+                      where t.id = r.down_trip_id and t.direction = 'down');
+  if v_bad > 0 then
+    raise exception '존재하지 않는 하행 편을 가리키는 신청 %건', v_bad;
+  end if;
+
+  -- 파생 트리거가 ALWAYS 인가. ORIGIN 이면 다음 백업 적재가 CHECK 위반으로 통째로 실패한다.
+  -- `enable trigger user` 를 쓰는 블록이 하나라도 지나가면 조용히 내려가므로 매번 확인한다.
+  if not exists (
+    select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid
+     where c.relname = 'registrations' and t.tgname = 'trg_reg_000_derive'
+       and t.tgenabled = 'A'
+  ) then
+    raise exception 'trg_reg_000_derive 가 ENABLE ALWAYS 가 아닙니다 — 백업 적재가 실패합니다';
   end if;
 end $$;
 SQL

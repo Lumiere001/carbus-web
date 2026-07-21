@@ -18,8 +18,8 @@ function pax(overrides: Partial<Passenger> = {}): Passenger {
     name: `순장/순원${_pid}`,
     campus: "전남대",
     attendance_type: "roundtrip",
-    departure_slot_id: AM,
-    uses_return_bus: true,
+    up_trip_id: AM,
+    down_trip_id: DOWN,
     fixed_up_bus_id: null,
     ...overrides,
   };
@@ -136,13 +136,13 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   });
 
   it("6) 차량순장 고정: driver 지정 호차에 고정 (이동 X)", () => {
-    const driver = pax({ id: "drv", departure_slot_id: AM, campus: "조선대" });
+    const driver = pax({ id: "drv", up_trip_id: AM, campus: "조선대" });
     const buses = [
       bus({ id: 1, up_trip_id: AM, driver_registration_id: "drv" }),
       bus({ id: 2, up_trip_id: AM }),
     ];
     // 1호차를 가득 메울 큰 캠퍼스 → 빈자리는 2호차가 더 많아짐
-    const others = paxN(40, { campus: "전남대", departure_slot_id: AM });
+    const others = paxN(40, { campus: "전남대", up_trip_id: AM });
     const r = runBatch([driver, ...others], buses);
     expect(r.errors).toEqual([]);
     // driver 는 capacity 와 무관하게 반드시 1호차
@@ -150,7 +150,7 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   });
 
   it("7) fixed_passenger_ids 우선 점유: 5명 0호차 고정", () => {
-    const fixed = paxN(5, { departure_slot_id: AM, campus: "채플팀" });
+    const fixed = paxN(5, { up_trip_id: AM, campus: "채플팀" });
     const buses = [
       bus({
         id: 1,
@@ -172,8 +172,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const tueBus = bus({ id: 1, up_trip_id: AM, capacity: 2, hard_cap: 2 });
     const wedBus = bus({ id: 5, up_trip_id: PM, capacity: 44 });
     // TUE 5명 (정원 2 초과) → 일부 미배정, 그러나 WED 차에는 절대 안 들어감
-    const tuePax = paxN(5, { departure_slot_id: AM, campus: "전남대" });
-    const r = runBatch([...tuePax, pax({ departure_slot_id: PM })], [
+    const tuePax = paxN(5, { up_trip_id: AM, campus: "전남대" });
+    const r = runBatch([...tuePax, pax({ up_trip_id: PM })], [
       tueBus,
       wedBus,
     ]);
@@ -192,8 +192,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const buses = nineBuses();
     const downPax = paxN(10, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const r = runBatch(downPax, buses);
@@ -213,8 +213,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const buses = nineBuses();
     const down = paxN(50, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const r = runBatch(down, buses, "down");
@@ -241,7 +241,7 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     // WED 상행자는 상행은 WED 호차(5)지만, 하행은 토요일 9대 어디든 가능.
     const wedBuses = [5, 6].map((id) => bus({ id, up_trip_id: PM }));
     const tueBus = bus({ id: 1, up_trip_id: AM });
-    const wed = paxN(3, { departure_slot_id: PM, campus: "전남대" });
+    const wed = paxN(3, { up_trip_id: PM, campus: "전남대" });
     const r = runBatch(wed, [tueBus, ...wedBuses]);
     for (const p of wed) {
       // 상행: WED 호차만 (5 또는 6)
@@ -255,8 +255,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const buses = [bus({ id: 1, up_trip_id: AM })];
     const onewayUp = paxN(5, {
       attendance_type: "oneway",
-      departure_slot_id: AM,
-      uses_return_bus: false,
+      up_trip_id: AM,
+      down_trip_id: null,
     });
     const r = runBatch(onewayUp, buses);
     for (const p of onewayUp) {
@@ -279,14 +279,14 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(bBuses.size).toBe(1);
   });
 
-  it("14) 고정 배정 요일 불일치 → errors 기록 + 미배정", () => {
-    const wrong = pax({ id: "wrong", departure_slot_id: PM });
+  it("14) 고정 배정 편 불일치 → errors 기록 + 미배정", () => {
+    const wrong = pax({ id: "wrong", up_trip_id: PM });
     const buses = [
       bus({ id: 1, up_trip_id: AM, driver_registration_id: "wrong" }),
       bus({ id: 5, up_trip_id: PM }),
     ];
     const r = runBatch([wrong], buses);
-    expect(r.errors.some((e) => e.includes("슬롯 불일치"))).toBe(true);
+    expect(r.errors.some((e) => e.includes("편 불일치"))).toBe(true);
     // TUE 차에 고정 안 됨. WED 차에는 일반 배정될 수 있음 (pinned 아님)
     expect(r.up_assignments["wrong"]).not.toBe(1);
   });
@@ -296,7 +296,7 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     // 불필요한 분할을 만들지 않는다 (정원 안 채워도 분할보다 낫다 — 빈좌석 동일).
     const buses = [1, 2, 3, 4].map((id) => bus({ id, up_trip_id: AM }));
     const passengers = Array.from({ length: 7 }, (_, c) =>
-      paxN(20, { campus: `c${c}`, departure_slot_id: AM })
+      paxN(20, { campus: `c${c}`, up_trip_id: AM })
     ).flat();
     const r = runBatch(passengers, buses);
     expect(r.errors).toEqual([]);
@@ -318,8 +318,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const buses = nineBuses();
     const down = paxN(47, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const r = runBatch(down, buses);
@@ -333,8 +333,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
 
   it("17) 차량순장 캠퍼스 우선: 같은 캠퍼스를 순장 호차에 먼저 배정", () => {
     // 순장(전남대) 2호차. 전남대 동료 10명이 순장 호차(2)로 우선 배정됨. (1호차는 예외라 회피)
-    const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
-    const mates = paxN(10, { campus: "전남대", departure_slot_id: AM });
+    const drv = pax({ id: "drv", campus: "전남대", up_trip_id: AM });
+    const mates = paxN(10, { campus: "전남대", up_trip_id: AM });
     const buses = [
       bus({ id: 2, name: "2호차", up_trip_id: AM, driver_registration_id: "drv" }),
       bus({ id: 3, name: "3호차", up_trip_id: AM }),
@@ -349,8 +349,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   it("17b) 순장 캠퍼스 정원 초과: 정원(44)까지만 순장 호차, 나머지 일반 배차", () => {
     // 순장(전남대) 2호차 + 전남대 50명. 2호차는 정원(순장1+43=44)까지, 7명은 3호차로.
     // cohesion 없으면 best-fit 으로 3호차 44·2호차 7 이 되므로 이 테스트가 cohesion 을 검증.
-    const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
-    const mates = paxN(50, { campus: "전남대", departure_slot_id: AM });
+    const drv = pax({ id: "drv", campus: "전남대", up_trip_id: AM });
+    const mates = paxN(50, { campus: "전남대", up_trip_id: AM });
     const buses = [
       bus({ id: 2, name: "2호차", up_trip_id: AM, driver_registration_id: "drv" }),
       bus({ id: 3, name: "3호차", up_trip_id: AM }),
@@ -364,8 +364,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   it("17d) 1호차는 예외: 순장 있어도 캠퍼스 우선 배치 안 함", () => {
     // 1호차 순장(전남대) + 전남대 10명, 비-1호차(2·3호차) 여유 있음.
     // 응집이 적용됐다면 전남대가 순장 호차(1)로 몰리지만, 1호차는 예외라 비-1호차로 감.
-    const drv = pax({ id: "drv", campus: "전남대", departure_slot_id: AM });
-    const mates = paxN(10, { campus: "전남대", departure_slot_id: AM });
+    const drv = pax({ id: "drv", campus: "전남대", up_trip_id: AM });
+    const mates = paxN(10, { campus: "전남대", up_trip_id: AM });
     const buses = [
       bus({ id: 1, name: "1호차", up_trip_id: AM, driver_registration_id: "drv" }),
       bus({ id: 2, name: "2호차", up_trip_id: AM }),
@@ -411,14 +411,14 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const drv = pax({
       id: "ddrv",
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "조선대",
     });
     const mates = paxN(10, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "조선대",
     });
     const buses = [
@@ -434,7 +434,7 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
 
   it("18) 큰 캠퍼스 분할 최소화: 50명 → 정확히 2호차 (45+5)", () => {
     const buses = [1, 2, 3].map((id) => bus({ id, up_trip_id: AM }));
-    const big = paxN(50, { campus: "전남대", departure_slot_id: AM });
+    const big = paxN(50, { campus: "전남대", up_trip_id: AM });
     const r = runBatch(big, buses);
     const used = new Set(big.map((m) => r.up_assignments[m.id]));
     expect(used.size).toBe(2);
@@ -444,14 +444,14 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const drv = pax({
       id: "ddrv",
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "조선대",
     });
     const others = paxN(40, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const buses = [
@@ -469,8 +469,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   it("21) 하행 고정탑승: down_fixed 5명 지정 호차 점유", () => {
     const fixed = paxN(5, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "채플팀",
     });
     const buses = [
@@ -491,8 +491,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const p = pax({
       id: "both",
       attendance_type: "roundtrip",
-      departure_slot_id: AM,
-      uses_return_bus: true,
+      up_trip_id: AM,
+      down_trip_id: DOWN,
       campus: "호남대",
     });
     const buses = [
@@ -511,14 +511,14 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     const x = pax({
       id: "x",
       attendance_type: "roundtrip",
-      departure_slot_id: AM,
-      uses_return_bus: true,
+      up_trip_id: AM,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const mates = paxN(5, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const buses = [
@@ -535,7 +535,7 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
 
   it("23) 고정 정원 초과 방지: hard_cap(45) 넘는 고정은 차단+에러", () => {
     // 1대(hard_cap 45)에 46명 고정 시도 → 45명만 고정, 초과분 에러
-    const fixed = paxN(46, { departure_slot_id: AM, campus: "전남대" });
+    const fixed = paxN(46, { up_trip_id: AM, campus: "전남대" });
     const buses = [
       bus({
         id: 1,
@@ -550,7 +550,7 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   });
 
   it("24) 같은 사람 두 호차 중복 고정 → 첫 호차만, 중복 경고", () => {
-    const dup = pax({ id: "dup", departure_slot_id: AM, campus: "조선대" });
+    const dup = pax({ id: "dup", up_trip_id: AM, campus: "조선대" });
     const buses = [
       bus({ id: 1, up_trip_id: AM, fixed_passenger_ids: ["dup"] }),
       bus({ id: 2, up_trip_id: AM, fixed_passenger_ids: ["dup"] }),
@@ -563,8 +563,8 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   it("25) 하행 고정 정원 초과 방지", () => {
     const fixed = paxN(46, {
       attendance_type: "oneway",
-      departure_slot_id: null,
-      uses_return_bus: true,
+      up_trip_id: null,
+      down_trip_id: DOWN,
       campus: "전남대",
     });
     const buses = [

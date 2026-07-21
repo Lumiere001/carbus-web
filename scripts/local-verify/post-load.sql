@@ -37,7 +37,23 @@ begin
   get diagnostics matched = row_count;
 
   alter table public.registrations enable trigger user;
+  -- ⚠️ `enable trigger user` 는 **모든** 사용자 트리거를 ORIGIN 으로 되돌린다.
+  --    ENABLE ALWAYS 로 세워둔 트리거도 조용히 내려간다. 아래에서 복구한다.
   raise notice 'home_unit_id backfill: %건', matched;
+end $$;
+
+-- ── ENABLE ALWAYS 트리거 복구 ────────────────────────────────
+-- 위처럼 `enable trigger user` 를 쓰는 블록이 지나가면 ALWAYS 가 ORIGIN 으로 내려간다.
+-- trg_reg_000_derive 는 백업 적재(replica 모드)에서도 돌아야 하는 구조 유지 트리거라
+-- ORIGIN 이면 파생 컬럼이 안 채워지고 CHECK 위반으로 적재가 통째로 실패한다.
+-- 실측으로 두 번 당했다 — 그래서 여기서 무조건 다시 세운다.
+do $$
+begin
+  if exists (select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid
+              where c.relname = 'registrations' and t.tgname = 'trg_reg_000_derive') then
+    alter table public.registrations enable always trigger trg_reg_000_derive;
+    raise notice 'trg_reg_000_derive 를 ENABLE ALWAYS 로 복구';
+  end if;
 end $$;
 
 -- ⚠️ 데이터 의존 backfill 이 이 파일에만 있는 게 아니다.

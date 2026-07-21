@@ -62,7 +62,7 @@ export default async function AdminLeadersPage() {
     boundIds.size > 0
       ? supabase
           .from("registrations")
-          .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, roles")
+          .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, roles")
           // 취소자는 리더 목록에서 제외 (좌석·차량순장은 DB 트리거가 이미 반납했다)
           .neq("participation_status", "cancelled")
           .in("id", [...boundIds])
@@ -70,7 +70,7 @@ export default async function AdminLeadersPage() {
     plainLabels.length > 0
       ? supabase
           .from("registrations")
-          .select("id, name, student_id, campus_id, departure_slot_id, uses_return_bus, roles")
+          .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, roles")
           .neq("participation_status", "cancelled")
           .overlaps("roles", plainLabels)
       : Promise.resolve({ data: [] as never[] }),
@@ -83,8 +83,8 @@ export default async function AdminLeadersPage() {
       name: string;
       student_id: string;
       campus_id: string;
-      departure_slot_id: number | null;
-      uses_return_bus: boolean;
+      up_trip_id: number | null;
+      down_trip_id: number | null;
       roles: string[];
     }
   >();
@@ -113,8 +113,8 @@ export default async function AdminLeadersPage() {
     if (roleBadges.length === 0) continue;
     // 새 방향 결박 시 사용할 기본 종류 (차량순장 우선)
     const primaryKind: "driver" | "fixed" | null = isDriver ? "driver" : isFixed ? "fixed" : null;
-    const ridesUp = r.departure_slot_id !== null;
-    const ridesDown = r.uses_return_bus === true;
+    const ridesUp = r.up_trip_id !== null;
+    const ridesDown = r.down_trip_id !== null;
     const upBusId = upDriverOf.get(r.id) ?? upFixedOf.get(r.id) ?? null;
     const downBusId = downDriverOf.get(r.id) ?? downFixedOf.get(r.id) ?? null;
     leaders.push({
@@ -124,7 +124,7 @@ export default async function AdminLeadersPage() {
       campus_name: campusName.get(r.campus_id) ?? "—",
       roleBadges,
       primaryKind,
-      departure_slot_id: r.departure_slot_id ?? null,
+      up_trip_id: r.up_trip_id ?? null,
       ridesUp,
       ridesDown,
       upKind,

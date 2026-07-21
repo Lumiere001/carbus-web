@@ -19,7 +19,7 @@ export type LeaderRow = {
   roleBadges: string[];
   /** 새 방향 결박 시 기본 종류. 일반 역할만 있으면 null(호차 칸 비활성). */
   primaryKind: "driver" | "fixed" | null;
-  departure_slot_id: number | null;
+  up_trip_id: number | null;
   ridesUp: boolean;
   ridesDown: boolean;
   /** 방향별 현재 바인딩 종류 (없으면 null). */
@@ -82,7 +82,7 @@ export function LeadersPanel({
     // 이 방향의 결박 종류 (없으면 기본 종류로 새로 결박)
     const cellKind = (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind;
     if (!rides) return <span className="text-muted-2">해당 없음</span>;
-    const opts = mode === "up" ? buses.filter((b) => b.up_trip_id === row.departure_slot_id) : buses;
+    const opts = mode === "up" ? buses.filter((b) => b.up_trip_id === row.up_trip_id) : buses;
     if (!isMaster) {
       const b = buses.find((x) => x.id === cur);
       return (

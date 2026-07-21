@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegistrationGrid } from "@/components/campus/registration-grid";
-import { buildAttendancePresets } from "@/lib/labels";
 
 export default async function CampusPage() {
   const supabase = await createClient();
@@ -29,7 +28,7 @@ export default async function CampusPage() {
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("name").eq("id", campusId).single(),
     supabase.from("buses").select("id, name").order("id"),
-    supabase.from("event_trips").select("*").eq("direction", "up").order("display_order"),
+    supabase.from("event_trips").select("*").order("direction").order("display_order"),
   ]);
 
   return (
@@ -38,7 +37,7 @@ export default async function CampusPage() {
       campusName={campusRes.data?.name ?? "내"}
       initialRows={regRes.data ?? []}
       buses={busRes.data ?? []}
-      presets={buildAttendancePresets(slotRes.data ?? [])}
+      trips={slotRes.data ?? []}
     />
   );
 }

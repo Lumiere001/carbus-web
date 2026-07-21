@@ -61,6 +61,23 @@ RENAMED_COLUMNS = {
     "buses": {"departure_slot_id": "up_trip_id"},
 }
 
+# 어떤 테이블을 넣은 **직후** 돌려야 하는 SQL.
+# 왜 필요한가: registrations 의 파생 트리거가 "하행 편"을 찾는데, 백업은 3-A 이전에
+# 떠서 하행 편 행이 없다. 그 편은 마이그레이션이 events 를 보고 만드는데, 그건
+# 적재가 다 끝난 뒤(post-load.sh)라 순서가 뒤집힌다.
+# → event_trips 를 넣은 직후 하행 편을 만들어 둔다. 마이그레이션과 같은 SQL 이라
+#   나중에 다시 돌아도 (where not exists) 아무 일도 안 일어난다.
+AFTER_TABLE_SQL = {
+    "event_trips": """
+        insert into public.event_trips (key, label, display_order, active, event_id, direction)
+        select 'return', '귀가', 100, true, e.id, 'down'
+          from public.events e
+         where not exists (
+           select 1 from public.event_trips t
+            where t.event_id = e.id and t.direction = 'down');
+    """,
+}
+
 
 def psql(sql: str, tuples_only=True) -> str:
     cmd = ["docker", "exec", "-i", CONTAINER, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"]
@@ -159,6 +176,8 @@ def main():
             f"SELECT {collist} FROM jsonb_populate_recordset(null::public.{t}, '{payload}'::jsonb);"
         )
         summary.append((t, len(rows)))
+        if t in AFTER_TABLE_SQL:
+            stmts.append(AFTER_TABLE_SQL[t])
     stmts.append("SET session_replication_role = DEFAULT;")
 
     # 시퀀스/identity 를 최대값으로 올린다.
@@ -188,9 +207,12 @@ def main():
     ok = True
     for t, n in summary:
         actual = int(psql(f"select count(*) from public.{t}"))
-        match = actual == n
+        # AFTER_TABLE_SQL 이 행을 더 만드는 테이블은 DB 가 백업보다 많은 게 정상이다
+        # (예: event_trips 에 하행 편을 만들어 넣는다). 적기만 하면 여전히 실패.
+        match = actual >= n if t in AFTER_TABLE_SQL else actual == n
         ok &= match
-        print(f"  {'OK ' if match else 'MISMATCH'} {t:28} 백업 {n:6} / DB {actual:6}")
+        extra = f" (+{actual - n} 생성)" if t in AFTER_TABLE_SQL and actual > n else ""
+        print(f"  {'OK ' if match else 'MISMATCH'} {t:28} 백업 {n:6} / DB {actual:6}{extra}")
     print()
     print("적재 무결성:", "PASS ✅" if ok else "FAIL ❌")
     return 0 if ok else 1

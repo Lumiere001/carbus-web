@@ -47,7 +47,7 @@ const rows = (sql) => (q(sql) ? JSON.parse(q(sql)) : []);
 const regs = rows(`
   select coalesce(json_agg(t order by t.id), '[]'::json)::text from (
     select id::text, campus_id::text, attendance_type,
-           departure_slot_id, uses_return_bus
+           up_trip_id, down_trip_id
       from registrations
      where participation_status is distinct from 'cancelled'
        and event_id = public.active_event_id()
@@ -88,8 +88,8 @@ const passengers = regs.map((r) => {
     name: id, // 이름은 errors 메시지에만 쓰인다 — 가명으로 충분
     campus: aliasCampus(r.campus_id),
     attendance_type: r.attendance_type,
-    departure_slot_id: r.departure_slot_id,
-    uses_return_bus: r.uses_return_bus,
+    up_trip_id: r.up_trip_id,
+    down_trip_id: r.down_trip_id,
     fixed_up_bus_id: null, // 운영 코드가 항상 null 로 투영한다
   };
 });
@@ -145,6 +145,6 @@ writeFileSync(
 
 const campusSizes = [...passengers.reduce((m, p) => m.set(p.campus, (m.get(p.campus) ?? 0) + 1), new Map()).values()].sort((a, b) => b - a);
 console.log(`승객 ${passengers.length} · 호차 ${busFixture.length} · 캠퍼스 ${campusAlias.size}`);
-console.log(`상행슬롯 보유 ${passengers.filter((p) => p.departure_slot_id !== null).length} · 하행이용 ${passengers.filter((p) => p.uses_return_bus).length}`);
+console.log(`상행편 보유 ${passengers.filter((p) => p.up_trip_id !== null).length} · 하행편 보유 ${passengers.filter((p) => p.down_trip_id !== null).length}`);
 console.log(`캠퍼스 크기 분포 ${campusSizes.join(",")}`);
 console.log(`→ ${path.relative(REPO, OUT)}`);
