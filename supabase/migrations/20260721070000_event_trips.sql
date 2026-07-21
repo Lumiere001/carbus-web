@@ -298,7 +298,13 @@ begin
       insert into event_trips (key, label, display_order, active, event_id,
                                direction, origin, destination)
       values (r.key, r.label, r.display_order, r.active, v_new,
-              r.direction, coalesce(p_origin, r.origin), coalesce(p_destination, r.destination))
+              r.direction,
+              -- 하행은 방향이 반대다 — 행사의 출발지/도착지를 그대로 박으면 거꾸로 들어간다.
+              -- (광주 → 무주 행사면 하행 편의 출발지는 무주, 도착지는 광주)
+              case r.direction when 'down' then coalesce(p_destination, r.origin)
+                                           else coalesce(p_origin, r.origin) end,
+              case r.direction when 'down' then coalesce(p_origin, r.destination)
+                                           else coalesce(p_destination, r.destination) end)
       returning id into v_next;
       insert into _trip_map values (r.id, v_next);
     end loop;

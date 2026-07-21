@@ -50,8 +50,15 @@ export function RegForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [studentId, setStudentId] = useState(initial?.student_id ?? "");
   const [campusId, setCampusId] = useState(initial?.campus_id ?? campuses[0]?.id ?? "");
+  // ⚠️ 수정 모드에서 `?? presets[0]?.key` 로 폴백하면 **신청 내용이 조용히 덮어써진다.**
+  //    preset 은 활성 운행편으로만 만들어지므로(lib/labels.ts), 관리자가 편을 비활성으로
+  //    내린 뒤 그 편 신청자를 열면 매칭이 실패해 첫 preset(예: '왕복 (화 오후 7시)')이
+  //    잡힌다. 납부 상태만 고치고 저장해도 출발 편·참여 형태가 함께 바뀐다.
+  //    빈 값으로 두고 아래에서 "(현재 편 — 목록에 없음)" 선택지를 보여준다.
+  //    새로 만들 때만 첫 preset 을 기본값으로 쓴다.
+  const matchedKey = initial ? presetKeyOf(initial, presets) : null;
   const [presetKey, setPresetKey] = useState(
-    (initial ? presetKeyOf(initial, presets) : null) ?? presets[0]?.key ?? ""
+    initial ? (matchedKey ?? "") : (presets[0]?.key ?? "")
   );
   const [payment, setPayment] = useState<PaymentStatus>(
     initial?.payment_status ?? "unpaid"
@@ -122,6 +129,14 @@ export function RegForm({
           <label className="text-xs text-muted space-y-1 block">
             참석 일정
             <select className={inputCls} value={presetKey} onChange={(e) => setPresetKey(e.target.value)}>
+              {/*
+                현재 값이 어떤 preset 에도 안 맞는 경우(대개 운행편이 비활성으로 내려간 경우).
+                빈 선택지를 두어 "고르지 않으면 저장이 막히게" 한다 — 예전엔 첫 preset 으로
+                조용히 폴백해서 납부만 고쳐도 출발 편이 바뀌었다.
+              */}
+              {initial && matchedKey == null && (
+                <option value="">지금 편이 목록에 없습니다 — 다시 고르세요</option>
+              )}
               {presets.map((p) => (
                 <option key={p.key} value={p.key}>
                   {p.label}

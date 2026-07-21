@@ -37,11 +37,12 @@ export default async function AdminTripsPage() {
       .order("direction")
       .order("display_order"),
     supabase.from("buses").select("*").order("display_order").order("id"),
-    // 삭제 위험을 화면에서 미리 보여주려고 배정 인원을 센다.
-    // (실제 차단은 DB 트리거가 한다 — 화면 검사만 두면 우회된다)
+    // 삭제·변경 위험을 화면에서 미리 보여주려고 배정 상태를 읽는다.
+    // (실제 차단은 DB 트리거가 한다 — 화면 검사만 두면 우회된다.
+    //  화면은 "무엇이 막히는지 미리 알려주는" 역할만 한다)
     supabase
       .from("registrations")
-      .select("assigned_up_bus_id, assigned_down_bus_id")
+      .select("assigned_up_bus_id, assigned_down_bus_id, departure_slot_id")
       .neq("participation_status", "cancelled"),
   ]);
 
@@ -49,12 +50,28 @@ export default async function AdminTripsPage() {
   const buses = (busesRes.data ?? []) as BusRow[];
 
   const loads: Record<number, BusLoad> = {};
-  for (const b of buses) loads[b.id] = { up: 0, down: 0 };
+  // 차량에 배정된 사람들이 **신청한 상행 편**의 집합.
+  // DB 가드가 "바꾼 뒤 신청 편과 어긋나는 인원"을 세므로, 화면도 같은 술어를 쓰려면
+  // 단순 인원수가 아니라 이 집합이 필요하다.
+  const upRequests: Record<number, number[]> = {};
+  for (const b of buses) {
+    loads[b.id] = { up: 0, down: 0 };
+    upRequests[b.id] = [];
+  }
+  const seen: Record<number, Set<number>> = {};
   for (const r of regsRes.data ?? []) {
-    if (r.assigned_up_bus_id != null && loads[r.assigned_up_bus_id])
-      loads[r.assigned_up_bus_id].up += 1;
+    const up = r.assigned_up_bus_id;
+    if (up != null && loads[up]) {
+      loads[up].up += 1;
+      if (r.departure_slot_id != null) {
+        (seen[up] ??= new Set()).add(r.departure_slot_id);
+      }
+    }
     if (r.assigned_down_bus_id != null && loads[r.assigned_down_bus_id])
       loads[r.assigned_down_bus_id].down += 1;
+  }
+  for (const [busId, set] of Object.entries(seen)) {
+    upRequests[Number(busId)] = [...set];
   }
 
   return (
@@ -62,12 +79,15 @@ export default async function AdminTripsPage() {
       <header>
         <h2 className="text-xl font-semibold">편성</h2>
         <p className="text-sm text-muted-2 mt-1">
-          운행편과 차량을 만들고 고칩니다. 상행·하행은 완전히 같은 구조라, 하행도
-          출발 시각이 다른 여러 편으로 나눌 수 있습니다.
+          운행편과 차량을 만들고 고칩니다. 차량은 상·하행 편을 각각 갖습니다.
+          <br />
+          <strong className="text-warning-700">아직은</strong> 신청 화면이 하행 편을
+          고르게 하지 못합니다 — 하행을 여러 편으로 나눠도 신청자가 편을 선택할 수 없고
+          배차가 섞습니다. 하행은 당분간 한 편으로 두세요.
         </p>
       </header>
 
-      <FleetPanel trips={trips} buses={buses} loads={loads} />
+      <FleetPanel trips={trips} buses={buses} loads={loads} upRequests={upRequests} />
     </div>
   );
 }

@@ -29,11 +29,22 @@
 -- ============================================================
 
 -- ── 차량 삭제 가드 ──────────────────────────────────────────
+-- ⚠️ 배정 인원만 보면 **정작 이 화면을 가장 많이 쓰는 시점에 무력하다.**
+--    정상 운영 순서가 "차량순장·고정탑승 지정 → 배차 실행" 이라,
+--    편성을 만지는 시점에는 assigned_*_bus_id 가 전부 NULL 이다.
+--    처음에 배정만 검사했다가 실측으로 확인했다 — 배차 전에는 11대 전부 삭제되고,
+--    1호차 기준 고정탑승 34명(상행 25 / 하행 9) + 하행 차량순장 지정이 조용히 사라졌다.
+--    배차 후에도 batch/actions.ts 의 배정 초기화 경로를 타면 같은 상태가 된다.
+--    그래서 **차량에 매달린 모든 사람 정보**를 검사한다.
 create or replace function public.guard_bus_delete()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
-  v_up   int;
-  v_down int;
+  v_up      int;
+  v_down    int;
+  v_fix_up  int := coalesce(array_length(old.fixed_passenger_ids, 1), 0);
+  v_fix_dn  int := coalesce(array_length(old.down_fixed_passenger_ids, 1), 0);
+  v_logins  int;
+  v_parts   text[] := '{}';
 begin
   select count(*) into v_up
     from registrations
@@ -43,19 +54,23 @@ begin
     from registrations
    where assigned_down_bus_id = old.id
      and participation_status <> 'cancelled';
+  select count(*) into v_logins from profiles where driver_bus_id = old.id;
 
-  if v_up + v_down > 0 then
+  -- 무엇이 함께 사라지는지 전부 모아 한 문장으로 알려준다.
+  -- raise notice 는 클라이언트(PostgREST)에 도달하지 않으므로 경고로는 쓸 수 없다.
+  if v_up > 0   then v_parts := v_parts || format('상행 배정 %s명', v_up); end if;
+  if v_down > 0 then v_parts := v_parts || format('하행 배정 %s명', v_down); end if;
+  if v_fix_up > 0 then v_parts := v_parts || format('상행 고정탑승 %s명', v_fix_up); end if;
+  if v_fix_dn > 0 then v_parts := v_parts || format('하행 고정탑승 %s명', v_fix_dn); end if;
+  if old.driver_registration_id is not null      then v_parts := v_parts || '상행 차량순장'::text; end if;
+  if old.down_driver_registration_id is not null then v_parts := v_parts || '하행 차량순장'::text; end if;
+  if v_logins > 0 then v_parts := v_parts || format('차량순장 로그인 %s건', v_logins); end if;
+
+  if array_length(v_parts, 1) > 0 then
     raise exception
-      '%에 배정된 인원이 있습니다 (상행 %명 / 하행 %명). 먼저 재배차하거나 배정을 옮겨 주세요.',
-      old.name, v_up, v_down
+      '%에 %이(가) 걸려 있어 지울 수 없습니다. 먼저 해제하거나 다른 호차로 옮겨 주세요.',
+      old.name, array_to_string(v_parts, ' · ')
       using errcode = 'restrict_violation';
-  end if;
-
-  -- 차량순장 로그인이 이 호차를 가리키면 끊어준다(FK 는 SET NULL 이라 어차피 풀리지만,
-  -- 여기서 명시적으로 처리해 "왜 순장 로그인이 풀렸지" 를 로그로 남긴다).
-  if exists (select 1 from profiles where driver_bus_id = old.id) then
-    raise notice '차량순장 로그인 %건이 %호차 연결에서 해제됩니다',
-      (select count(*) from profiles where driver_bus_id = old.id), old.name;
   end if;
 
   return old;
@@ -97,17 +112,12 @@ begin
       using errcode = 'restrict_violation';
   end if;
 
-  -- 그 방향의 마지막 편을 지우면 해당 방향이 통째로 사라진다.
-  select count(*) into v_left
-    from event_trips
-   where event_id = old.event_id and direction = old.direction and id <> old.id;
-  if v_left = 0 then
-    raise exception
-      '"%" 는 이 행사의 마지막 % 편입니다. 방향이 통째로 사라지므로 지울 수 없습니다 — 대신 비활성으로 두세요.',
-      old.label,
-      case old.direction when 'up' then '상행' else '하행' end
-      using errcode = 'restrict_violation';
-  end if;
+  -- ⚠️ "마지막 편이니 못 지운다" 규칙은 넣지 않는다.
+  --    처음엔 넣었는데, 위 두 검사가 이미 "쓰이고 있는 편"을 막고 있어서 중복이면서
+  --    **범용성만 깎았다**. 예를 들어 "하행만 있는 행사"(상행 0편)를 만들 수 없게 된다.
+  --    아무도 안 쓰는 편이라면 지워도 잃을 게 없다.
+  --    대신 활성 편이 0개가 되는 것은 아래 guard_trip_last_active 가 막는다 —
+  --    그건 삭제뿐 아니라 **비활성화**로도 도달하는 상태라 따로 다뤄야 한다.
 
   return old;
 end $$;
@@ -116,6 +126,71 @@ drop trigger if exists trg_trip_guard_delete on public.event_trips;
 create trigger trg_trip_guard_delete
   before delete on public.event_trips
   for each row execute function public.guard_trip_delete();
+
+-- ── 그 방향에 신청자가 있는데 활성 편이 0개가 되는 것 ───────
+-- 신청 폼은 **활성 편**으로만 선택지를 만든다(lib/labels.ts). 그래서 상행 활성 편이
+-- 0개가 되면 아무도 상행을 신청할 수 없다. 화면에는 아무 경고도 안 뜬다.
+-- 삭제뿐 아니라 [비활성] 토글로도 같은 상태에 도달하므로 UPDATE 도 함께 본다.
+--
+-- "그 방향을 아예 안 쓰는 행사"(예: 하행만 있는 행사)는 정당하므로,
+-- 신청자가 이미 있는 방향만 막는다.
+create or replace function public.guard_trip_last_active()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_dir   text := coalesce(new.direction, old.direction);
+  v_event uuid := coalesce(new.event_id, old.event_id);
+  v_left  int;
+  v_users int;
+begin
+  -- 비활성으로 내리는 것도, 지우는 것도 아니면 볼 것 없다.
+  if tg_op = 'UPDATE' and new.active then
+    return new;
+  end if;
+
+  select count(*) into v_left
+    from event_trips
+   where event_id = v_event and direction = v_dir and active
+     and id <> coalesce(new.id, old.id);
+  if v_left > 0 then
+    return coalesce(new, old);
+  end if;
+
+  -- 이 방향을 쓰는 신청자가 있는가 (상행만 판정 가능 — 하행은 3-C 이후)
+  if v_dir = 'up' then
+    select count(*) into v_users
+      from registrations
+     where event_id = v_event and departure_slot_id is not null
+       and participation_status <> 'cancelled';
+  else
+    select count(*) into v_users
+      from registrations
+     where event_id = v_event and uses_return_bus
+       and participation_status <> 'cancelled';
+  end if;
+
+  if v_users > 0 then
+    raise exception
+      '"%" 를 내리면 % 활성 편이 0개가 됩니다. 그 방향 신청자 %명이 편을 고를 수 없게 됩니다 — 먼저 다른 편을 만드세요.',
+      coalesce(new.label, old.label),
+      case v_dir when 'up' then '상행' else '하행' end,
+      v_users
+      using errcode = 'restrict_violation';
+  end if;
+
+  return coalesce(new, old);
+end $$;
+
+drop trigger if exists trg_trip_last_active on public.event_trips;
+create trigger trg_trip_last_active
+  before update or delete on public.event_trips
+  for each row execute function public.guard_trip_last_active();
+
+-- ── 정원은 양수여야 하고 보조석이 정원보다 작을 수 없다 ─────
+-- 화면 검사만으로는 빈 입력(→ Number("") = 0)과 PostgREST 직접 호출을 둘 다 못 막는다.
+alter table public.buses drop constraint if exists buses_capacity_sane;
+alter table public.buses
+  add constraint buses_capacity_sane
+  check (capacity > 0 and hard_cap >= capacity);
 
 -- ── 차량이 다른 행사의 운행편을 가리키지 못하게 ─────────────
 -- 편성 화면에서 편 id 를 직접 넘기게 되므로, 행사 간 교차 참조가 실제로 가능해진다.
