@@ -17,7 +17,9 @@
 | 2-A | 결제 장부 + 환불 차액 추적 | ✅ 배포됨 | [#11](https://github.com/Lumiere001/carbus-web/pull/11) |
 | — | 행사별 차량비 설정 + 용어 '원장'→'장부' | ✅ 배포됨 | [#12](https://github.com/Lumiere001/carbus-web/pull/12) |
 | 2-B | 취소 상태 + 좌석 자동 반납 | ✅ 배포됨 | [#13](https://github.com/Lumiere001/carbus-web/pull/13) |
-| **3** | **상/하행 운행편 대칭 + 자유 설정** | **다음** | — |
+| 3-A | 배차 특례 플래그화 + 운행편 모델(event_trips) | 🟡 로컬만 (미배포) | 브랜치 `phase3-trips` |
+| **3-B** | **/admin/trips·/admin/buses 편성 편집 UI** | **다음** | — |
+| 3-C | 신청 대칭화 (registrations.up/down_trip_id + 폼) | 대기 | — |
 | 4 | 비고 구조화 본체 (transport_legs) | 대기 | — |
 | 5 | 화면 응집 (목업 반영) | 대기 | — |
 
@@ -37,35 +39,60 @@
 
 ---
 
+## 1-A. ⚠️ 먼저 알아야 할 것 (2026-07-21 추가)
+
+**`.env.local` 은 운영 DB 를 가리킨다** (`qqtqwyhclscfjlefkiqr.supabase.co`).
+`pnpm dev` 를 그냥 띄우면 **로컬 화면이 운영 데이터에 붙는다.** 로컬 스키마로 검증하려면
+`.env.local` 을 `supabase status` 의 로컬 URL·키로 바꾸고 띄워야 한다.
+지금 브랜치의 코드는 `buses.up_trip_id` 를 조회하는데 운영은 아직 `departure_slot_id` 라,
+바꾸지 않고 띄우면 /admin 화면이 전부 깨진다.
+
+**브랜치 `phase3-trips` 는 아직 운영에 반영되지 않았다.** 커밋 5개가 로컬 검증만 끝난 상태다.
+반영 순서는 §3 "운영 반영" 참고 — 이 브랜치는 **DB 와 코드를 함께** 올려야 한다
+(컬럼 rename 이라 한쪽만 올리면 깨진다). 다행히 행사 사이 정지 구간이라 트래픽이 없다.
+
 ## 2. 다음 작업 — Phase 3
 
 **목표:** 지금 하행은 `uses_return_bus` 불린 하나뿐이라 **출발 시각 개념 자체가 없습니다.**
 상행처럼 운행편(trip)으로 승격해 상·하행 모두 시각·차량을 자유롭게 짜게 합니다.
 
-### 할 일
+### 3-A ✅ 끝남 (로컬 검증 완료, 미배포 — 브랜치 `phase3-trips`)
 
-1. **`event_trips` 신설** (`departure_slots` 승격)
-   - `direction`(up/down), `departs_at`(nullable), `origin`, `destination`, `label`
-   - `departs_at`은 nullable로 시작 — 기존 라벨 `"화 오전 9시"`에 연·월·일이 없어 파싱 불가.
-     화면에서 1회 입력받는다.
-2. **`buses.up_trip_id` / `down_trip_id`** (nullable) + `is_cohesion_exempt` / `fill_priority` / `display_order`
-   - 지금 `lib/batch/engine.ts:40,51`이 **`"1호차"` 문자열 일치**로 배차 특례를 판정한다.
-     다른 행사에서는 **에러 없이 조용히 무력화**된다. 플래그 컬럼으로 승격.
-   - ⚠️ 이걸 바꾸면 배차 결과가 바뀐다. `tests/unit/batch.test.ts:325,354,372,386`이 의존.
-     **착수 전 현재 배차 결과를 골든 스냅샷 테스트로 고정할 것.**
-3. **`registrations.up_trip_id` / `down_trip_id`**
-   - CHECK 재작성은 `NOT VALID` → 위반 행 리포트 → 수동 정리 → `VALIDATE` **3단계**로.
-     한 번에 걸면 모순 행 때문에 마이그레이션 전체가 롤백된다.
-4. **`/admin/trips` CRUD** + `/admin/buses` 차량 설정 화면
-   - 하행 신규 운행편은 **생성 즉시 전 차량 기본 배정**(현 운영 실태가 그렇다)
-5. **배차 엔진**: 시그니처 유지하고 필터 조건만 치환 (2곳)
-   - `b.departure_slot_id === slotId` → `b.up_trip_id === tripId`
-   - 하행 필터 추가
+1. **배차 특례 플래그화** — `buses.is_cohesion_exempt` / `fill_priority` / `display_order`.
+   엔진이 `"1호차"` 문자열 대신 이 컬럼을 본다. 배차 결과는 비트 단위로 동일.
+2. **`departure_slots` → `event_trips`** (rename) + `direction`(up/down)·`departs_at`·
+   `origin`·`destination`. `buses.departure_slot_id` → `up_trip_id`(nullable) + `down_trip_id`.
+   행사마다 하행 편 1건 생성 + 전 차량 연결.
+3. **골든 스냅샷** `tests/unit/batch-golden.test.ts` — 운영 599명 형상을 익명화해 고정.
+   기존 33개 테스트로는 특례를 통째로 지워도 31개가 통과했다(하행 응집 면제는 테스트 0개).
 
-### 결정 필요
+### 3-B ⬅ 다음 — 편성 편집 UI
 
-- **다음 행사에 하행이 여러 편으로 나뉘나?** 안 나뉘면 Phase 3의 하행 대칭화는
-  "미래 대비"일 뿐이고 실제 비고 흡수 효과는 8~14건에 그친다.
+- **`/admin/trips` CRUD** — 운행편 생성·수정·삭제. 참고할 기존 UI 선례가 **0곳**이다
+  (`departure_slots` 쓰기 경로가 코드에 아예 없었다). `lib/admin/trips.ts` 신설 필요.
+- **`/admin/buses` 차량 설정** — 라우트는 이미 있지만 차량 생성·정원·시각·플래그 UI 가 없다.
+  지금 있는 건 차량순장/고정탑승 지정뿐. 확장 대상이지 재사용 대상이 아니다.
+- ⚠️ **차량 삭제 UI 를 붙일 때 가드 필수.** `registrations.assigned_*_bus_id` FK 가
+  `ON DELETE SET NULL` 이라, 차량을 지우면 승객 배정이 **조용히** 사라진다.
+- `components/admin/buses-panel.tsx` 는 이미 상/하행 탭이 있고 상행만 편별 섹션을 만든다.
+  하행도 같은 `activeTrips.filter(direction==='down')` 구조로 통일하면, 하행이 2편으로
+  갈리는 순간 코드 변경 없이 섹션이 나뉜다 — "용어만 하행으로 바뀔 뿐"이 구현되는 지점.
+
+### 3-C 대기 — 신청 대칭화
+
+- `registrations.up_trip_id` / `down_trip_id` + CHECK **3개**(`chk_roundtrip`·`chk_oneway`·
+  **`chk_self`**) 재작성. 원안이 chk_self 를 빠뜨렸다.
+- ⚠️ `NOT VALID` 로 걸어도 **신규 INSERT 는 즉시 검사된다.** "DB 먼저 → 코드 나중" 순서와
+  겹치면 그 구간 동안 신규 신청이 전부 막힌다. 컬럼 추가·backfill → 앱 배포 → CHECK 순서로.
+- **`attendance_type` 은 입력이 아니라 파생값이 된다** (up/down 조합으로 완전히 결정됨).
+  `lib/labels.ts` 의 `AttendancePreset` 개념 자체를 폐기할 수 있다. 실제 편집 UI 는
+  `registration-grid.tsx` 와 `reg-form.tsx` **2곳뿐**이고 나머지는 표시용이다.
+- 두 개의 독립 select 로 쪼개되 **DB write 는 한 번으로 묶어야 한다** — 낙관적 잠금이
+  `version` 을 쓰므로 따로 보내면 충돌이 두 번 뜨고 중간 상태가 저장된다.
+- CSV `"하행 차량 이용"` 헤더가 O/X 불린이다. 하위호환 규칙 필요(O → 그 행사의 단일 하행편).
+- ⚠️ `trg_reg_00_fare` 가 `attendance_type` 을 읽어 요금을 계산한다. 파생 트리거는
+  `trg_reg_audit` 앞이 아니라 **`trg_reg_00_fare` 앞**에 서야 한다(이름을 `trg_reg_00a_*` 류로).
+  HANDOFF 가 예전에 안내한 `trg_reg_02_*` 를 따르면 요금이 한 세대 늦게 계산된다.
 
 ---
 
@@ -139,6 +166,12 @@ supabase db push          # link 되어 있음 (project ref qqtqwyhclscfjlefkiqr
 >
 > ⚠️ CI는 마이그레이션을 적용하지 않습니다. **DB 먼저 적용 → 확인 → PR 머지** 순서를 지키세요.
 > 코드만 먼저 배포되면 없는 테이블을 조회해 화면이 깨집니다.
+>
+> ⚠️ **브랜치 `phase3-trips` 는 예외입니다.** 컬럼 rename(`buses.departure_slot_id`
+> → `up_trip_id`)이 들어 있어 **어느 쪽을 먼저 올려도 반대쪽이 깨집니다.**
+> DB 적용과 코드 배포를 연달아 해야 합니다. 지금은 행사 사이 정지 구간이라
+> (여름수련회 6/27 종료, `batch_enabled=false`) 실사용 트래픽이 없어 안전합니다.
+> 다음 행사 신청이 열린 뒤에는 이 방법을 쓰면 안 됩니다.
 
 ---
 
