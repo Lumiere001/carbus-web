@@ -100,37 +100,46 @@ export type Database = {
         Row: {
           capacity: number
           departure_slot_id: number
+          display_order: number
           down_driver_registration_id: string | null
           down_fixed_passenger_ids: string[]
           driver_registration_id: string | null
           event_id: string
+          fill_priority: number
           fixed_passenger_ids: string[]
           hard_cap: number
           id: number
+          is_cohesion_exempt: boolean
           name: string
         }
         Insert: {
           capacity?: number
           departure_slot_id: number
+          display_order?: number
           down_driver_registration_id?: string | null
           down_fixed_passenger_ids?: string[]
           driver_registration_id?: string | null
           event_id?: string
+          fill_priority?: number
           fixed_passenger_ids?: string[]
           hard_cap?: number
           id?: number
+          is_cohesion_exempt?: boolean
           name: string
         }
         Update: {
           capacity?: number
           departure_slot_id?: number
+          display_order?: number
           down_driver_registration_id?: string | null
           down_fixed_passenger_ids?: string[]
           driver_registration_id?: string | null
           event_id?: string
+          fill_priority?: number
           fixed_passenger_ids?: string[]
           hard_cap?: number
           id?: number
+          is_cohesion_exempt?: boolean
           name?: string
         }
         Relationships: [

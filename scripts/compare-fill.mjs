@@ -35,8 +35,10 @@ function makePax(n, seed) {
 }
 const mkBuses = () => {
   const b = [];
-  for (let i = 1; i <= 7; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_slot_id: 1 });
-  for (let i = 8; i <= 9; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_slot_id: 2 });
+  // 이 스크립트의 호차에는 name 이 없다. 짐차 특례는 1번을 짐차로 본다(운영 형상과 동일).
+  const flags = (i) => ({ is_cohesion_exempt: i === 1, fill_priority: i === 1 ? 1 : 0 });
+  for (let i = 1; i <= 7; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_slot_id: 1, ...flags(i) });
+  for (let i = 8; i <= 9; i++) b.push({ id: i, capacity: 44, hard_cap: 45, departure_slot_id: 2, ...flags(i) });
   return b;
 };
 

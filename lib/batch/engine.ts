@@ -10,12 +10,15 @@
  *   3. 같은 캠퍼스 묶음(soft) — 안 되면 찢어서라도 채움.
  *      3-1. 차량순장 캠퍼스 우선 — 순장이 있는 호차에 같은 캠퍼스를 정원(44)까지
  *           먼저 채운다(상·하행 각각). 넘치는 인원·남는 좌석은 아래 일반 배차가 처리.
- *           단, 1호차는 예외(여러 캠퍼스 혼합) — COHESION_EXEMPT_BUS_NAMES.
+ *           단, 여러 캠퍼스가 섞이는 호차는 예외 — `buses.is_cohesion_exempt`.
  *   4. 혼자만 다른 캠퍼스 금지 — 분할 조각이 1명이 되지 않게.
  *   5. (상행만) 요일 분리 + 고정 배정(driver/fixed) 보존. 차량순장은 개별 배정.
- *   6. (후순위) 1호차 빈자리 최대 — 1호차는 지구 짐을 함께 실어 인원을 최소화.
- *      1~5를 모두 지킨 뒤, 빈자리 분배 단계에서만 1호차를 가장 나중에 채운다
- *      (오버플로우 전용). 다른 호차로 충분하면 1호차는 비워진다. FILL_LAST_BUS_NAMES.
+ *   6. (후순위) 짐차 빈자리 최대 — 짐을 함께 싣는 호차는 인원을 최소화.
+ *      1~5를 모두 지킨 뒤, 빈자리 분배 단계에서만 가장 나중에 채운다
+ *      (오버플로우 전용) — `buses.fill_priority` 가 클수록 뒤로 밀린다.
+ *      ⚠️ "다른 호차로 충분하면 비워진다"는 보장이 아니다. 캠퍼스 단위 best-fit 과
+ *      1명조각 방지가 먼저 걸려, 다른 호차에 빈자리가 남은 채로 쓰이기도 한다
+ *      (실측: 운영 599명에서 다른 호차 잔여 9석인데 짐차가 8명 수용).
  *
  * 알고리즘 (FFD — First-Fit Decreasing, 캠퍼스 단위):
  *   ⓪ 차량순장 캠퍼스 우선: 순장 있는 호차에 같은 캠퍼스를 정원까지 먼저 배정.
@@ -24,7 +27,7 @@
  *     ② 어느 호차에도 통째로 못 들어가면(캠퍼스 > 호차 잔여) 잔여 큰 호차부터 분할
  *        (조각 최소, 1명 조각 방지).
  *     ③ 정원(44) 다 차면 보조석(45)까지 → 그래도 넘치면 미배정.
- *   ①②③ 모두 같은 잔여 조건이면 1호차(FILL_LAST)를 후순위로 밀어 마지막에 채운다.
+ *   ①②③ 모두 같은 잔여 조건이면 fill_priority 가 큰 호차를 뒤로 밀어 마지막에 채운다.
  *   순차 채움(next-fit) 대비 작은 캠퍼스의 불필요한 분할을 없애면서 빈좌석은
  *   동일하게 유지한다(파레토 개선). 순수 함수.
  */
@@ -33,25 +36,54 @@ import type { Assignment, BatchResult, Bus, Passenger } from "./types";
 
 export type BatchMode = "up" | "down" | "both";
 
-/**
- * 차량순장 캠퍼스 우선 배치(3-1)에서 제외할 호차 (이름 기준).
- * 1호차는 임원·총단 등 여러 캠퍼스가 섞이는 차라 순장 캠퍼스를 끌지 않고 일반 배차한다.
- */
-const COHESION_EXEMPT_BUS_NAMES = new Set(["1호차"]);
-
 /** 작업용 호차: count = 현재 배정 인원. */
 interface BusWork extends Bus {
   count: number;
 }
 
 /**
- * 빈자리를 최대한 남길 호차 (이름 기준) — 모든 채움 단계에서 가장 나중에 채운다.
- * 1호차는 지구 짐을 함께 실어 인원을 최소화(후순위). 다른 호차가 충분하면 1호차는 비워진다.
+ * 후순위 정렬 키 — 클수록 나중에 채운다.
+ *
+ * 예전엔 `FILL_LAST_BUS_NAMES.has(b.name)` 로 `"1호차"` 를 찾았다. 이름이
+ * 코드에 박혀 있어 다른 행사에서 짐차 이름이 바뀌면 조용히 특례가 사라졌다.
+ * 지금은 buses.fill_priority 컬럼이 진실원이다(마이그레이션 20260721050000).
  */
-const FILL_LAST_BUS_NAMES = new Set(["1호차"]);
-/** 후순위 정렬 키: FILL_LAST 호차는 1(뒤로), 그 외 0. */
-const fillLastRank = (b: BusWork): number =>
-  FILL_LAST_BUS_NAMES.has(b.name) ? 1 : 0;
+const fillLastRank = (b: BusWork): number => b.fill_priority;
+
+/**
+ * 호차에 배차 플래그가 실제로 들어 있는지 확인하고, 없으면 **던진다**.
+ *
+ * 왜 던지나 — 빠뜨리면 조용히 반대로 배차되기 때문이다:
+ *   `fill_priority` 가 undefined 면 `fillLastRank(a) - fillLastRank(b)` 가 NaN 이고,
+ *   NaN 은 falsy 라 `||` 우변으로 폴백해 **후순위 규칙이 통째로 무시된다.**
+ *   `is_cohesion_exempt` 가 undefined 면 falsy 라 응집 면제도 사라진다.
+ *   실측: 80명·3대에서 짐차 배정이 0명 → 44명으로 뒤집혔다.
+ *
+ * 왜 errors 배열이 아니라 예외인가 — 호출부(batch/actions.ts)가 result.errors 를
+ * 검사하지 않고 배정을 DB 에 쓴다. 경고로 두면 틀린 배정이 그대로 저장된다.
+ *
+ * 왜 `?? 0` 폴백을 쓰지 않나 — 그러면 누락이 영구히 숨는다. 이건 데이터 상태가
+ * 아니라 **호출부의 버그**이므로 크게 실패하는 게 맞다.
+ *
+ * .ts 호출부는 tsc 가 막아준다. 이 가드는 타입 검사를 안 받는 경로
+ * (scripts/*.mjs 진단 도구, JSON 픽스처, 런타임 DB row)를 위한 것이다.
+ */
+function assertBusFlags(buses: Bus[]): void {
+  const bad = buses.filter(
+    (b) =>
+      typeof b.fill_priority !== "number" ||
+      Number.isNaN(b.fill_priority) ||
+      typeof b.is_cohesion_exempt !== "boolean"
+  );
+  if (bad.length > 0) {
+    throw new Error(
+      `배차 플래그 누락: ${bad
+        .map((b) => b.name ?? b.id)
+        .join(", ")} — is_cohesion_exempt(boolean) / fill_priority(number) 가 필요합니다. ` +
+        `빠뜨리면 짐차 특례가 조용히 반대로 적용됩니다.`
+    );
+  }
+}
 
 function groupByCampus(passengers: Passenger[]): Map<string, Passenger[]> {
   const m = new Map<string, Passenger[]>();
@@ -116,7 +148,7 @@ function fillBuses(
     let q = members;
 
     // ① 통째로 들어가는 호차 중 잔여 최소(best-fit) — 분할·빈자리 동시 최소화.
-    //    동률이면 1호차(FILL_LAST)를 뒤로 → 1호차 빈자리 최대(후순위).
+    //    동률이면 fill_priority 가 큰 호차를 뒤로 → 짐차 빈자리 최대(후순위).
     const whole = buses
       .filter((b) => b.capacity - b.count >= q.length)
       .sort(
@@ -133,7 +165,7 @@ function fillBuses(
     }
 
     // ② 통째로 못 들어감 → 잔여 큰 호차부터 분할 (조각 최소, 1명 조각 방지).
-    //    1호차(FILL_LAST)는 후순위로 밀어 비-1호차부터 채운다.
+    //    fill_priority 가 큰 호차는 뒤로 밀어 일반 호차부터 채운다.
     while (q.length > 0) {
       const b = buses
         .filter((x) => x.count < x.capacity)
@@ -152,7 +184,7 @@ function fillBuses(
       q = q.slice(take);
     }
 
-    // ③ 정원(44) 다 참 → 보조석(hard_cap)까지, 잔여 큰 호차부터 (1호차는 후순위)
+    // ③ 정원(44) 다 참 → 보조석(hard_cap)까지, 잔여 큰 호차부터 (짐차는 후순위)
     while (q.length > 0) {
       const b = buses
         .filter((x) => x.count < x.hard_cap)
@@ -184,6 +216,8 @@ export function runBatch(
   buses: Bus[],
   mode: BatchMode = "both"
 ): BatchResult {
+  assertBusFlags(buses);
+
   const assignments = new Map<string, Assignment>();
   for (const p of passengers) {
     assignments.set(p.id, { up_bus_id: null, down_bus_id: null });
@@ -245,10 +279,10 @@ export function runBatch(
     const upParticipants = passengers.filter(
       (p) => p.departure_slot_id !== null && !pinned.has(p.id)
     );
-    // 차량순장 캠퍼스 우선용: 호차 id → 상행 순장의 캠퍼스. (1호차 등 예외 호차 제외)
+    // 차량순장 캠퍼스 우선용: 호차 id → 상행 순장의 캠퍼스. (응집 면제 호차 제외)
     const upDriverCampus = new Map<number, string>();
     for (const b of buses) {
-      if (COHESION_EXEMPT_BUS_NAMES.has(b.name)) continue;
+      if (b.is_cohesion_exempt) continue;
       if (b.driver_registration_id) {
         const d = byId.get(b.driver_registration_id);
         if (d) upDriverCampus.set(b.id, d.campus);
@@ -309,10 +343,10 @@ export function runBatch(
     const downParticipants = passengers.filter(
       (p) => p.uses_return_bus === true && !pinnedDown.has(p.id)
     );
-    // 차량순장 캠퍼스 우선용: 호차 id → 하행 순장의 캠퍼스. (1호차 등 예외 호차 제외)
+    // 차량순장 캠퍼스 우선용: 호차 id → 하행 순장의 캠퍼스. (응집 면제 호차 제외)
     const downDriverCampus = new Map<number, string>();
     for (const b of buses) {
-      if (COHESION_EXEMPT_BUS_NAMES.has(b.name)) continue;
+      if (b.is_cohesion_exempt) continue;
       if (b.down_driver_registration_id) {
         const d = byId.get(b.down_driver_registration_id);
         if (d) downDriverCampus.set(b.id, d.campus);

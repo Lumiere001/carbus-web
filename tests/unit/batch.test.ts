@@ -29,9 +29,10 @@ function paxN(n: number, overrides: Partial<Passenger> = {}): Passenger[] {
 }
 
 function bus(overrides: Partial<Bus> = {}): Bus {
+  const name = overrides.name ?? "1호차";
   return {
     id: 1,
-    name: "1호차",
+    name,
     capacity: 44,
     hard_cap: 45,
     departure_slot_id: AM,
@@ -39,6 +40,11 @@ function bus(overrides: Partial<Bus> = {}): Bus {
     fixed_passenger_ids: [],
     down_driver_registration_id: null,
     down_fixed_passenger_ids: [],
+    // 배차 특례는 이제 이름이 아니라 플래그다(마이그레이션 20260721050000).
+    // 여기서 이름으로 유도하는 건 그 마이그레이션의 backfill 과 **같은 규칙**이라,
+    // 기존 테스트가 검증하던 동작이 그대로 유지된다. 플래그를 직접 지정하면 그게 이긴다.
+    is_cohesion_exempt: name === "1호차",
+    fill_priority: name === "1호차" ? 1 : 0,
     ...overrides,
   };
 }

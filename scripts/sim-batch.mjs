@@ -44,8 +44,11 @@ for (const [campus, n] of CAMPUSES) {
 }
 
 const buses = [];
-for (let i = 1; i <= 8; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, departure_slot_id: AM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [] });
-buses.push({ id: 9, name: "9호차", capacity: 44, hard_cap: 45, departure_slot_id: PM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [] });
+// 배차 특례 플래그(마이그레이션 20260721050000)의 backfill 규칙과 동일 — 1호차만 짐차.
+// 빠뜨리면 엔진이 던진다. 예전엔 NaN 폴백으로 특례가 조용히 사라졌다.
+const flags = (i) => ({ is_cohesion_exempt: i === 1, fill_priority: i === 1 ? 1 : 0 });
+for (let i = 1; i <= 8; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, departure_slot_id: AM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [], ...flags(i) });
+buses.push({ id: 9, name: "9호차", capacity: 44, hard_cap: 45, departure_slot_id: PM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [], ...flags(9) });
 
 const upAm = passengers.filter((p) => p.departure_slot_id === AM).length;
 const upPm = passengers.filter((p) => p.departure_slot_id === PM).length;
