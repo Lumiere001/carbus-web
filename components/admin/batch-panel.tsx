@@ -27,7 +27,7 @@ export type UnassignedRow = {
   student_id: string;
   campus_name: string;
 };
-export type BusOption = { id: number; name: string; departure_slot_id: number };
+export type BusOption = { id: number; name: string; up_trip_id: number | null };
 
 function fmt(iso: string | null): string {
   if (!iso) return "기록 없음";
@@ -352,7 +352,7 @@ function UnassignedList({
                 {buses.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
-                    {mode === "up" ? ` (${slotLabel(b.departure_slot_id, slots)})` : ""}
+                    {mode === "up" ? ` (${slotLabel(b.up_trip_id, slots)})` : ""}
                   </option>
                 ))}
               </select>

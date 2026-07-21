@@ -71,7 +71,7 @@ async function validateAssign(
 ): Promise<Result> {
   const { data: bus } = await supabase
     .from("buses")
-    .select("name, departure_slot_id, hard_cap")
+    .select("name, up_trip_id, hard_cap")
     .eq("id", busId)
     .single();
   if (!bus) return { ok: false, message: "호차를 찾을 수 없습니다" };
@@ -79,16 +79,20 @@ async function validateAssign(
   if (mode === "up") {
     if (reg.departure_slot_id == null)
       return { ok: false, message: "상행 대상이 아닙니다 (하행 편도 신청자)" };
-    if (reg.departure_slot_id !== bus.departure_slot_id) {
+    // up_trip_id 가 nullable 이 되면서 "상행을 운행하지 않는 차량"이 표현 가능해졌다.
+    if (bus.up_trip_id == null)
+      return { ok: false, message: `${bus.name}는 상행을 운행하지 않습니다` };
+    if (reg.departure_slot_id !== bus.up_trip_id) {
+      const upTripId = bus.up_trip_id;
       const { data: slots } = await supabase
-        .from("departure_slots")
+        .from("event_trips")
         .select("id, label")
-        .in("id", [reg.departure_slot_id, bus.departure_slot_id]);
+        .in("id", [reg.departure_slot_id, upTripId]);
       const lbl = (sid: number) =>
         slots?.find((s) => s.id === sid)?.label ?? `slot ${sid}`;
       return {
         ok: false,
-        message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(bus.departure_slot_id)})`,
+        message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(upTripId)})`,
       };
     }
   } else if (reg.uses_return_bus !== true) {

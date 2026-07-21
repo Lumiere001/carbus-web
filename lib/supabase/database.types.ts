@@ -99,10 +99,10 @@ export type Database = {
       buses: {
         Row: {
           capacity: number
-          departure_slot_id: number
           display_order: number
           down_driver_registration_id: string | null
           down_fixed_passenger_ids: string[]
+          down_trip_id: number | null
           driver_registration_id: string | null
           event_id: string
           fill_priority: number
@@ -111,13 +111,14 @@ export type Database = {
           id: number
           is_cohesion_exempt: boolean
           name: string
+          up_trip_id: number | null
         }
         Insert: {
           capacity?: number
-          departure_slot_id: number
           display_order?: number
           down_driver_registration_id?: string | null
           down_fixed_passenger_ids?: string[]
+          down_trip_id?: number | null
           driver_registration_id?: string | null
           event_id?: string
           fill_priority?: number
@@ -126,13 +127,14 @@ export type Database = {
           id?: number
           is_cohesion_exempt?: boolean
           name: string
+          up_trip_id?: number | null
         }
         Update: {
           capacity?: number
-          departure_slot_id?: number
           display_order?: number
           down_driver_registration_id?: string | null
           down_fixed_passenger_ids?: string[]
+          down_trip_id?: number | null
           driver_registration_id?: string | null
           event_id?: string
           fill_priority?: number
@@ -141,22 +143,9 @@ export type Database = {
           id?: number
           is_cohesion_exempt?: boolean
           name?: string
+          up_trip_id?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "buses_departure_slot_id_fkey"
-            columns: ["departure_slot_id"]
-            isOneToOne: false
-            referencedRelation: "departure_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buses_departure_slot_id_fkey"
-            columns: ["departure_slot_id"]
-            isOneToOne: false
-            referencedRelation: "v_day_capacity"
-            referencedColumns: ["slot_id"]
-          },
           {
             foreignKeyName: "buses_down_driver_registration_id_fkey"
             columns: ["down_driver_registration_id"]
@@ -177,6 +166,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_payment_balance"
             referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "departure_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_down_capacity"
+            referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "buses_driver_registration_id_fkey"
@@ -205,6 +222,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "departure_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_down_capacity"
+            referencedColumns: ["trip_id"]
           },
         ]
       }
@@ -384,37 +429,49 @@ export type Database = {
         }
         Relationships: []
       }
-      departure_slots: {
+      event_trips: {
         Row: {
           active: boolean
           created_at: string
+          departs_at: string | null
+          destination: string | null
+          direction: string
           display_order: number
           event_id: string
           id: number
           key: string
           label: string
+          origin: string | null
         }
         Insert: {
           active?: boolean
           created_at?: string
+          departs_at?: string | null
+          destination?: string | null
+          direction?: string
           display_order?: number
           event_id?: string
           id?: never
           key: string
           label: string
+          origin?: string | null
         }
         Update: {
           active?: boolean
           created_at?: string
+          departs_at?: string | null
+          destination?: string | null
+          direction?: string
           display_order?: number
           event_id?: string
           id?: never
           key?: string
           label?: string
+          origin?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "departure_slots_event_id_fkey"
+            foreignKeyName: "event_trips_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
@@ -854,8 +911,22 @@ export type Database = {
             foreignKeyName: "registrations_departure_slot_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_departure_slot_id_fkey"
+            columns: ["departure_slot_id"]
+            isOneToOne: false
             referencedRelation: "v_day_capacity"
             referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "registrations_departure_slot_id_fkey"
+            columns: ["departure_slot_id"]
+            isOneToOne: false
+            referencedRelation: "v_down_capacity"
+            referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "registrations_event_id_fkey"
@@ -929,6 +1000,44 @@ export type Database = {
       }
     }
     Views: {
+      departure_slots: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          display_order: number | null
+          event_id: string | null
+          id: number | null
+          key: string | null
+          label: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          display_order?: number | null
+          event_id?: string | null
+          id?: number | null
+          key?: string | null
+          label?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          display_order?: number | null
+          event_id?: string | null
+          id?: number | null
+          key?: string | null
+          label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_trips_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_bus_occupancy: {
         Row: {
           bus_id: number | null
@@ -937,9 +1046,11 @@ export type Database = {
           departure_slot_id: number | null
           down_empty_seats: number | null
           down_passengers: number | null
+          down_trip_id: number | null
           hard_cap: number | null
           up_empty_seats: number | null
           up_passengers: number | null
+          up_trip_id: number | null
         }
         Insert: {
           bus_id?: number | null
@@ -948,9 +1059,11 @@ export type Database = {
           departure_slot_id?: number | null
           down_empty_seats?: never
           down_passengers?: never
+          down_trip_id?: number | null
           hard_cap?: number | null
           up_empty_seats?: never
           up_passengers?: never
+          up_trip_id?: number | null
         }
         Update: {
           bus_id?: number | null
@@ -959,24 +1072,96 @@ export type Database = {
           departure_slot_id?: number | null
           down_empty_seats?: never
           down_passengers?: never
+          down_trip_id?: number | null
           hard_cap?: number | null
           up_empty_seats?: never
           up_passengers?: never
+          up_trip_id?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "buses_departure_slot_id_fkey"
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "departure_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_down_trip_id_fkey"
+            columns: ["down_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_down_capacity"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "departure_slots"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "buses_departure_slot_id_fkey"
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "departure_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["departure_slot_id"]
+            isOneToOne: false
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "v_day_capacity"
             referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["departure_slot_id"]
+            isOneToOne: false
+            referencedRelation: "v_down_capacity"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_down_capacity"
+            referencedColumns: ["trip_id"]
           },
         ]
       }
@@ -1041,6 +1226,7 @@ export type Database = {
       v_day_capacity: {
         Row: {
           arrived: number | null
+          departs_at: string | null
           display_order: number | null
           remaining_seats: number | null
           slot_id: number | null
@@ -1048,6 +1234,19 @@ export type Database = {
           slot_label: string | null
           total_capacity: number | null
           total_passengers: number | null
+        }
+        Relationships: []
+      }
+      v_down_capacity: {
+        Row: {
+          departs_at: string | null
+          display_order: number | null
+          returned: number | null
+          total_capacity: number | null
+          total_passengers: number | null
+          trip_id: number | null
+          trip_key: string | null
+          trip_label: string | null
         }
         Relationships: []
       }

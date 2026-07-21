@@ -26,7 +26,7 @@ export default async function AdminBusesPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, departure_slot_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase
@@ -38,7 +38,7 @@ export default async function AdminBusesPage() {
       .neq("participation_status", "cancelled")
       .order("name"),
     supabase.from("campuses").select("id, name"),
-    supabase.from("departure_slots").select("id, label, active, display_order").order("display_order"),
+    supabase.from("event_trips").select("id, label, active, display_order").eq("direction", "up").order("display_order"),
   ]);
 
   const campusName = new Map(

@@ -167,7 +167,7 @@ export default async function AdminChangesPage() {
   }
 
   const [busRes, campusRes] = await Promise.all([
-    supabase.from("buses").select("id, name, departure_slot_id"),
+    supabase.from("buses").select("id, name, up_trip_id"),
     supabase.from("campuses").select("id, name"),
   ]);
   const busMap = new Map((busRes.data ?? []).map((b) => [b.id, b]));
@@ -202,7 +202,7 @@ export default async function AdminChangesPage() {
           rebatch = true;
         } else {
           const b = busMap.get(cur.assigned_up_bus_id);
-          const match = b?.departure_slot_id === cur.departure_slot_id;
+          const match = b?.up_trip_id === cur.departure_slot_id;
           up = (b?.name ?? `${cur.assigned_up_bus_id}호차`) + (match ? "" : " ⚠슬롯불일치");
           if (!match) rebatch = true;
         }

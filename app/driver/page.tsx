@@ -7,7 +7,7 @@ import type { DepartureSlot } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
-type BusInfo = { id: number; name: string; departure_slot_id: number };
+type BusInfo = { id: number; name: string; up_trip_id: number | null };
 type SlotMini = Pick<DepartureSlot, "id" | "label">;
 type Reg = {
   id: string;
@@ -53,8 +53,8 @@ export default async function DriverPage() {
       .neq("participation_status", "cancelled")
       .or(`assigned_up_bus_id.eq.${busId},assigned_down_bus_id.eq.${busId}`)
       .order("name"),
-    supabase.from("buses").select("id, name, departure_slot_id").order("id"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("buses").select("id, name, up_trip_id").order("id"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
     supabase.from("campuses").select("id, name"),
   ]);
 
@@ -91,7 +91,7 @@ export default async function DriverPage() {
     : [];
 
   const slotStats = slots
-    .filter((s) => myBus?.departure_slot_id === s.id)
+    .filter((s) => myBus?.up_trip_id === s.id)
     .map((s) => ({ id: s.id, label: s.label, total: upMembers.length }));
 
   return (

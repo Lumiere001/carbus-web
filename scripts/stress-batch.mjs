@@ -34,7 +34,7 @@ function makeBuses() {
 }
 const bus = (id, day) => ({
   id, name: `${id}호차`, capacity: 44, hard_cap: 45,
-  departure_slot_id: day, driver_registration_id: null, fixed_passenger_ids: [],
+  up_trip_id: day, down_trip_id: 90, driver_registration_id: null, fixed_passenger_ids: [],
   // 배차 특례 플래그(마이그레이션 20260721050000)의 backfill 규칙과 동일.
   // 빠뜨리면 엔진이 던진다 — 예전엔 조용히 특례가 사라졌다.
   is_cohesion_exempt: id === 1, fill_priority: id === 1 ? 1 : 0,

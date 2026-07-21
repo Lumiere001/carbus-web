@@ -17,8 +17,9 @@ export default async function ImportPage() {
   if (!profile?.campus_id) redirect("/pending");
 
   const { data: slots } = await supabase
-    .from("departure_slots")
+    .from("event_trips")
     .select("id, key, label")
+    .eq("direction", "up")
     .eq("active", true)
     .order("display_order");
 

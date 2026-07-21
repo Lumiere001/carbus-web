@@ -128,20 +128,24 @@ async function assertUpSlotMatch(
   if (mode !== "up") return { ok: true };
   const [{ data: reg }, { data: bus }] = await Promise.all([
     supabase.from("registrations").select("departure_slot_id").eq("id", personId).single(),
-    supabase.from("buses").select("name, departure_slot_id").eq("id", busId).single(),
+    supabase.from("buses").select("name, up_trip_id").eq("id", busId).single(),
   ]);
   if (!reg || !bus) return { ok: true }; // 못 찾으면 후속 쿼리에서 처리
   if (reg.departure_slot_id == null)
     return { ok: false, message: "상행 대상이 아닙니다 (하행 편도 신청자)" };
-  if (reg.departure_slot_id !== bus.departure_slot_id) {
+  // up_trip_id 가 nullable 이 되면서 "상행을 운행하지 않는 차량"이 표현 가능해졌다.
+  if (bus.up_trip_id == null)
+    return { ok: false, message: `${bus.name}는 상행을 운행하지 않습니다` };
+  if (reg.departure_slot_id !== bus.up_trip_id) {
+    const upTripId = bus.up_trip_id;
     const { data: slots } = await supabase
-      .from("departure_slots")
+      .from("event_trips")
       .select("id, label")
-      .in("id", [reg.departure_slot_id, bus.departure_slot_id]);
+      .in("id", [reg.departure_slot_id, upTripId]);
     const lbl = (sid: number) => slots?.find((s) => s.id === sid)?.label ?? `slot ${sid}`;
     return {
       ok: false,
-      message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(bus.departure_slot_id)})`,
+      message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(upTripId)})`,
     };
   }
   return { ok: true };

@@ -83,6 +83,21 @@ function assertBusFlags(buses: Bus[]): void {
         `빠뜨리면 짐차 특례가 조용히 반대로 적용됩니다.`
     );
   }
+
+  // 운행편 id 도 같은 이유로 검사한다. undefined 는 null 과 다르다 —
+  // "이 방향을 운행하지 않는다"(null)와 "값을 안 넘겼다"(undefined)를 구분하지 않으면
+  // undefined 가 그대로 운행편 id 로 취급돼 엉뚱한 그룹이 생긴다.
+  const badTrip = buses.filter(
+    (b) => b.up_trip_id === undefined || b.down_trip_id === undefined
+  );
+  if (badTrip.length > 0) {
+    throw new Error(
+      `운행편 id 누락: ${badTrip
+        .map((b) => b.name ?? b.id)
+        .join(", ")} — up_trip_id / down_trip_id 는 number 또는 null 이어야 합니다 ` +
+        `(null = 그 방향을 운행하지 않음). undefined 는 허용하지 않습니다.`
+    );
+  }
 }
 
 function groupByCampus(passengers: Passenger[]): Map<string, Passenger[]> {
@@ -258,7 +273,11 @@ export function runBatch(
         }
         const reg = byId.get(rid);
         if (!reg || reg.departure_slot_id === null) continue;
-        if (reg.departure_slot_id !== bus.departure_slot_id) {
+        if (bus.up_trip_id === null) {
+          errors.push(`${bus.name}는 상행을 운행하지 않는데 고정 배정됨: ${reg.name}`);
+          continue;
+        }
+        if (reg.departure_slot_id !== bus.up_trip_id) {
           errors.push(
             `고정 배정 슬롯 불일치: ${reg.name} (slot ${reg.departure_slot_id} → ${bus.name})`
           );
@@ -274,7 +293,7 @@ export function runBatch(
       }
     }
 
-    // Step 2. 슬롯별로 채움. 운행 슬롯 = buses 에 존재하는 distinct departure_slot_id.
+    // Step 2. 편별로 채움. 운행 편 = buses 에 존재하는 distinct up_trip_id.
     //   (요일 enum 하드코딩 제거 → 슬롯 추가는 buses 행 추가만으로 자동 반영)
     const upParticipants = passengers.filter(
       (p) => p.departure_slot_id !== null && !pinned.has(p.id)
@@ -288,9 +307,13 @@ export function runBatch(
         if (d) upDriverCampus.set(b.id, d.campus);
       }
     }
-    const slots = [...new Set(upBuses.map((b) => b.departure_slot_id))];
+    const slots = [
+      ...new Set(
+        upBuses.map((b) => b.up_trip_id).filter((id): id is number => id !== null)
+      ),
+    ];
     for (const slotId of slots) {
-      const slotBuses = upBuses.filter((b) => b.departure_slot_id === slotId);
+      const slotBuses = upBuses.filter((b) => b.up_trip_id === slotId);
       const grp = upParticipants.filter((p) => p.departure_slot_id === slotId);
       fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors, upDriverCampus);
     }
@@ -308,8 +331,18 @@ export function runBatch(
 
   // ════════════════════ 하행 (DOWN) — 독립 ════════════════════
   if (runDown) {
-    // 하행은 전 호차 운행(대수는 DB buses 기준). 상행 호차 상속 X.
-    const downBuses: BusWork[] = buses.map((b) => ({ ...b, count: 0 }));
+    // 하행 운행 차량만 대상. 상행 호차 상속 X.
+    //
+    // 예전엔 "하행은 전 호차 운행"이 코드에 박힌 가정이었다. 이제 차량마다
+    // down_trip_id 를 가지므로 "이 차량은 하행을 운행하지 않는다"(NULL)를 표현할 수 있다.
+    // 현재 데이터는 전 차량이 하행 편을 갖고 있어 동작은 그대로다.
+    //
+    // ⚠️ 아직 신청(registrations)에는 하행 편 개념이 없어(uses_return_bus 불린) 편별
+    //    그룹 배차는 하지 않는다. 하행 편이 둘 이상으로 갈리는 건 신청 쪽이 대칭
+    //    승격된 뒤에 의미가 생긴다. 그때 상행의 편별 루프와 같은 구조로 맞춘다.
+    const downBuses: BusWork[] = buses
+      .filter((b) => b.down_trip_id !== null)
+      .map((b) => ({ ...b, count: 0 }));
     const pinnedDown = new Set<string>();
 
     // Step 1. 하행 고정 배정 (down 차량순장 + down 고정탑승). 하행은 요일 제약 없음.

@@ -5400,7 +5400,8 @@
    "name": "1호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": null,
    "fixed_passenger_ids": [
     "r0201",
@@ -5449,7 +5450,8 @@
    "name": "2호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0182",
    "fixed_passenger_ids": [
     "r0074",
@@ -5480,7 +5482,8 @@
    "name": "3호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0259",
    "fixed_passenger_ids": [
     "r0237",
@@ -5498,7 +5501,8 @@
    "name": "4호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0095",
    "fixed_passenger_ids": [
     "r0405",
@@ -5516,7 +5520,8 @@
    "name": "5호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0425",
    "fixed_passenger_ids": [
     "r0096"
@@ -5534,7 +5539,8 @@
    "name": "6호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0162",
    "fixed_passenger_ids": [],
    "down_driver_registration_id": "r0162",
@@ -5549,7 +5555,8 @@
    "name": "7호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0117",
    "fixed_passenger_ids": [],
    "down_driver_registration_id": "r0117",
@@ -5566,7 +5573,8 @@
    "name": "8호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0394",
    "fixed_passenger_ids": [
     "r0171"
@@ -5583,7 +5591,8 @@
    "name": "9호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 1,
+   "up_trip_id": 1,
+   "down_trip_id": 4,
    "driver_registration_id": "r0094",
    "fixed_passenger_ids": [
     "r0353",
@@ -5603,7 +5612,8 @@
    "name": "10호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 2,
+   "up_trip_id": 2,
+   "down_trip_id": 4,
    "driver_registration_id": "r0529",
    "fixed_passenger_ids": [],
    "down_driver_registration_id": "r0529",
@@ -5616,7 +5626,8 @@
    "name": "11호차",
    "capacity": 44,
    "hard_cap": 45,
-   "departure_slot_id": 3,
+   "up_trip_id": 3,
+   "down_trip_id": 4,
    "driver_registration_id": "r0464",
    "fixed_passenger_ids": [
     "r0438"

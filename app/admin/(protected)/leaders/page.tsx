@@ -25,12 +25,12 @@ export default async function AdminLeadersPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
     supabase.from("role_labels").select("label"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
   ]);
   const buses = busRes.data ?? [];
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
@@ -143,7 +143,7 @@ export default async function AdminLeadersPage() {
   const busOpts: BusOpt[] = buses.map((b) => ({
     id: b.id,
     name: b.name,
-    departure_slot_id: b.departure_slot_id,
+    up_trip_id: b.up_trip_id,
   }));
 
   return (

@@ -56,7 +56,7 @@ export async function runBatchAction(
     supabase
       .from("buses")
       .select(
-        "id, name, capacity, hard_cap, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids, is_cohesion_exempt, fill_priority"
+        "id, name, capacity, hard_cap, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids, is_cohesion_exempt, fill_priority"
       ),
   ]);
   if (regRes.error) return { ok: false, message: regRes.error.message };

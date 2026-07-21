@@ -35,6 +35,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATIONS=(
   "supabase/migrations/20260721020100_ledger_backfill.sql"   # Phase 2-A 장부 이관
   "supabase/migrations/20260721050000_bus_batch_flags.sql"   # Phase 3 배차 특례 플래그
+  "supabase/migrations/20260721070000_event_trips.sql"       # Phase 3 하행 편 생성 + 차량 연결
 )
 
 run_sql_file() {
@@ -48,6 +49,38 @@ for m in "${MIGRATIONS[@]}"; do
   echo "── $m"
   run_sql_file "$REPO_ROOT/$m"
 done
+
+echo "── 정합성 확인"
+# 행수만 보면 "적재 성공"인데 실제로는 망가진 상태가 있다.
+# 실제 사례: 컬럼 rename(buses.departure_slot_id → up_trip_id)을 로더가 못 따라가
+# 전 차량 up_trip_id 가 NULL 이 됐다. 행수는 11/11 로 멀쩡했고 적재는 PASS 였지만
+# 상행 배차가 0건이 되는 상태였다. 값이 비면 여기서 크게 실패시킨다.
+docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q <<'SQL'
+do $$
+declare v_bad int;
+begin
+  select count(*) into v_bad from buses where up_trip_id is null;
+  if v_bad > 0 then
+    raise exception '상행 편 미연결 차량 %대 — 백업 적재가 컬럼을 흘렸습니다 (load-backup.py RENAMED_COLUMNS 확인)', v_bad;
+  end if;
+
+  select count(*) into v_bad from buses where down_trip_id is null;
+  if v_bad > 0 then
+    raise exception '하행 편 미연결 차량 %대', v_bad;
+  end if;
+
+  -- 신청의 상행 편이 실제 운행편을 가리키는가
+  select count(*) into v_bad
+    from registrations r
+   where r.departure_slot_id is not null
+     and not exists (select 1 from event_trips t
+                      where t.id = r.departure_slot_id and t.direction = 'up');
+  if v_bad > 0 then
+    raise exception '존재하지 않는 상행 편을 가리키는 신청 %건', v_bad;
+  end if;
+end $$;
+SQL
+echo "  OK — 차량·신청이 운행편에 정상 연결됨"
 
 echo "── 기준선 확인"
 docker exec -i "$CONTAINER" psql -U postgres -d postgres -q -c "

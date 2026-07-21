@@ -115,6 +115,14 @@ describe("배차 골든 스냅샷 (운영 형상)", () => {
     // NaN 도 같이 막는다 — 숫자 타입이라도 계산이 오염되면 같은 증상이 난다.
     const nanFlags = buses.map((b) => ({ ...b, fill_priority: Number.NaN }));
     expect(() => runBatch(passengers, nanFlags, "up")).toThrow(/배차 플래그 누락/);
+
+    // 운행편 id 도 마찬가지. undefined("안 넘김")와 null("운행 안 함")은 다르다.
+    const noTrip = buses.map((b) => {
+      const rest: Record<string, unknown> = { ...b };
+      delete rest.up_trip_id;
+      return rest as unknown as Bus;
+    });
+    expect(() => runBatch(passengers, noTrip, "up")).toThrow(/운행편 id 누락/);
   });
 
   it("결정적이다 — 같은 입력이면 항상 같은 결과", () => {
@@ -135,7 +143,7 @@ describe("배차 골든 스냅샷 (운영 형상)", () => {
 
     const SLOT1 = 1;
     const others = buses.filter(
-      (b) => b.departure_slot_id === SLOT1 && b.name !== "1호차"
+      (b) => b.up_trip_id === SLOT1 && b.name !== "1호차"
     );
     const otherRemaining = others.reduce(
       (n, b) => n + (b.capacity - (up.by_bus[b.id] ?? 0)),

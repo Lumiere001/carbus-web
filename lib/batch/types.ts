@@ -43,8 +43,13 @@ export interface Bus {
   capacity: number;
   /** 최대 정원 (기본 45). capacity 초과 시 fallback 한계. */
   hard_cap: number;
-  /** 상행 운행 슬롯 id. */
-  departure_slot_id: number;
+  /**
+   * 이 차량이 운행하는 **상행 편** id. NULL 이면 상행을 운행하지 않는다.
+   * (예전 departure_slot_id. 하행이 대칭 승격되면서 이름과 nullability 가 바뀌었다.)
+   */
+  up_trip_id: number | null;
+  /** 이 차량이 운행하는 **하행 편** id. NULL 이면 하행을 운행하지 않는다. */
+  down_trip_id: number | null;
   /** 상행 차량순장 신청자 id. 해당 호차에서 절대 이동 X. */
   driver_registration_id: string | null;
   /** 상행 고정 탑승자 id 목록. 해당 호차에서 절대 이동 X. */

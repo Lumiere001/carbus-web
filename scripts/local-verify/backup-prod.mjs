@@ -10,7 +10,7 @@ const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL||env.SUPABASE_URL, env.SUPA
 //    그 백업으로는 복구도 로컬 재현도 되지 않는다(registrations.event_id 가 붕 뜬다).
 //    load-backup.py 가 적재 시 DB 테이블 목록과 대조해 누락을 잡아준다.
 // 순서: 참조되는 쪽 먼저 (events → registrations → payment_ledger)
-const TABLES=["events","campuses","org_units","departure_slots","buses","registrations","profiles","role_labels","system_config","batch_runs","registration_audit","campus_remittances","campus_payment_settlements","payment_ledger"];
+const TABLES=["events","campuses","org_units","event_trips","buses","registrations","profiles","role_labels","system_config","batch_runs","registration_audit","campus_remittances","campus_payment_settlements","payment_ledger"];
 const manifest={created_at:new Date().toISOString(),purpose:process.argv[3]??"운영 스냅샷",tables:{}};
 let failed=0;
 for(const t of TABLES){

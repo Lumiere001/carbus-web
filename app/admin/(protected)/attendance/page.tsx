@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
-type BusInfo = { id: number; name: string; departure_slot_id: number };
+type BusInfo = { id: number; name: string; up_trip_id: number | null };
 type SlotMini = Pick<DepartureSlot, "id" | "label">;
 type Reg = {
   id: string;
@@ -94,8 +94,8 @@ export default async function AdminAttendancePage() {
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
       .order("name"),
-    supabase.from("buses").select("id, name, departure_slot_id").order("id"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("buses").select("id, name, up_trip_id").order("id"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
     supabase.from("campuses").select("id, name"),
   ]);
 
@@ -117,7 +117,7 @@ export default async function AdminAttendancePage() {
   // 분자가 배차된 인원만 세므로(미배차자는 명단에 안 뜨고 set_attendance도 거부),
   // 분모도 배차 기준이어야 전원 탑승 시 100%에 도달한다. 간사 차량·불참자는 제외.
   // 슬롯 귀속도 분자(bus-attendance)와 동일하게 "배정된 호차의 슬롯" 기준.
-  const busSlot = new Map(buses.map((b) => [b.id, b.departure_slot_id]));
+  const busSlot = new Map(buses.map((b) => [b.id, b.up_trip_id]));
   const slotStats = slots.map((s) => ({
     id: s.id,
     label: s.label,

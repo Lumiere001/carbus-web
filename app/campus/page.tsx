@@ -29,7 +29,7 @@ export default async function CampusPage() {
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("name").eq("id", campusId).single(),
     supabase.from("buses").select("id, name").order("id"),
-    supabase.from("departure_slots").select("*").order("display_order"),
+    supabase.from("event_trips").select("*").eq("direction", "up").order("display_order"),
   ]);
 
   return (

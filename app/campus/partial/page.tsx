@@ -47,7 +47,7 @@ export default async function CampusPartialPage() {
       .eq("campus_id", profile.campus_id)
       .eq("attendance_type", "oneway")
       .order("name"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
   ]);
   const regs = (data ?? []) as Reg[];
   const slots = (slotData ?? []) as SlotMini[];

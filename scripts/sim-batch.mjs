@@ -5,6 +5,7 @@ import { runBatch } from "../lib/batch/engine.ts";
 // 슬롯 id: 1 = 화 오전 9시(tue_am), 2 = 화 오후 7시(tue_pm). 운영 = 8대 am + 1대 pm.
 const AM = 1;
 const PM = 2;
+const DOWN = 90; // 하행 편 (buses.down_trip_id)
 const SLOT_LABEL = { [AM]: "화오전", [PM]: "화오후" };
 
 const CAMPUSES = [
@@ -47,8 +48,8 @@ const buses = [];
 // 배차 특례 플래그(마이그레이션 20260721050000)의 backfill 규칙과 동일 — 1호차만 짐차.
 // 빠뜨리면 엔진이 던진다. 예전엔 NaN 폴백으로 특례가 조용히 사라졌다.
 const flags = (i) => ({ is_cohesion_exempt: i === 1, fill_priority: i === 1 ? 1 : 0 });
-for (let i = 1; i <= 8; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, departure_slot_id: AM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [], ...flags(i) });
-buses.push({ id: 9, name: "9호차", capacity: 44, hard_cap: 45, departure_slot_id: PM, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [], ...flags(9) });
+for (let i = 1; i <= 8; i++) buses.push({ id: i, name: `${i}호차`, capacity: 44, hard_cap: 45, up_trip_id: AM, down_trip_id: DOWN, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [], ...flags(i) });
+buses.push({ id: 9, name: "9호차", capacity: 44, hard_cap: 45, up_trip_id: PM, down_trip_id: DOWN, driver_registration_id: null, fixed_passenger_ids: [], down_driver_registration_id: null, down_fixed_passenger_ids: [], ...flags(9) });
 
 const upAm = passengers.filter((p) => p.departure_slot_id === AM).length;
 const upPm = passengers.filter((p) => p.departure_slot_id === PM).length;

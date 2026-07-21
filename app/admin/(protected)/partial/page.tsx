@@ -51,7 +51,7 @@ export default async function AdminPartialPage() {
       .in("attendance_type", ["oneway", "self"])
       .order("campus_id"),
     supabase.from("campuses").select("id, name, display_order"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
   ]);
   const all = (regRes.data ?? []) as Reg[];
   const slots = (slotRes.data ?? []) as SlotMini[];

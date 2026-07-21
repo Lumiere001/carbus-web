@@ -10,7 +10,7 @@ import { BusAttendance } from "@/components/campus/bus-attendance";
 export const dynamic = "force-dynamic";
 
 type SlotMini = Pick<DepartureSlot, "id" | "label">;
-type BusInfo = { id: number; name: string; departure_slot_id: number };
+type BusInfo = { id: number; name: string; up_trip_id: number | null };
 type Reg = {
   id: string;
   name: string;
@@ -64,8 +64,8 @@ export default async function CampusBusesPage() {
       .neq("participation_status", "cancelled")
       .eq("campus_id", campusId)
       .order("name"),
-    supabase.from("buses").select("id, name, departure_slot_id").order("id"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("buses").select("id, name, up_trip_id").order("id"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
   ]);
 
   const buses = (busRes.data ?? []) as BusInfo[];

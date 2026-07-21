@@ -30,7 +30,7 @@ export type LeaderRow = {
   needUp: boolean;
   needDown: boolean;
 };
-export type BusOpt = { id: number; name: string; departure_slot_id: number };
+export type BusOpt = { id: number; name: string; up_trip_id: number | null };
 
 function badgeVariant(role: string): "warning" | "primary" | "mute" {
   if (role === ROLE_DRIVER) return "warning";
@@ -82,7 +82,7 @@ export function LeadersPanel({
     // 이 방향의 결박 종류 (없으면 기본 종류로 새로 결박)
     const cellKind = (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind;
     if (!rides) return <span className="text-muted-2">해당 없음</span>;
-    const opts = mode === "up" ? buses.filter((b) => b.departure_slot_id === row.departure_slot_id) : buses;
+    const opts = mode === "up" ? buses.filter((b) => b.up_trip_id === row.departure_slot_id) : buses;
     if (!isMaster) {
       const b = buses.find((x) => x.id === cur);
       return (
@@ -105,7 +105,7 @@ export function LeadersPanel({
         {opts.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name}
-            {mode === "up" ? ` (${slotLabel(b.departure_slot_id, slots)})` : ""}
+            {mode === "up" ? ` (${slotLabel(b.up_trip_id, slots)})` : ""}
           </option>
         ))}
       </select>

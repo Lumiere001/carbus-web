@@ -35,7 +35,7 @@ BACKUP = latest_backup()
 CONTAINER = "supabase_db_carbus-web"
 # FK 순서 무관(replica 모드)이지만 가독성을 위해 논리 순서대로
 TABLES = [
-    "events", "campuses", "org_units", "departure_slots", "buses",
+    "events", "campuses", "org_units", "event_trips", "buses",
     "profiles", "registrations", "role_labels", "system_config",
     "batch_runs", "registration_audit",
     "campus_remittances", "campus_payment_settlements", "payment_ledger",
@@ -43,6 +43,23 @@ TABLES = [
 
 # 백업하지 않아도 되는 테이블 (마이그레이션이 전량 생성 = 데이터가 아니라 스키마의 일부)
 NO_BACKUP_NEEDED: set[str] = set()
+
+# 테이블이 rename 된 경우, 그 전에 뜬 백업 파일의 옛 이름.
+# 옛 백업으로도 재현이 되어야 한다 — 운영이 아직 rename 전일 수도 있으므로.
+# 백업 JSON 에 없는 컬럼은 로더가 자동으로 빼므로 신규 컬럼은 DEFAULT 가 채운다
+# (예: event_trips.direction 은 'up' 으로 앉는다 — 옛 departure_slots 가 곧 상행이었다).
+RENAMED_FROM = {
+    "event_trips": "departure_slots",
+}
+
+# 컬럼이 rename 된 경우: {테이블: {백업의 옛 키: 현재 컬럼명}}.
+# 테이블 rename 만 처리하면 컬럼은 조용히 버려진다 — jsonb_populate_recordset 은
+# JSON 키를 컬럼명으로 매칭하므로, 옛 키는 어떤 컬럼에도 안 붙고 NULL 이 된다.
+# 실제로 buses.departure_slot_id → up_trip_id 를 놓쳐 전 차량 상행 편이 NULL 이 됐고,
+# 상행 배차가 0건이 되는데도 적재는 "PASS" 로 끝났다(행수만 보므로).
+RENAMED_COLUMNS = {
+    "buses": {"departure_slot_id": "up_trip_id"},
+}
 
 
 def psql(sql: str, tuples_only=True) -> str:
@@ -86,13 +103,26 @@ def check_coverage() -> None:
             f"   운영 백업을 다시 뜨세요. 지금 백업으로는 복구도 재현도 안 됩니다."
         )
 
-    no_file = [t for t in TABLES if not (BACKUP / f"{t}.json").exists()]
+    no_file = [t for t in TABLES if backup_file(t) is None]
     if no_file:
         sys.exit(
             f"❌ 백업 '{BACKUP.name}' 에 파일이 없는 테이블: {', '.join(no_file)}\n"
             f"   이 백업은 해당 테이블이 생기기 전에 뜬 것입니다.\n"
             f"   운영 백업을 다시 뜨거나(권장), 더 최신 백업 경로를 인자로 주세요."
         )
+
+
+def backup_file(table: str) -> pathlib.Path | None:
+    """이 테이블의 백업 JSON. rename 이전 백업이면 옛 이름으로 찾는다."""
+    p = BACKUP / f"{table}.json"
+    if p.exists():
+        return p
+    old = RENAMED_FROM.get(table)
+    if old:
+        p = BACKUP / f"{old}.json"
+        if p.exists():
+            return p
+    return None
 
 
 def main():
@@ -105,7 +135,14 @@ def main():
     ]
     summary = []
     for t in TABLES:
-        rows = json.loads((BACKUP / f"{t}.json").read_text())
+        rows = json.loads(backup_file(t).read_text())
+        # 컬럼 rename 이 있었으면 백업의 옛 키를 현재 컬럼명으로 바꿔 끼운다.
+        colmap = RENAMED_COLUMNS.get(t)
+        if colmap and rows:
+            for r in rows:
+                for old_c, new_c in colmap.items():
+                    if old_c in r and new_c not in r:
+                        r[new_c] = r.pop(old_c)
         if not rows:
             summary.append((t, 0))
             continue

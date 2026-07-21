@@ -104,7 +104,7 @@ export default async function AdminDashboardPage() {
         .from("registration_audit")
         .select("id", { count: "exact", head: true })
         .gte("created_at", since),
-      supabase.from("departure_slots").select("id, label").order("display_order"),
+      supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
       supabase
         .from("registrations")
         .select("id", { count: "exact", head: true })

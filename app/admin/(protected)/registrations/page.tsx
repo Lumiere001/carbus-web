@@ -34,12 +34,12 @@ export default async function AdminRegistrationsPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, departure_slot_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("role_labels").select("label, color").order("display_order"),
     supabase.from("system_config").select("current_phase").maybeSingle(),
-    supabase.from("departure_slots").select("*").order("display_order"),
+    supabase.from("event_trips").select("*").eq("direction", "up").order("display_order"),
   ]);
   const slots = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).

@@ -25,7 +25,8 @@ export type CandidateData = PaxData & {
 export type BusData = {
   id: number;
   name: string;
-  departure_slot_id: number;
+  /** 이 차량의 상행 편. NULL 이면 상행을 운행하지 않는다. */
+  up_trip_id: number | null;
   capacity: number;
   hard_cap: number;
   driver_registration_id: string | null;
@@ -99,7 +100,7 @@ export function BusesPanel({
 
       {view === "up"
         ? activeSlots.map((slot) => {
-            const slotBuses = buses.filter((b) => b.departure_slot_id === slot.id);
+            const slotBuses = buses.filter((b) => b.up_trip_id === slot.id);
             if (slotBuses.length === 0) return null;
             return (
               <section key={slot.id}>
@@ -199,7 +200,7 @@ function BusCard({
   const pinPool = candidates
     .filter((c) =>
       mode === "up"
-        ? c.departure_slot_id === bus.departure_slot_id
+        ? c.departure_slot_id === bus.up_trip_id
         : c.uses_return_bus === true
     )
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));

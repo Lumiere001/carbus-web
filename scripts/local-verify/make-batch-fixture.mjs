@@ -56,7 +56,7 @@ const regs = rows(`
 
 const buses = rows(`
   select coalesce(json_agg(t order by t.id), '[]'::json)::text from (
-    select id, name, capacity, hard_cap, departure_slot_id,
+    select id, name, capacity, hard_cap, up_trip_id, down_trip_id,
            driver_registration_id::text,
            coalesce(fixed_passenger_ids, '{}')::text[] as fixed_passenger_ids,
            down_driver_registration_id::text,
@@ -101,7 +101,8 @@ const busFixture = buses.map((b) => ({
   name: b.name,
   capacity: b.capacity,
   hard_cap: b.hard_cap,
-  departure_slot_id: b.departure_slot_id,
+  up_trip_id: b.up_trip_id,
+  down_trip_id: b.down_trip_id,
   driver_registration_id: aliasReg(b.driver_registration_id),
   fixed_passenger_ids: (b.fixed_passenger_ids ?? []).map(aliasReg).filter(Boolean),
   down_driver_registration_id: aliasReg(b.down_driver_registration_id),
