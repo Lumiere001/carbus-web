@@ -39,3 +39,8 @@ begin
   alter table public.registrations enable trigger user;
   raise notice 'home_unit_id backfill: %건', matched;
 end $$;
+
+-- ⚠️ 데이터 의존 backfill 이 이 파일에만 있는 게 아니다.
+--    payment_ledger 이관(Phase 2-A)은 마이그레이션 파일 자체를 재실행해야 하므로
+--    post-load.sh 가 이 파일 다음에 이어서 돌린다. 이 파일만 단독 실행하면
+--    로컬 장부가 0건이 되어 차액 46명이 재현되지 않는다. → post-load.sh 를 쓸 것.

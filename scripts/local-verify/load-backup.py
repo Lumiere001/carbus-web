@@ -8,14 +8,41 @@
 """
 import json, subprocess, sys, pathlib
 
-BACKUP = pathlib.Path("/Users/east_star/Backups/carbus-web/2026-07-21_0038-pre-phase1")
+BACKUP_ROOT = pathlib.Path("/Users/east_star/Backups/carbus-web")
+
+
+def latest_backup() -> pathlib.Path:
+    """가장 최근 백업 디렉터리. 인자로 경로를 주면 그걸 쓴다.
+
+    상수로 박아두면 Phase 가 넘어갈 때마다 낡는다(실제로 pre-phase1 을 가리킨 채
+    Phase 2-B 까지 왔다). 디렉터리명이 YYYY-MM-DD_HHMM 접두사라 이름순 정렬이
+    곧 시간순이다.
+    """
+    if len(sys.argv) > 1:
+        p = pathlib.Path(sys.argv[1]).expanduser()
+        if not p.is_dir():
+            sys.exit(f"백업 경로가 없습니다: {p}")
+        return p
+    dirs = sorted((d for d in BACKUP_ROOT.iterdir()
+                   if d.is_dir() and (d / "_manifest.json").exists()),
+                  key=lambda d: d.name)
+    if not dirs:
+        sys.exit(f"백업이 없습니다: {BACKUP_ROOT}")
+    return dirs[-1]
+
+
+BACKUP = latest_backup()
 CONTAINER = "supabase_db_carbus-web"
 # FK 순서 무관(replica 모드)이지만 가독성을 위해 논리 순서대로
 TABLES = [
-    "campuses", "departure_slots", "buses", "profiles", "registrations",
-    "role_labels", "system_config", "batch_runs", "registration_audit",
-    "campus_remittances", "campus_payment_settlements",
+    "events", "campuses", "org_units", "departure_slots", "buses",
+    "profiles", "registrations", "role_labels", "system_config",
+    "batch_runs", "registration_audit",
+    "campus_remittances", "campus_payment_settlements", "payment_ledger",
 ]
+
+# 백업하지 않아도 되는 테이블 (마이그레이션이 전량 생성 = 데이터가 아니라 스키마의 일부)
+NO_BACKUP_NEEDED: set[str] = set()
 
 
 def psql(sql: str, tuples_only=True) -> str:
@@ -40,7 +67,36 @@ def insertable_columns(table: str) -> list[str]:
     return [c for c in out.splitlines() if c]
 
 
+def check_coverage() -> None:
+    """DB 테이블 ⊆ 백업 대상인지 검사.
+
+    backup-prod.mjs 의 테이블 목록이 하드코딩이라 새 Phase 가 테이블을 추가해도
+    조용히 빠진다. 실제로 events·org_units·payment_ledger 가 그렇게 누락됐고,
+    적재는 replica 모드(FK 끔) 덕에 성공한 척하다가 뒤늦게 FK 위반으로 터졌다.
+    여기서 먼저, 크게 실패시킨다.
+    """
+    db_tables = {t for t in psql(
+        "select tablename from pg_tables where schemaname='public'"
+    ).splitlines() if t}
+    missing = db_tables - set(TABLES) - NO_BACKUP_NEEDED
+    if missing:
+        sys.exit(
+            f"❌ 백업 대상에 빠진 테이블: {', '.join(sorted(missing))}\n"
+            f"   backup-prod.mjs 의 TABLES 와 이 파일의 TABLES 양쪽에 추가한 뒤\n"
+            f"   운영 백업을 다시 뜨세요. 지금 백업으로는 복구도 재현도 안 됩니다."
+        )
+
+    no_file = [t for t in TABLES if not (BACKUP / f"{t}.json").exists()]
+    if no_file:
+        sys.exit(
+            f"❌ 백업 '{BACKUP.name}' 에 파일이 없는 테이블: {', '.join(no_file)}\n"
+            f"   이 백업은 해당 테이블이 생기기 전에 뜬 것입니다.\n"
+            f"   운영 백업을 다시 뜨거나(권장), 더 최신 백업 경로를 인자로 주세요."
+        )
+
+
 def main():
+    check_coverage()
     # 마이그레이션이 마스터데이터(campuses·slots·role_labels·system_config)를 시드하므로
     # 운영 백업으로 갈아끼우기 위해 먼저 비운다. 로컬 전용 작업.
     stmts = [
@@ -91,7 +147,7 @@ def main():
 
     psql("\n".join(stmts), tuples_only=False)
 
-    print("=== 적재 결과 (백업 vs 로컬 DB) ===")
+    print(f"=== 적재 결과 (백업 {BACKUP.name} vs 로컬 DB) ===")
     ok = True
     for t, n in summary:
         actual = int(psql(f"select count(*) from public.{t}"))
