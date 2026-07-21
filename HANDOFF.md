@@ -133,7 +133,7 @@ bash scripts/local-verify/post-load.sh         # 데이터 의존 backfill 일�
 # 1) 새 마이그레이션을 잠시 빼고 "적용 전" 기준선을 찍는다
 mkdir -p /tmp/hold && mv supabase/migrations/<새파일>.sql /tmp/hold/
 supabase db reset --no-seed && python3 scripts/local-verify/load-backup.py
-docker exec -i supabase_db_carbus-web psql -U postgres -d postgres -q < scripts/local-verify/post-load.sql
+bash scripts/local-verify/post-load.sh
 bash scripts/local-verify/snapshot.sh > /tmp/before.txt
 
 # 2) 되돌려놓고 적용
