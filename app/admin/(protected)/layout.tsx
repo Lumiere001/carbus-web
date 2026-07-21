@@ -67,9 +67,14 @@ export default async function AdminProtectedLayout({
                 출석
               </a>
               {isMaster && (
-                <a href="/admin/batch" className={navLink}>
-                  배차
-                </a>
+                <>
+                  <a href="/admin/trips" className={navLink}>
+                    편성
+                  </a>
+                  <a href="/admin/batch" className={navLink}>
+                    배차
+                  </a>
+                </>
               )}
               <a href="/admin/leaders" className={navLink}>
                 리더
