@@ -1,0 +1,5630 @@
+{
+ "_note": "운영 데이터(2026-07-21)의 구조만 익명화해 옮긴 배차 골든 스냅샷 입력. 실명·실 UUID 없음.",
+ "_source": "scripts/local-verify/make-batch-fixture.mjs",
+ "passengers": [
+  {
+   "id": "r0001",
+   "name": "r0001",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0002",
+   "name": "r0002",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0003",
+   "name": "r0003",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0004",
+   "name": "r0004",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0005",
+   "name": "r0005",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0006",
+   "name": "r0006",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0007",
+   "name": "r0007",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0008",
+   "name": "r0008",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0009",
+   "name": "r0009",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0010",
+   "name": "r0010",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0011",
+   "name": "r0011",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0012",
+   "name": "r0012",
+   "campus": "C05",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0013",
+   "name": "r0013",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0014",
+   "name": "r0014",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0015",
+   "name": "r0015",
+   "campus": "C08",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0016",
+   "name": "r0016",
+   "campus": "C09",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0017",
+   "name": "r0017",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0018",
+   "name": "r0018",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0019",
+   "name": "r0019",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0020",
+   "name": "r0020",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0021",
+   "name": "r0021",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0022",
+   "name": "r0022",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0023",
+   "name": "r0023",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0024",
+   "name": "r0024",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0025",
+   "name": "r0025",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0026",
+   "name": "r0026",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0027",
+   "name": "r0027",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0028",
+   "name": "r0028",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0029",
+   "name": "r0029",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0030",
+   "name": "r0030",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0031",
+   "name": "r0031",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0032",
+   "name": "r0032",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0033",
+   "name": "r0033",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0034",
+   "name": "r0034",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0035",
+   "name": "r0035",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0036",
+   "name": "r0036",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0037",
+   "name": "r0037",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0038",
+   "name": "r0038",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0039",
+   "name": "r0039",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0040",
+   "name": "r0040",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0041",
+   "name": "r0041",
+   "campus": "C06",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0042",
+   "name": "r0042",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0043",
+   "name": "r0043",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0044",
+   "name": "r0044",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0045",
+   "name": "r0045",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0046",
+   "name": "r0046",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0047",
+   "name": "r0047",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0048",
+   "name": "r0048",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0049",
+   "name": "r0049",
+   "campus": "C11",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0050",
+   "name": "r0050",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0051",
+   "name": "r0051",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0052",
+   "name": "r0052",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0053",
+   "name": "r0053",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0054",
+   "name": "r0054",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0055",
+   "name": "r0055",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0056",
+   "name": "r0056",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0057",
+   "name": "r0057",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0058",
+   "name": "r0058",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0059",
+   "name": "r0059",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0060",
+   "name": "r0060",
+   "campus": "C08",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0061",
+   "name": "r0061",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0062",
+   "name": "r0062",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0063",
+   "name": "r0063",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0064",
+   "name": "r0064",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0065",
+   "name": "r0065",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0066",
+   "name": "r0066",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0067",
+   "name": "r0067",
+   "campus": "C11",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0068",
+   "name": "r0068",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0069",
+   "name": "r0069",
+   "campus": "C14",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0070",
+   "name": "r0070",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0071",
+   "name": "r0071",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0072",
+   "name": "r0072",
+   "campus": "C11",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0073",
+   "name": "r0073",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0074",
+   "name": "r0074",
+   "campus": "C10",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0075",
+   "name": "r0075",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0076",
+   "name": "r0076",
+   "campus": "C16",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0077",
+   "name": "r0077",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0078",
+   "name": "r0078",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0079",
+   "name": "r0079",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0080",
+   "name": "r0080",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0081",
+   "name": "r0081",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0082",
+   "name": "r0082",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0083",
+   "name": "r0083",
+   "campus": "C03",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0084",
+   "name": "r0084",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0085",
+   "name": "r0085",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0086",
+   "name": "r0086",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0087",
+   "name": "r0087",
+   "campus": "C03",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0088",
+   "name": "r0088",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0089",
+   "name": "r0089",
+   "campus": "C16",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0090",
+   "name": "r0090",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0091",
+   "name": "r0091",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0092",
+   "name": "r0092",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0093",
+   "name": "r0093",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0094",
+   "name": "r0094",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0095",
+   "name": "r0095",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0096",
+   "name": "r0096",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0097",
+   "name": "r0097",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0098",
+   "name": "r0098",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0099",
+   "name": "r0099",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0100",
+   "name": "r0100",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0101",
+   "name": "r0101",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0102",
+   "name": "r0102",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0103",
+   "name": "r0103",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0104",
+   "name": "r0104",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0105",
+   "name": "r0105",
+   "campus": "C03",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0106",
+   "name": "r0106",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0107",
+   "name": "r0107",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0108",
+   "name": "r0108",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0109",
+   "name": "r0109",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0110",
+   "name": "r0110",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0111",
+   "name": "r0111",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0112",
+   "name": "r0112",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0113",
+   "name": "r0113",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0114",
+   "name": "r0114",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0115",
+   "name": "r0115",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0116",
+   "name": "r0116",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0117",
+   "name": "r0117",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0118",
+   "name": "r0118",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0119",
+   "name": "r0119",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0120",
+   "name": "r0120",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0121",
+   "name": "r0121",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0122",
+   "name": "r0122",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0123",
+   "name": "r0123",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0124",
+   "name": "r0124",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0125",
+   "name": "r0125",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0126",
+   "name": "r0126",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0127",
+   "name": "r0127",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0128",
+   "name": "r0128",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0129",
+   "name": "r0129",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0130",
+   "name": "r0130",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0131",
+   "name": "r0131",
+   "campus": "C05",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0132",
+   "name": "r0132",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0133",
+   "name": "r0133",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0134",
+   "name": "r0134",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0135",
+   "name": "r0135",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0136",
+   "name": "r0136",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0137",
+   "name": "r0137",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0138",
+   "name": "r0138",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0139",
+   "name": "r0139",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0140",
+   "name": "r0140",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0141",
+   "name": "r0141",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0142",
+   "name": "r0142",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0143",
+   "name": "r0143",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0144",
+   "name": "r0144",
+   "campus": "C03",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0145",
+   "name": "r0145",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0146",
+   "name": "r0146",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0147",
+   "name": "r0147",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0148",
+   "name": "r0148",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0149",
+   "name": "r0149",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0150",
+   "name": "r0150",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0151",
+   "name": "r0151",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0152",
+   "name": "r0152",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0153",
+   "name": "r0153",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0154",
+   "name": "r0154",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0155",
+   "name": "r0155",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0156",
+   "name": "r0156",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0157",
+   "name": "r0157",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0158",
+   "name": "r0158",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0159",
+   "name": "r0159",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0160",
+   "name": "r0160",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0161",
+   "name": "r0161",
+   "campus": "C04",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0162",
+   "name": "r0162",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0163",
+   "name": "r0163",
+   "campus": "C13",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0164",
+   "name": "r0164",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0165",
+   "name": "r0165",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0166",
+   "name": "r0166",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0167",
+   "name": "r0167",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0168",
+   "name": "r0168",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0169",
+   "name": "r0169",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0170",
+   "name": "r0170",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0171",
+   "name": "r0171",
+   "campus": "C10",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0172",
+   "name": "r0172",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0173",
+   "name": "r0173",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0174",
+   "name": "r0174",
+   "campus": "C07",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0175",
+   "name": "r0175",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0176",
+   "name": "r0176",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0177",
+   "name": "r0177",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0178",
+   "name": "r0178",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0179",
+   "name": "r0179",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0180",
+   "name": "r0180",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0181",
+   "name": "r0181",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0182",
+   "name": "r0182",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0183",
+   "name": "r0183",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0184",
+   "name": "r0184",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0185",
+   "name": "r0185",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0186",
+   "name": "r0186",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0187",
+   "name": "r0187",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0188",
+   "name": "r0188",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0189",
+   "name": "r0189",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0190",
+   "name": "r0190",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0191",
+   "name": "r0191",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0192",
+   "name": "r0192",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0193",
+   "name": "r0193",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0194",
+   "name": "r0194",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0195",
+   "name": "r0195",
+   "campus": "C14",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0196",
+   "name": "r0196",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0197",
+   "name": "r0197",
+   "campus": "C06",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0198",
+   "name": "r0198",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0199",
+   "name": "r0199",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0200",
+   "name": "r0200",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0201",
+   "name": "r0201",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0202",
+   "name": "r0202",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0203",
+   "name": "r0203",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0204",
+   "name": "r0204",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0205",
+   "name": "r0205",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0206",
+   "name": "r0206",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0207",
+   "name": "r0207",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0208",
+   "name": "r0208",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0209",
+   "name": "r0209",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0210",
+   "name": "r0210",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0211",
+   "name": "r0211",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0212",
+   "name": "r0212",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0213",
+   "name": "r0213",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0214",
+   "name": "r0214",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0215",
+   "name": "r0215",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0216",
+   "name": "r0216",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0217",
+   "name": "r0217",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0218",
+   "name": "r0218",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0219",
+   "name": "r0219",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0220",
+   "name": "r0220",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0221",
+   "name": "r0221",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0222",
+   "name": "r0222",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0223",
+   "name": "r0223",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0224",
+   "name": "r0224",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0225",
+   "name": "r0225",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0226",
+   "name": "r0226",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0227",
+   "name": "r0227",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0228",
+   "name": "r0228",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0229",
+   "name": "r0229",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0230",
+   "name": "r0230",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0231",
+   "name": "r0231",
+   "campus": "C07",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0232",
+   "name": "r0232",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0233",
+   "name": "r0233",
+   "campus": "C13",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0234",
+   "name": "r0234",
+   "campus": "C13",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0235",
+   "name": "r0235",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0236",
+   "name": "r0236",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0237",
+   "name": "r0237",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0238",
+   "name": "r0238",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0239",
+   "name": "r0239",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0240",
+   "name": "r0240",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0241",
+   "name": "r0241",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0242",
+   "name": "r0242",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0243",
+   "name": "r0243",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0244",
+   "name": "r0244",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0245",
+   "name": "r0245",
+   "campus": "C16",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0246",
+   "name": "r0246",
+   "campus": "C13",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0247",
+   "name": "r0247",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0248",
+   "name": "r0248",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0249",
+   "name": "r0249",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0250",
+   "name": "r0250",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0251",
+   "name": "r0251",
+   "campus": "C16",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0252",
+   "name": "r0252",
+   "campus": "C04",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0253",
+   "name": "r0253",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0254",
+   "name": "r0254",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0255",
+   "name": "r0255",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0256",
+   "name": "r0256",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0257",
+   "name": "r0257",
+   "campus": "C16",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0258",
+   "name": "r0258",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0259",
+   "name": "r0259",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0260",
+   "name": "r0260",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0261",
+   "name": "r0261",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0262",
+   "name": "r0262",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0263",
+   "name": "r0263",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0264",
+   "name": "r0264",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0265",
+   "name": "r0265",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0266",
+   "name": "r0266",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0267",
+   "name": "r0267",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0268",
+   "name": "r0268",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0269",
+   "name": "r0269",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0270",
+   "name": "r0270",
+   "campus": "C12",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0271",
+   "name": "r0271",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0272",
+   "name": "r0272",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0273",
+   "name": "r0273",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0274",
+   "name": "r0274",
+   "campus": "C07",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0275",
+   "name": "r0275",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0276",
+   "name": "r0276",
+   "campus": "C16",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0277",
+   "name": "r0277",
+   "campus": "C14",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0278",
+   "name": "r0278",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0279",
+   "name": "r0279",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0280",
+   "name": "r0280",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0281",
+   "name": "r0281",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0282",
+   "name": "r0282",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0283",
+   "name": "r0283",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0284",
+   "name": "r0284",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0285",
+   "name": "r0285",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0286",
+   "name": "r0286",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0287",
+   "name": "r0287",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0288",
+   "name": "r0288",
+   "campus": "C06",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0289",
+   "name": "r0289",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0290",
+   "name": "r0290",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0291",
+   "name": "r0291",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0292",
+   "name": "r0292",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0293",
+   "name": "r0293",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0294",
+   "name": "r0294",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0295",
+   "name": "r0295",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0296",
+   "name": "r0296",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0297",
+   "name": "r0297",
+   "campus": "C06",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0298",
+   "name": "r0298",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0299",
+   "name": "r0299",
+   "campus": "C11",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0300",
+   "name": "r0300",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0301",
+   "name": "r0301",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0302",
+   "name": "r0302",
+   "campus": "C11",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0303",
+   "name": "r0303",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0304",
+   "name": "r0304",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0305",
+   "name": "r0305",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0306",
+   "name": "r0306",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0307",
+   "name": "r0307",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0308",
+   "name": "r0308",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0309",
+   "name": "r0309",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0310",
+   "name": "r0310",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0311",
+   "name": "r0311",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0312",
+   "name": "r0312",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0313",
+   "name": "r0313",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0314",
+   "name": "r0314",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0315",
+   "name": "r0315",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0316",
+   "name": "r0316",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0317",
+   "name": "r0317",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0318",
+   "name": "r0318",
+   "campus": "C09",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0319",
+   "name": "r0319",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0320",
+   "name": "r0320",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0321",
+   "name": "r0321",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0322",
+   "name": "r0322",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0323",
+   "name": "r0323",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0324",
+   "name": "r0324",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0325",
+   "name": "r0325",
+   "campus": "C09",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0326",
+   "name": "r0326",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0327",
+   "name": "r0327",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0328",
+   "name": "r0328",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0329",
+   "name": "r0329",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0330",
+   "name": "r0330",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0331",
+   "name": "r0331",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0332",
+   "name": "r0332",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0333",
+   "name": "r0333",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0334",
+   "name": "r0334",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0335",
+   "name": "r0335",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0336",
+   "name": "r0336",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0337",
+   "name": "r0337",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0338",
+   "name": "r0338",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0339",
+   "name": "r0339",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0340",
+   "name": "r0340",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0341",
+   "name": "r0341",
+   "campus": "C16",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0342",
+   "name": "r0342",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0343",
+   "name": "r0343",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0344",
+   "name": "r0344",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0345",
+   "name": "r0345",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0346",
+   "name": "r0346",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0347",
+   "name": "r0347",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0348",
+   "name": "r0348",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0349",
+   "name": "r0349",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0350",
+   "name": "r0350",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0351",
+   "name": "r0351",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0352",
+   "name": "r0352",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0353",
+   "name": "r0353",
+   "campus": "C10",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0354",
+   "name": "r0354",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0355",
+   "name": "r0355",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0356",
+   "name": "r0356",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0357",
+   "name": "r0357",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0358",
+   "name": "r0358",
+   "campus": "C16",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0359",
+   "name": "r0359",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0360",
+   "name": "r0360",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0361",
+   "name": "r0361",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0362",
+   "name": "r0362",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0363",
+   "name": "r0363",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0364",
+   "name": "r0364",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0365",
+   "name": "r0365",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0366",
+   "name": "r0366",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0367",
+   "name": "r0367",
+   "campus": "C04",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0368",
+   "name": "r0368",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0369",
+   "name": "r0369",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0370",
+   "name": "r0370",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0371",
+   "name": "r0371",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0372",
+   "name": "r0372",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0373",
+   "name": "r0373",
+   "campus": "C11",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0374",
+   "name": "r0374",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0375",
+   "name": "r0375",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0376",
+   "name": "r0376",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0377",
+   "name": "r0377",
+   "campus": "C16",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0378",
+   "name": "r0378",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0379",
+   "name": "r0379",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0380",
+   "name": "r0380",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0381",
+   "name": "r0381",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0382",
+   "name": "r0382",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0383",
+   "name": "r0383",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0384",
+   "name": "r0384",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0385",
+   "name": "r0385",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0386",
+   "name": "r0386",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0387",
+   "name": "r0387",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0388",
+   "name": "r0388",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0389",
+   "name": "r0389",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0390",
+   "name": "r0390",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0391",
+   "name": "r0391",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0392",
+   "name": "r0392",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0393",
+   "name": "r0393",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0394",
+   "name": "r0394",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0395",
+   "name": "r0395",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0396",
+   "name": "r0396",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0397",
+   "name": "r0397",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0398",
+   "name": "r0398",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0399",
+   "name": "r0399",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0400",
+   "name": "r0400",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0401",
+   "name": "r0401",
+   "campus": "C08",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0402",
+   "name": "r0402",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0403",
+   "name": "r0403",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0404",
+   "name": "r0404",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0405",
+   "name": "r0405",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0406",
+   "name": "r0406",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0407",
+   "name": "r0407",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0408",
+   "name": "r0408",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0409",
+   "name": "r0409",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0410",
+   "name": "r0410",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0411",
+   "name": "r0411",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0412",
+   "name": "r0412",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0413",
+   "name": "r0413",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0414",
+   "name": "r0414",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0415",
+   "name": "r0415",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0416",
+   "name": "r0416",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0417",
+   "name": "r0417",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0418",
+   "name": "r0418",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0419",
+   "name": "r0419",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0420",
+   "name": "r0420",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0421",
+   "name": "r0421",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0422",
+   "name": "r0422",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0423",
+   "name": "r0423",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0424",
+   "name": "r0424",
+   "campus": "C11",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0425",
+   "name": "r0425",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0426",
+   "name": "r0426",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0427",
+   "name": "r0427",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0428",
+   "name": "r0428",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0429",
+   "name": "r0429",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0430",
+   "name": "r0430",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0431",
+   "name": "r0431",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0432",
+   "name": "r0432",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0433",
+   "name": "r0433",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0434",
+   "name": "r0434",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0435",
+   "name": "r0435",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0436",
+   "name": "r0436",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0437",
+   "name": "r0437",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0438",
+   "name": "r0438",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0439",
+   "name": "r0439",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0440",
+   "name": "r0440",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0441",
+   "name": "r0441",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0442",
+   "name": "r0442",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0443",
+   "name": "r0443",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0444",
+   "name": "r0444",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0445",
+   "name": "r0445",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0446",
+   "name": "r0446",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0447",
+   "name": "r0447",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0448",
+   "name": "r0448",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0449",
+   "name": "r0449",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0450",
+   "name": "r0450",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0451",
+   "name": "r0451",
+   "campus": "C13",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0452",
+   "name": "r0452",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0453",
+   "name": "r0453",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0454",
+   "name": "r0454",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0455",
+   "name": "r0455",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0456",
+   "name": "r0456",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0457",
+   "name": "r0457",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0458",
+   "name": "r0458",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0459",
+   "name": "r0459",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0460",
+   "name": "r0460",
+   "campus": "C13",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0461",
+   "name": "r0461",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0462",
+   "name": "r0462",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0463",
+   "name": "r0463",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0464",
+   "name": "r0464",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0465",
+   "name": "r0465",
+   "campus": "C14",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0466",
+   "name": "r0466",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0467",
+   "name": "r0467",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0468",
+   "name": "r0468",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0469",
+   "name": "r0469",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0470",
+   "name": "r0470",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0471",
+   "name": "r0471",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0472",
+   "name": "r0472",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0473",
+   "name": "r0473",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0474",
+   "name": "r0474",
+   "campus": "C10",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0475",
+   "name": "r0475",
+   "campus": "C11",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0476",
+   "name": "r0476",
+   "campus": "C11",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0477",
+   "name": "r0477",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0478",
+   "name": "r0478",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0479",
+   "name": "r0479",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0480",
+   "name": "r0480",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0481",
+   "name": "r0481",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0482",
+   "name": "r0482",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0483",
+   "name": "r0483",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0484",
+   "name": "r0484",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0485",
+   "name": "r0485",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0486",
+   "name": "r0486",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0487",
+   "name": "r0487",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0488",
+   "name": "r0488",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0489",
+   "name": "r0489",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0490",
+   "name": "r0490",
+   "campus": "C10",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0491",
+   "name": "r0491",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": 3,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0492",
+   "name": "r0492",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0493",
+   "name": "r0493",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0494",
+   "name": "r0494",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0495",
+   "name": "r0495",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0496",
+   "name": "r0496",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0497",
+   "name": "r0497",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0498",
+   "name": "r0498",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0499",
+   "name": "r0499",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0500",
+   "name": "r0500",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0501",
+   "name": "r0501",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0502",
+   "name": "r0502",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0503",
+   "name": "r0503",
+   "campus": "C04",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0504",
+   "name": "r0504",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0505",
+   "name": "r0505",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0506",
+   "name": "r0506",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0507",
+   "name": "r0507",
+   "campus": "C09",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0508",
+   "name": "r0508",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0509",
+   "name": "r0509",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0510",
+   "name": "r0510",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0511",
+   "name": "r0511",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0512",
+   "name": "r0512",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0513",
+   "name": "r0513",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0514",
+   "name": "r0514",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0515",
+   "name": "r0515",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0516",
+   "name": "r0516",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0517",
+   "name": "r0517",
+   "campus": "C08",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0518",
+   "name": "r0518",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0519",
+   "name": "r0519",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0520",
+   "name": "r0520",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0521",
+   "name": "r0521",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0522",
+   "name": "r0522",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0523",
+   "name": "r0523",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0524",
+   "name": "r0524",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0525",
+   "name": "r0525",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0526",
+   "name": "r0526",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0527",
+   "name": "r0527",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0528",
+   "name": "r0528",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0529",
+   "name": "r0529",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0530",
+   "name": "r0530",
+   "campus": "C04",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0531",
+   "name": "r0531",
+   "campus": "C11",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0532",
+   "name": "r0532",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0533",
+   "name": "r0533",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0534",
+   "name": "r0534",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0535",
+   "name": "r0535",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0536",
+   "name": "r0536",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0537",
+   "name": "r0537",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0538",
+   "name": "r0538",
+   "campus": "C16",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0539",
+   "name": "r0539",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0540",
+   "name": "r0540",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0541",
+   "name": "r0541",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0542",
+   "name": "r0542",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0543",
+   "name": "r0543",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0544",
+   "name": "r0544",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0545",
+   "name": "r0545",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0546",
+   "name": "r0546",
+   "campus": "C16",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0547",
+   "name": "r0547",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0548",
+   "name": "r0548",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0549",
+   "name": "r0549",
+   "campus": "C07",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0550",
+   "name": "r0550",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0551",
+   "name": "r0551",
+   "campus": "C16",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0552",
+   "name": "r0552",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0553",
+   "name": "r0553",
+   "campus": "C15",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0554",
+   "name": "r0554",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0555",
+   "name": "r0555",
+   "campus": "C02",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0556",
+   "name": "r0556",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0557",
+   "name": "r0557",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0558",
+   "name": "r0558",
+   "campus": "C14",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0559",
+   "name": "r0559",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0560",
+   "name": "r0560",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0561",
+   "name": "r0561",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0562",
+   "name": "r0562",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0563",
+   "name": "r0563",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0564",
+   "name": "r0564",
+   "campus": "C05",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0565",
+   "name": "r0565",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0566",
+   "name": "r0566",
+   "campus": "C03",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0567",
+   "name": "r0567",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0568",
+   "name": "r0568",
+   "campus": "C07",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0569",
+   "name": "r0569",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0570",
+   "name": "r0570",
+   "campus": "C13",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0571",
+   "name": "r0571",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0572",
+   "name": "r0572",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0573",
+   "name": "r0573",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0574",
+   "name": "r0574",
+   "campus": "C10",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0575",
+   "name": "r0575",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0576",
+   "name": "r0576",
+   "campus": "C13",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0577",
+   "name": "r0577",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0578",
+   "name": "r0578",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0579",
+   "name": "r0579",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0580",
+   "name": "r0580",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0581",
+   "name": "r0581",
+   "campus": "C07",
+   "attendance_type": "oneway",
+   "departure_slot_id": 1,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0582",
+   "name": "r0582",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0583",
+   "name": "r0583",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0584",
+   "name": "r0584",
+   "campus": "C02",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0585",
+   "name": "r0585",
+   "campus": "C12",
+   "attendance_type": "oneway",
+   "departure_slot_id": null,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0586",
+   "name": "r0586",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0587",
+   "name": "r0587",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0588",
+   "name": "r0588",
+   "campus": "C03",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0589",
+   "name": "r0589",
+   "campus": "C12",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0590",
+   "name": "r0590",
+   "campus": "C06",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 2,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0591",
+   "name": "r0591",
+   "campus": "C08",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0592",
+   "name": "r0592",
+   "campus": "C01",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0593",
+   "name": "r0593",
+   "campus": "C01",
+   "attendance_type": "self",
+   "departure_slot_id": null,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0594",
+   "name": "r0594",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0595",
+   "name": "r0595",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0596",
+   "name": "r0596",
+   "campus": "C15",
+   "attendance_type": "oneway",
+   "departure_slot_id": 2,
+   "uses_return_bus": false,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0597",
+   "name": "r0597",
+   "campus": "C02",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0598",
+   "name": "r0598",
+   "campus": "C01",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 3,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  },
+  {
+   "id": "r0599",
+   "name": "r0599",
+   "campus": "C05",
+   "attendance_type": "roundtrip",
+   "departure_slot_id": 1,
+   "uses_return_bus": true,
+   "fixed_up_bus_id": null
+  }
+ ],
+ "buses": [
+  {
+   "id": 1,
+   "name": "1호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": null,
+   "fixed_passenger_ids": [
+    "r0201",
+    "r0488",
+    "r0128",
+    "r0031",
+    "r0305",
+    "r0391",
+    "r0506",
+    "r0595",
+    "r0371",
+    "r0437",
+    "r0484",
+    "r0573",
+    "r0089",
+    "r0238",
+    "r0266",
+    "r0157",
+    "r0114",
+    "r0469",
+    "r0239",
+    "r0043",
+    "r0492",
+    "r0377",
+    "r0490",
+    "r0267",
+    "r0045"
+   ],
+   "down_driver_registration_id": "r0127",
+   "down_fixed_passenger_ids": [
+    "r0574",
+    "r0506",
+    "r0371",
+    "r0492",
+    "r0437",
+    "r0114",
+    "r0484",
+    "r0573",
+    "r0239"
+   ],
+   "is_cohesion_exempt": true,
+   "fill_priority": 1
+  },
+  {
+   "id": 2,
+   "name": "2호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0182",
+   "fixed_passenger_ids": [
+    "r0074",
+    "r0364",
+    "r0421",
+    "r0158"
+   ],
+   "down_driver_registration_id": "r0182",
+   "down_fixed_passenger_ids": [
+    "r0241",
+    "r0045",
+    "r0237",
+    "r0438",
+    "r0409",
+    "r0405",
+    "r0096",
+    "r0183",
+    "r0364",
+    "r0421",
+    "r0158",
+    "r0074"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 3,
+   "name": "3호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0259",
+   "fixed_passenger_ids": [
+    "r0237",
+    "r0409"
+   ],
+   "down_driver_registration_id": "r0259",
+   "down_fixed_passenger_ids": [
+    "r0490"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 4,
+   "name": "4호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0095",
+   "fixed_passenger_ids": [
+    "r0405",
+    "r0183"
+   ],
+   "down_driver_registration_id": "r0095",
+   "down_fixed_passenger_ids": [
+    "r0285"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 5,
+   "name": "5호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0425",
+   "fixed_passenger_ids": [
+    "r0096"
+   ],
+   "down_driver_registration_id": "r0425",
+   "down_fixed_passenger_ids": [
+    "r0353",
+    "r0156"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 6,
+   "name": "6호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0162",
+   "fixed_passenger_ids": [],
+   "down_driver_registration_id": "r0162",
+   "down_fixed_passenger_ids": [
+    "r0355"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 7,
+   "name": "7호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0117",
+   "fixed_passenger_ids": [],
+   "down_driver_registration_id": "r0117",
+   "down_fixed_passenger_ids": [
+    "r0398",
+    "r0316",
+    "r0532"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 8,
+   "name": "8호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0394",
+   "fixed_passenger_ids": [
+    "r0171"
+   ],
+   "down_driver_registration_id": "r0394",
+   "down_fixed_passenger_ids": [
+    "r0559"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 9,
+   "name": "9호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 1,
+   "driver_registration_id": "r0094",
+   "fixed_passenger_ids": [
+    "r0353",
+    "r0241",
+    "r0521"
+   ],
+   "down_driver_registration_id": "r0094",
+   "down_fixed_passenger_ids": [
+    "r0407",
+    "r0521"
+   ],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 10,
+   "name": "10호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 2,
+   "driver_registration_id": "r0529",
+   "fixed_passenger_ids": [],
+   "down_driver_registration_id": "r0529",
+   "down_fixed_passenger_ids": [],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  },
+  {
+   "id": 11,
+   "name": "11호차",
+   "capacity": 44,
+   "hard_cap": 45,
+   "departure_slot_id": 3,
+   "driver_registration_id": "r0464",
+   "fixed_passenger_ids": [
+    "r0438"
+   ],
+   "down_driver_registration_id": "r0464",
+   "down_fixed_passenger_ids": [],
+   "is_cohesion_exempt": false,
+   "fill_priority": 0
+  }
+ ]
+}
