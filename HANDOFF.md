@@ -78,21 +78,27 @@ open -a Docker && sleep 30          # Docker Desktop (필수)
 cd ~/Projects/carbus-web
 supabase start                       # 로컬 스택
 supabase db reset --no-seed          # 마이그레이션 전량 적용
-python3 scripts/local-verify/load-backup.py                     # 운영 백업 적재
-docker exec -i supabase_db_carbus-web psql -U postgres -d postgres \
-  -v ON_ERROR_STOP=1 -q < scripts/local-verify/post-load.sql    # 데이터 의존 backfill
+python3 scripts/local-verify/load-backup.py    # 운영 백업 적재 (최신 백업 자동 선택)
+bash scripts/local-verify/post-load.sh         # 데이터 의존 backfill 일괄 + 기준선 출력
 ```
 
-적재 후 아래와 일치해야 운영과 동일한 상태입니다:
+적재 후 아래와 일치해야 운영과 동일한 상태입니다 (post-load.sh 가 직접 찍어줍니다):
 
 ```
 신청 599 · 감사로그 18,967 · 소속(home_unit_id) 65 · 장부 1,081 · 차액 46명
 배차 상행 454 / 하행 459
 ```
 
-> `load-backup.py` 상단 `BACKUP` 상수가 백업 경로입니다. 최신은
-> `~/Backups/carbus-web/2026-07-21_0843-pre-phase2b`.
+> `load-backup.py` 는 `~/Backups/carbus-web/` 에서 **가장 최근 백업을 자동 선택**합니다
+> (인자로 경로를 주면 그걸 씁니다). 상수로 박아두면 Phase 마다 낡습니다.
 > ⚠️ 로컬 DB에 실명이 올라갑니다. 커밋·외부 전송 금지.
+
+> ⚠️ **2026-07-21_0843-pre-phase2b 이전 백업은 못 씁니다.** `events`·`org_units`·
+> `payment_ledger` 가 백업 대상에서 빠져 있어서, 적재하면 `registrations.event_id` 가
+> 존재하지 않는 행사를 가리킵니다. 적재는 replica 모드(FK 끔)라 성공한 척하지만
+> RLS·뷰를 통과하면 599행이 전부 0으로 보입니다. 지금은 `load-backup.py` 가
+> 착수 전에 이 누락을 검사해 크게 실패시킵니다. 쓸 수 있는 최초의 완전한 백업은
+> `2026-07-21_0924-pre-phase3` 입니다.
 
 ### 스키마 변경 작업 절차 (반드시 지킬 것)
 
@@ -156,15 +162,27 @@ supabase db push          # link 되어 있음 (project ref qqtqwyhclscfjlefkiqr
    **금액은 금액으로, 상태는 상태 필드로.**
 
 5. **BEFORE 트리거는 이름 알파벳순으로 실행된다.**
-   현재 순서: `trg_reg_00_fare` → `trg_reg_01_cancel` → `trg_reg_audit` → `trg_reg_guard_*`
+   `registrations` 의 BEFORE 트리거는 4개가 아니라 **9개**다 (실측):
+   `trg_cleanup_bus_fixed_on_reg_delete` → `trg_guard_attendance` → `trg_reg_00_fare`
+   → `trg_reg_01_cancel` → `trg_reg_audit` → `trg_reg_block_delete`
+   → `trg_reg_guard_assignment` → `trg_reg_guard_roles` → `trg_reg_updated_at`
    감사에 남겨야 할 변경은 `trg_reg_audit`보다 **먼저** 돌아야 한다.
+   → 새 트리거는 `trg_reg_02_*` 처럼 지어야 앞에 선다. `trg_trip_*` 로 지으면
+   `trg_reg_audit` 뒤로 밀려 **변경이 조용히 감사 누락**된다.
+   (`snapshot.sh` 의 "### 트리거" 섹션이 현재 순서를 항상 찍어준다)
 
-6. **GENERATED 컬럼은 BEFORE 트리거에서 `NEW`가 항상 NULL이다.**
-   그래서 감사로그의 `after_value.fee`는 전부 NULL이고 `before_value.fee`만 실값이다.
-   (이 성질로 "납부 시점 청구액"을 복원해 환불 대상 46명을 찾아냈다)
+6. ~~**GENERATED 컬럼은 BEFORE 트리거에서 `NEW`가 항상 NULL이다.**~~ — **더는 사실이 아니다.**
+   Phase 2-A 가 `fee` 의 생성식을 해제해서 지금은 평범한 nullable int 다
+   (`is_generated=NEVER`, public 스키마에 생성컬럼 0개). 지금은 `trg_reg_00_fare`
+   (BEFORE, 알파벳상 `trg_reg_audit` 앞)가 `NEW.fee` 를 채우므로 **Phase 2-A 이후
+   새로 쌓이는 감사행은 `after_value.fee` 에 실값이 들어간다.**
+   ⚠️ "after_value.fee 는 NULL" 을 전제로 쿼리를 짜면 옛 행과 새 행이 뒤섞여 틀린다.
+   과거 46명을 복원할 때 쓴 성질이라 기록으로만 남긴다.
 
-7. **생성컬럼 해제는 `ALTER COLUMN ... DROP EXPRESSION`.**
-   `DROP COLUMN`을 쓰면 CASCADE로 `v_payment_summary`가 함께 삭제돼 납부 화면이 즉시 죽는다.
+7. **`v_payment_summary` 를 CASCADE 로 날리지 마라.**
+   원래는 "생성컬럼 해제는 `DROP EXPRESSION` 으로" 라는 규칙이었다(§6 참고).
+   일반화하면: `registrations` 의 컬럼을 `DROP COLUMN` 하면 CASCADE 로
+   `v_payment_summary` 가 함께 삭제돼 납부 화면이 즉시 죽는다.
 
 8. **신규 테이블은 `event_id` + RESTRICTIVE 정책을 갖고 태어나야 한다.**
    안 걸면 다음 행사에서 지난 행사 데이터가 샌다.
