@@ -157,6 +157,14 @@ export function RegForm({
             {upTripId === null && downTripId === null &&
               " — KTX·자차 등 버스를 전혀 이용하지 않는 분입니다."}
           </p>
+          {initial &&
+            payment === "paid" &&
+            (upTripId !== initial.up_trip_id || downTripId !== initial.down_trip_id) && (
+              <p className="text-[11px] text-warning-700 leading-snug">
+                ⚠ 이미 납부한 신청입니다. 편을 바꿔도 <b>청구액은 자동으로 바뀌지 않습니다</b> —
+                환불이 필요한지 따로 확인하세요.
+              </p>
+            )}
           <label className="text-xs text-muted space-y-1 block">
             납부
             <select

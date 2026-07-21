@@ -6,31 +6,49 @@ import {
   type CsvParseResult,
 } from "@/lib/csv/parse";
 import { insertRegistration } from "@/lib/registrations/mutations";
-import { ATTENDANCE_LABELS, slotLabel } from "@/lib/labels";
-import type { DepartureSlot } from "@/lib/supabase/types";
+import {
+  tripLabel,
+  ATTENDANCE_LABELS,
+  deriveAttendance,
+} from "@/lib/labels";
+import type { EventTrip } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 
-type SlotMini = Pick<DepartureSlot, "id" | "key" | "label">;
+type TripMini = Pick<EventTrip, "id" | "key" | "label" | "direction" | "active">;
 
-/** active 슬롯 기준 템플릿 CSV (상행 출발 = 슬롯 라벨). */
-function buildTemplate(slots: SlotMini[]): string {
-  const s0 = slots[0]?.label ?? "";
-  const s1 = slots[1]?.label ?? s0;
+/**
+ * 템플릿 CSV. 상·하행 모두 **편 라벨**로 적는다.
+ *
+ * 하행 칸은 예전에 O/X 였다. 지금도 O/X 를 받지만(임역원 기존 템플릿 하위호환),
+ * O 는 "탄다"만 말하므로 하행 편이 여러 개면 해석할 수 없다 — 그때는 미인식으로
+ * 표면화된다. 그래서 템플릿은 처음부터 라벨을 권한다.
+ */
+function buildTemplate(trips: TripMini[]): string {
+  const up = trips.filter((t) => t.direction === "up" && t.active);
+  const down = trips.filter((t) => t.direction === "down" && t.active);
+  const u0 = up[0]?.label ?? "";
+  const u1 = up[1]?.label ?? u0;
+  const d0 = down[0]?.label ?? "";
   return [
-    "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
-    `홍길동,26,왕복,${s0},O,`,
-    `김영희,27,편도,${s1},X,상행만`,
-    "이타지,타지구,편도,,O,하행만",
-    "박이동,26,버스 미이용,,X,KTX 자가 이동",
+    "이름,학번,상행 출발,하행 출발,비고",
+    `홍길동,26,${u0},${d0},`,
+    `김영희,27,${u1},,상행만`,
+    `이타지,타지구,,${d0},하행만`,
+    "박이동,26,,,KTX 자가 이동",
   ].join("\n");
+}
+
+/** 미리보기용 참여형태 라벨 — DB 파생 규칙과 같은 함수를 쓴다. */
+function deriveAttendanceLabel(up: number | null, down: number | null): string {
+  return ATTENDANCE_LABELS[deriveAttendance(up, down)];
 }
 
 export function ImportPanel({
   campusId,
-  slots,
+  trips,
 }: {
   campusId: string;
-  slots: SlotMini[];
+  trips: TripMini[];
 }) {
   const [preview, setPreview] = useState<CsvParseResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,7 +62,7 @@ export function ImportPanel({
     if (!file) return;
     const content = await file.text();
     setDone(null);
-    setPreview(parseRegistrationsCsv(content, campusId, slots));
+    setPreview(parseRegistrationsCsv(content, campusId, trips));
   }
 
   async function handleRegister() {
@@ -72,7 +90,7 @@ export function ImportPanel({
   }
 
   function downloadTemplate() {
-    const blob = new Blob(["﻿" + buildTemplate(slots)], {
+    const blob = new Blob(["﻿" + buildTemplate(trips)], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
@@ -149,8 +167,9 @@ export function ImportPanel({
                 </thead>
                 <tbody>
                   {preview.successes.map((r, i) => {
+                    // 버스를 전혀 안 타는데 이동 수단을 안 적은 행 — 배차·출석에서 빠지므로 표시한다.
                     const noteMissing =
-                      r.attendance_type === "self" && !r.note?.trim();
+                      r.up_trip_id === null && r.down_trip_id === null && !r.note?.trim();
                     return (
                     <tr
                       key={i}
@@ -162,10 +181,10 @@ export function ImportPanel({
                       <td className="px-3 py-2">{r.name}</td>
                       <td className="px-3 py-2">{r.student_id}</td>
                       <td className="px-3 py-2">
-                        {ATTENDANCE_LABELS[r.attendance_type]}
+                        {deriveAttendanceLabel(r.up_trip_id, r.down_trip_id)}
                       </td>
-                      <td className="px-3 py-2">{slotLabel(r.departure_slot_id, slots)}</td>
-                      <td className="px-3 py-2">{r.uses_return_bus ? "O" : "X"}</td>
+                      <td className="px-3 py-2">{tripLabel(r.up_trip_id, trips)}</td>
+                      <td className="px-3 py-2">{tripLabel(r.down_trip_id, trips)}</td>
                       <td className="px-3 py-2 text-muted">
                         {r.note ?? ""}
                         {noteMissing && (

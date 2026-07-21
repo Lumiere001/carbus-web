@@ -23,52 +23,30 @@ export const RegistrationSchema = z
         message: "학번 형식이 올바르지 않습니다 (예: 26 / 외국인 / 타지구)",
       }
     ),
-    attendance_type: z.enum(ATTENDANCE_TYPES, {
-      error: "참석 유형을 선택해주세요",
-    }),
-    departure_slot_id: z
-      .number({ error: "상행 출발 시간대를 선택해주세요" })
+    // ⚠️ attendance_type 은 **입력이 아니다.** DB 트리거가 (상행 편, 하행 편)에서
+    //    파생한다. 예전엔 입력으로 받고 3개 refine 으로 일관성을 강제했는데,
+    //    그 규칙들이 곧 파생 규칙이었다 — 즉 파생값을 입력으로 받고 나서
+    //    "제대로 계산해 왔는지" 검사하고 있었다. 이제 그럴 필요가 없다.
+    up_trip_id: z
+      .number({ error: "상행 운행편을 선택해주세요" })
       .int()
       .positive()
       .nullable(),
-    uses_return_bus: z.boolean(),
+    down_trip_id: z
+      .number({ error: "하행 운행편을 선택해주세요" })
+      .int()
+      .positive()
+      .nullable(),
     note: z.string().max(200, "비고는 200자 이내입니다").nullish(),
     roles: z.array(z.string()).default([]),
   })
-  // 규칙 3: 왕복 일관성 — departure_slot_id NOT NULL AND uses_return_bus
+  // 버스를 전혀 안 타면 이동 수단을 알아야 한다 — 배차·출석에서 빠지기 때문이다.
   .refine(
-    (data) =>
-      data.attendance_type !== "roundtrip" ||
-      (data.departure_slot_id !== null && data.uses_return_bus === true),
-    {
-      message: "왕복은 상행 출발 시간대와 하행 차량 이용이 모두 필요합니다",
-      path: ["attendance_type"],
-    }
-  )
-  // 규칙 4: 편도 일관성 — 편도 상행(슬롯O+하행X) 또는 편도 하행(슬롯X+하행O) 중 하나
-  .refine(
-    (data) => {
-      if (data.attendance_type !== "oneway") return true;
-      const upOnly =
-        data.departure_slot_id !== null && data.uses_return_bus === false;
-      const downOnly =
-        data.departure_slot_id === null && data.uses_return_bus === true;
-      return upOnly || downOnly;
-    },
-    {
-      message: "편도는 상행 또는 하행 중 하나만 선택 가능합니다",
-      path: ["attendance_type"],
-    }
-  )
-  // 규칙 5: 미이용(self) 일관성 — 슬롯 없음 + 하행 미이용
-  .refine(
-    (data) =>
-      data.attendance_type !== "self" ||
-      (data.departure_slot_id === null && data.uses_return_bus === false),
+    (d) => d.up_trip_id !== null || d.down_trip_id !== null || !!d.note?.trim(),
     {
       message:
-        "버스 미이용은 상행 슬롯·하행 차량 모두 비워야 합니다 (한쪽만 이용하시면 '편도 상행/하행'을 선택)",
-      path: ["attendance_type"],
+        "버스를 이용하지 않는 경우 이동 수단(KTX·자차 등)을 비고에 적어주세요",
+      path: ["note"],
     }
   );
 

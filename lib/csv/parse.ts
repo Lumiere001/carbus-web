@@ -5,7 +5,7 @@ import {
   type RegistrationInput,
 } from "@/lib/validators/registration";
 import { ATTENDANCE_FROM_KO, BOOL_FROM_KO } from "@/lib/labels";
-import type { DepartureSlot } from "@/lib/supabase/types";
+import type { EventTrip } from "@/lib/supabase/types";
 
 /**
  * CSV·복붙 import 파싱 (reference/validators.md §5·7).
@@ -19,9 +19,11 @@ const HEADER_MAP: Record<string, string> = {
   이름: "name",
   학번: "student_id",
   "참석 유형": "attendance_type",
-  "상행 출발": "departure_slot_id",
-  "상행 요일": "departure_slot_id",
-  "하행 차량 이용": "uses_return_bus",
+  "상행 출발": "up_trip_id",
+  "상행 요일": "up_trip_id",
+  // 하행은 O/X 였다. 이제 편 라벨도 받는다 — 둘 다 아래에서 해석한다.
+  "하행 차량 이용": "down_trip_id",
+  "하행 출발": "down_trip_id",
   비고: "note",
 };
 
@@ -44,16 +46,34 @@ const MAX_ROWS = 1000;
 export function parseRegistrationsCsv(
   csv: string,
   campusId: string,
-  slots: Pick<DepartureSlot, "id" | "key" | "label">[]
+  trips: Pick<EventTrip, "id" | "key" | "label" | "direction" | "active">[]
 ): CsvParseResult {
-  // 상행 출발 입력값(라벨 또는 key) → slot id. 트림·소문자 허용.
-  const slotIdFromInput = (raw: string): number | null | undefined => {
+  const dirTrips = (d: "up" | "down") => trips.filter((t) => t.direction === d);
+
+  /** 편 입력값(라벨 또는 key) → 편 id. 트림·소문자 허용. 미인식은 undefined. */
+  const tripIdFromInput = (
+    raw: string,
+    direction: "up" | "down"
+  ): number | null | undefined => {
     const v = raw.trim();
-    if (v === "") return null; // 미입력 = 상행 미이용(하행편도)
-    const hit = slots.find(
-      (s) => s.label === v || s.key === v || s.key === v.toLowerCase()
+    if (v === "") return null; // 미입력 = 그 방향 미이용
+    const pool = dirTrips(direction);
+    const hit = pool.find(
+      (t) => t.label === v || t.key === v || t.key === v.toLowerCase()
     );
-    return hit ? hit.id : undefined; // 미인식 → undefined(검증 실패로 표면화)
+    if (hit) return hit.id;
+
+    // ── 하위호환: 하행이 O/X 불린이던 시절의 CSV ──────────────
+    // 임역원들이 쓰던 템플릿이 전부 O/X 다. 그걸 계속 받아야 한다.
+    // O 는 "탄다"만 말하므로 편이 하나일 때만 해석할 수 있다.
+    // 여러 편이면 조용히 아무 편이나 꽂지 않고 미인식으로 두어 사람이 고치게 한다
+    // (조용히 꽂으면 엉뚱한 시각 버스에 배차된다).
+    if (direction === "down" && v in BOOL_FROM_KO) {
+      if (!BOOL_FROM_KO[v]) return null; // X → 하행 미이용
+      const active = pool.filter((t) => t.active);
+      return active.length === 1 ? active[0].id : undefined;
+    }
+    return undefined; // 미인식 → 검증 실패로 표면화
   };
 
   const parsed = Papa.parse<Record<string, string>>(csv, {
@@ -92,21 +112,14 @@ export function parseRegistrationsCsv(
       mapped.attendance_type =
         ATTENDANCE_FROM_KO[mapped.attendance_type] ?? mapped.attendance_type;
     }
-    if ("departure_slot_id" in mapped) {
-      mapped.departure_slot_id = slotIdFromInput(
-        (mapped.departure_slot_id as string) ?? ""
-      );
-    } else {
-      mapped.departure_slot_id = null;
-    }
-    if ("uses_return_bus" in mapped) {
-      const b = (mapped.uses_return_bus as string) ?? "";
-      if (b === "") mapped.uses_return_bus = false;
-      else if (b in BOOL_FROM_KO) mapped.uses_return_bus = BOOL_FROM_KO[b];
-      else mapped.uses_return_bus = undefined; // 인식 불가 값 → 검증 실패로 표면화(조용히 false로 두지 않음)
-    } else {
-      mapped.uses_return_bus = false;
-    }
+    mapped.up_trip_id =
+      "up_trip_id" in mapped
+        ? tripIdFromInput((mapped.up_trip_id as string) ?? "", "up")
+        : null;
+    mapped.down_trip_id =
+      "down_trip_id" in mapped
+        ? tripIdFromInput((mapped.down_trip_id as string) ?? "", "down")
+        : null;
     if (mapped.note === "") mapped.note = null;
 
     const candidate = { ...mapped, campus_id: campusId, roles: [] };

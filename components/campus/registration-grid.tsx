@@ -175,6 +175,18 @@ export function RegistrationGrid({
     row: RegistrationRow,
     patch: { up_trip_id?: number | null; down_trip_id?: number | null }
   ) {
+    // 이미 낸 사람의 편성을 바꾸면 청구액이 **동결된 채로** 남는다(Phase 2-A 설계).
+    // 실측: 왕복 5만원을 낸 사람의 편을 다 비워도 fee 는 50000 그대로고,
+    // 장부 차액에도 안 잡혀서 아무도 환불 대상인 걸 모른다.
+    // 3-C 로 편을 개별로 끄고 켜기 쉬워졌으니 최소한 이 순간에는 알려준다.
+    if (row.payment_status === "paid") {
+      const next = { ...row, ...patch };
+      const ridesAfter = next.up_trip_id !== null || next.down_trip_id !== null;
+      const msg = ridesAfter
+        ? `${row.name}님은 이미 납부했습니다. 편을 바꿔도 청구액은 그대로 남습니다.`
+        : `${row.name}님은 이미 납부했는데 버스를 아예 안 타게 됩니다.\n청구액은 자동으로 줄지 않으니 환불 여부를 따로 확인하세요.`;
+      if (!confirm(`${msg}\n\n계속할까요?`)) return;
+    }
     const res = await updateCells(
       row.id,
       { up_trip_id: row.up_trip_id, down_trip_id: row.down_trip_id },

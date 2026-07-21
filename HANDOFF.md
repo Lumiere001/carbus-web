@@ -18,8 +18,8 @@
 | — | 행사별 차량비 설정 + 용어 '원장'→'장부' | ✅ 배포됨 | [#12](https://github.com/Lumiere001/carbus-web/pull/12) |
 | 2-B | 취소 상태 + 좌석 자동 반납 | ✅ 배포됨 | [#13](https://github.com/Lumiere001/carbus-web/pull/13) |
 | 3-A | 배차 특례 플래그화 + 운행편 모델(event_trips) | 🟡 로컬만 (미배포) | 브랜치 `phase3-trips` |
-| **3-B** | **/admin/trips·/admin/buses 편성 편집 UI** | **다음** | — |
-| 3-C | 신청 대칭화 (registrations.up/down_trip_id + 폼) | 대기 | — |
+| 3-B | 편성 편집 UI (/admin/trips) | 🟡 로컬만 (미배포) | 〃 |
+| 3-C | 신청 대칭화 (up/down_trip_id + 폼 + 엔진) | 🟡 로컬만 (미배포) | 〃 |
 | 4 | 비고 구조화 본체 (transport_legs) | 대기 | — |
 | 5 | 화면 응집 (목업 반영) | 대기 | — |
 
@@ -66,33 +66,40 @@
 3. **골든 스냅샷** `tests/unit/batch-golden.test.ts` — 운영 599명 형상을 익명화해 고정.
    기존 33개 테스트로는 특례를 통째로 지워도 31개가 통과했다(하행 응집 면제는 테스트 0개).
 
-### 3-B ⬅ 다음 — 편성 편집 UI
+### 3-B ✅ 편성 편집 UI
 
-- **`/admin/trips` CRUD** — 운행편 생성·수정·삭제. 참고할 기존 UI 선례가 **0곳**이다
-  (`departure_slots` 쓰기 경로가 코드에 아예 없었다). `lib/admin/trips.ts` 신설 필요.
-- **`/admin/buses` 차량 설정** — 라우트는 이미 있지만 차량 생성·정원·시각·플래그 UI 가 없다.
-  지금 있는 건 차량순장/고정탑승 지정뿐. 확장 대상이지 재사용 대상이 아니다.
-- ⚠️ **차량 삭제 UI 를 붙일 때 가드 필수.** `registrations.assigned_*_bus_id` FK 가
-  `ON DELETE SET NULL` 이라, 차량을 지우면 승객 배정이 **조용히** 사라진다.
-- `components/admin/buses-panel.tsx` 는 이미 상/하행 탭이 있고 상행만 편별 섹션을 만든다.
-  하행도 같은 `activeTrips.filter(direction==='down')` 구조로 통일하면, 하행이 2편으로
-  갈리는 순간 코드 변경 없이 섹션이 나뉜다 — "용어만 하행으로 바뀔 뿐"이 구현되는 지점.
+`/admin/trips` — 운행편·차량을 화면에서 만들고 고친다. 상·하행이 같은 컴포넌트라
+하행을 여러 편으로 나눠도 코드 변경 없이 섹션이 나뉜다.
+파괴적 조작은 **DB 트리거**가 막는다(화면 검사는 우회 가능해서). 차량 삭제·운행편 삭제·
+방향 교차 지정·신청 편과 어긋나는 편 변경·마지막 활성 편 비활성화.
 
-### 3-C 대기 — 신청 대칭화
+### 3-C ✅ 신청 대칭화
 
-- `registrations.up_trip_id` / `down_trip_id` + CHECK **3개**(`chk_roundtrip`·`chk_oneway`·
-  **`chk_self`**) 재작성. 원안이 chk_self 를 빠뜨렸다.
-- ⚠️ `NOT VALID` 로 걸어도 **신규 INSERT 는 즉시 검사된다.** "DB 먼저 → 코드 나중" 순서와
-  겹치면 그 구간 동안 신규 신청이 전부 막힌다. 컬럼 추가·backfill → 앱 배포 → CHECK 순서로.
-- **`attendance_type` 은 입력이 아니라 파생값이 된다** (up/down 조합으로 완전히 결정됨).
-  `lib/labels.ts` 의 `AttendancePreset` 개념 자체를 폐기할 수 있다. 실제 편집 UI 는
-  `registration-grid.tsx` 와 `reg-form.tsx` **2곳뿐**이고 나머지는 표시용이다.
-- 두 개의 독립 select 로 쪼개되 **DB write 는 한 번으로 묶어야 한다** — 낙관적 잠금이
-  `version` 을 쓰므로 따로 보내면 충돌이 두 번 뜨고 중간 상태가 저장된다.
-- CSV `"하행 차량 이용"` 헤더가 O/X 불린이다. 하위호환 규칙 필요(O → 그 행사의 단일 하행편).
-- ⚠️ `trg_reg_00_fare` 가 `attendance_type` 을 읽어 요금을 계산한다. 파생 트리거는
-  `trg_reg_audit` 앞이 아니라 **`trg_reg_00_fare` 앞**에 서야 한다(이름을 `trg_reg_00a_*` 류로).
-  HANDOFF 가 예전에 안내한 `trg_reg_02_*` 를 따르면 요금이 한 세대 늦게 계산된다.
+`registrations.up_trip_id / down_trip_id`. `attendance_type` 은 **파생값**이 됐다
+(실측: 기존 599건과 100% 일치). 신청 폼은 조합 셀 대신 상행·하행 두 개의 독립 선택.
+엔진도 하행을 상행과 같은 편별 그룹 배차로 바꿨다 — 골든 스냅샷 기대값 불변.
+
+**양방향 파생 트리거**(`trg_reg_000_derive`)가 옛 컬럼과 새 컬럼을 서로 채운다.
+덕분에 DB 를 먼저 올려도 구버전 앱이 돌고, 배포 뒤에도 앱만 되돌리는 롤백이 가능하다.
+
+⚠️ 이 트리거는 **ENABLE ALWAYS** 여야 한다. 백업 적재가 `session_replication_role=replica`
+로 트리거를 끄는데, 이건 업무 로직이 아니라 파생 컬럼을 채우는 구조 유지 장치라
+꺼지면 CHECK 위반으로 적재가 통째로 실패한다. 그리고 **`enable trigger user` 를 쓰는
+블록이 지나갈 때마다 조용히 ORIGIN 으로 내려간다** — post-load.sh 가 매번 검사한다.
+
+### 남은 것 (3-C 이후)
+
+- **옛 컬럼 제거** — `departure_slot_id` / `uses_return_bus` 는 아직 살아 있다(파생 트리거가
+  동기화). 운영이 안정된 뒤 별도로 지운다. 지우는 순간 앱 롤백 경로가 사라지므로 서두르지 말 것.
+- **납부 후 편성 변경 → 환불** ⚠️ 사용자 결정 필요.
+  실측: 왕복 5만원을 낸 사람의 편을 다 비워도 `fee` 는 50000 으로 **동결**되고
+  장부 차액에도 안 잡힌다(Phase 2-A 가 청구액을 납부 시점에 동결하는 설계).
+  3-C 로 편을 개별로 끄고 켜기 쉬워졌으니 이 상황이 훨씬 자주 생긴다.
+  지금은 **편집 화면에서 경고만** 띄운다. 자동 환불 기록을 남길지는
+  §5 의 "차액 46명" 항목과 함께 결정할 문제다.
+- **편별 요금** — 요금은 아직 행사 단위(`events.fee_roundtrip` / `fee_oneway`)다.
+  상행과 하행 구간이 다른 행사(예: 광주→무주 / 무주→서울)에서 방향별 요금이 필요해지면
+  `event_trips.fare` 로 옮기는 별도 작업이 된다.
 
 ---
 
