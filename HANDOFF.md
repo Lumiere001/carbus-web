@@ -1,0 +1,219 @@
+# carbus-web 개선 작업 — 인수인계
+
+> **다음 세션은 이 문서부터 읽으세요.** 마지막 갱신 2026-07-21. 다음 작업은 **Phase 3**.
+
+---
+
+## 1. 지금 어디까지 왔나
+
+여름수련회(6/23~27) 운영 후 받은 피드백 9건을 6단계로 나눠 고치는 중입니다.
+**0~2단계는 끝났고 운영에 반영돼 있습니다.**
+
+| 단계 | 내용 | 상태 | PR |
+|---|---|---|---|
+| 0 | 거짓말 제거 (관측 교정) | ✅ 배포됨 | [#8](https://github.com/Lumiere001/carbus-web/pull/8) |
+| 1 | 행사(event) 골격 + 비파괴 초기화 | ✅ 배포됨 | [#9](https://github.com/Lumiere001/carbus-web/pull/9) |
+| — | 정산 경로 행사범위 복구 (Phase 1 회귀 핫픽스) | ✅ 배포됨 | [#10](https://github.com/Lumiere001/carbus-web/pull/10) |
+| 2-A | 결제 장부 + 환불 차액 추적 | ✅ 배포됨 | [#11](https://github.com/Lumiere001/carbus-web/pull/11) |
+| — | 행사별 차량비 설정 + 용어 '원장'→'장부' | ✅ 배포됨 | [#12](https://github.com/Lumiere001/carbus-web/pull/12) |
+| 2-B | 취소 상태 + 좌석 자동 반납 | ✅ 배포됨 | [#13](https://github.com/Lumiere001/carbus-web/pull/13) |
+| **3** | **상/하행 운행편 대칭 + 자유 설정** | **다음** | — |
+| 4 | 비고 구조화 본체 (transport_legs) | 대기 | — |
+| 5 | 화면 응집 (목업 반영) | 대기 | — |
+
+**피드백 ↔ 단계 매핑**
+
+| 사용자 피드백 | 해소 단계 |
+|---|---|
+| 상/하행 버스·출발시각 자유 선택 | **Phase 3** |
+| 초기화 버튼 | Phase 1 ✅ |
+| 전체 순장/순원 편집 UX (최상단 폼) | Phase 5 |
+| 비고 구조화 (타지구·KTX 확정상태) | Phase 4 |
+| 출석 호차별 네비게이션 | Phase 5 |
+| 부분참 정보 산발 | Phase 5 |
+| 로그 50건 제한 | Phase 5 |
+| 변경 이력 추적 | Phase 5 |
+| 캠퍼스 송금 등록 안 함 | Phase 2-A 일부 ✅ (넛지 UI는 Phase 5) |
+
+---
+
+## 2. 다음 작업 — Phase 3
+
+**목표:** 지금 하행은 `uses_return_bus` 불린 하나뿐이라 **출발 시각 개념 자체가 없습니다.**
+상행처럼 운행편(trip)으로 승격해 상·하행 모두 시각·차량을 자유롭게 짜게 합니다.
+
+### 할 일
+
+1. **`event_trips` 신설** (`departure_slots` 승격)
+   - `direction`(up/down), `departs_at`(nullable), `origin`, `destination`, `label`
+   - `departs_at`은 nullable로 시작 — 기존 라벨 `"화 오전 9시"`에 연·월·일이 없어 파싱 불가.
+     화면에서 1회 입력받는다.
+2. **`buses.up_trip_id` / `down_trip_id`** (nullable) + `is_cohesion_exempt` / `fill_priority` / `display_order`
+   - 지금 `lib/batch/engine.ts:40,51`이 **`"1호차"` 문자열 일치**로 배차 특례를 판정한다.
+     다른 행사에서는 **에러 없이 조용히 무력화**된다. 플래그 컬럼으로 승격.
+   - ⚠️ 이걸 바꾸면 배차 결과가 바뀐다. `tests/unit/batch.test.ts:325,354,372,386`이 의존.
+     **착수 전 현재 배차 결과를 골든 스냅샷 테스트로 고정할 것.**
+3. **`registrations.up_trip_id` / `down_trip_id`**
+   - CHECK 재작성은 `NOT VALID` → 위반 행 리포트 → 수동 정리 → `VALIDATE` **3단계**로.
+     한 번에 걸면 모순 행 때문에 마이그레이션 전체가 롤백된다.
+4. **`/admin/trips` CRUD** + `/admin/buses` 차량 설정 화면
+   - 하행 신규 운행편은 **생성 즉시 전 차량 기본 배정**(현 운영 실태가 그렇다)
+5. **배차 엔진**: 시그니처 유지하고 필터 조건만 치환 (2곳)
+   - `b.departure_slot_id === slotId` → `b.up_trip_id === tripId`
+   - 하행 필터 추가
+
+### 결정 필요
+
+- **다음 행사에 하행이 여러 편으로 나뉘나?** 안 나뉘면 Phase 3의 하행 대칭화는
+  "미래 대비"일 뿐이고 실제 비고 흡수 효과는 8~14건에 그친다.
+
+---
+
+## 3. 재개 방법
+
+### 로컬 환경 띄우기
+
+```bash
+open -a Docker && sleep 30          # Docker Desktop (필수)
+cd ~/Projects/carbus-web
+supabase start                       # 로컬 스택
+supabase db reset --no-seed          # 마이그레이션 전량 적용
+python3 scripts/local-verify/load-backup.py                     # 운영 백업 적재
+docker exec -i supabase_db_carbus-web psql -U postgres -d postgres \
+  -v ON_ERROR_STOP=1 -q < scripts/local-verify/post-load.sql    # 데이터 의존 backfill
+```
+
+적재 후 아래와 일치해야 운영과 동일한 상태입니다:
+
+```
+신청 599 · 감사로그 18,967 · 소속(home_unit_id) 65 · 장부 1,081 · 차액 46명
+배차 상행 454 / 하행 459
+```
+
+> `load-backup.py` 상단 `BACKUP` 상수가 백업 경로입니다. 최신은
+> `~/Backups/carbus-web/2026-07-21_0843-pre-phase2b`.
+> ⚠️ 로컬 DB에 실명이 올라갑니다. 커밋·외부 전송 금지.
+
+### 스키마 변경 작업 절차 (반드시 지킬 것)
+
+```bash
+# 1) 새 마이그레이션을 잠시 빼고 "적용 전" 기준선을 찍는다
+mkdir -p /tmp/hold && mv supabase/migrations/<새파일>.sql /tmp/hold/
+supabase db reset --no-seed && python3 scripts/local-verify/load-backup.py
+docker exec -i supabase_db_carbus-web psql -U postgres -d postgres -q < scripts/local-verify/post-load.sql
+bash scripts/local-verify/snapshot.sh > /tmp/before.txt
+
+# 2) 되돌려놓고 적용
+mv /tmp/hold/*.sql supabase/migrations/
+docker exec -i supabase_db_carbus-web psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < supabase/migrations/<새파일>.sql
+
+# 3) 대조 — 의도한 변경만 나와야 한다
+bash scripts/local-verify/snapshot.sh > /tmp/after.txt
+diff /tmp/before.txt /tmp/after.txt
+
+# 4) 기능 테스트
+bash scripts/local-verify/test-event-switch.sh   # 행사 전환
+bash scripts/local-verify/test-ledger.sh         # 장부·청구액 동결
+bash scripts/local-verify/test-cancel.sh         # 취소·좌석 반납
+
+# 5) 코드 검증
+pnpm tsc --noEmit && pnpm vitest run && pnpm eslint app components lib && pnpm build
+```
+
+### 운영 반영
+
+```bash
+node scripts/local-verify/backup-prod.mjs ~/Backups/carbus-web/$(date +%Y-%m-%d_%H%M)-pre-phaseN  # 백업 먼저
+supabase db push          # link 되어 있음 (project ref qqtqwyhclscfjlefkiqr)
+```
+
+> `supabase db push`는 **DB 비밀번호가 필요한 link가 이미 되어 있어서** 그냥 됩니다.
+> link가 풀리면 `supabase link --project-ref qqtqwyhclscfjlefkiqr`를 **사용자가 직접** 실행해야
+> 합니다(비밀번호 입력 필요).
+>
+> ⚠️ CI는 마이그레이션을 적용하지 않습니다. **DB 먼저 적용 → 확인 → PR 머지** 순서를 지키세요.
+> 코드만 먼저 배포되면 없는 테이블을 조회해 화면이 깨집니다.
+
+---
+
+## 4. 반드시 지켜야 할 규칙 (실제로 사고를 막은 것들)
+
+1. **backfill 중에는 사용자 트리거를 끈다.**
+   `registrations`를 UPDATE 하면 감사 트리거가 599건의 "아무도 안 바꾼" 이력을 쌓는다.
+   실제로 Phase 1에서 18,967 → 19,566으로 늘었다가 잡았다.
+
+2. **뷰를 재작성할 때 원본 정의를 먼저 덤프해서 조건을 확인한다.**
+   `v_payment_summary`에 `self` 제외 조건이 있었는데 빠뜨려 납부 집계가 60건 부풀었다.
+
+3. **UNIQUE는 제약(`pg_constraint`)뿐 아니라 인덱스(`pg_indexes`)도 확인한다.**
+   `buses.name` UNIQUE를 놓쳐 차량 복제가 통째로 막혔다.
+   `snapshot.sh`에 인덱스 검사를 넣어뒀다.
+
+4. **비고 텍스트로 자동 판정하지 않는다.**
+   - `"환불해야 할 것은 없음"`이 '환불' 부분문자열에 걸린다(상계 건)
+   - `"취소함 → 취소 이후 순수 하행 확정"`은 실제로는 참석자다
+   - 반대로 아무 말 없이 차액이 생긴 28명은 놓친다
+   **금액은 금액으로, 상태는 상태 필드로.**
+
+5. **BEFORE 트리거는 이름 알파벳순으로 실행된다.**
+   현재 순서: `trg_reg_00_fare` → `trg_reg_01_cancel` → `trg_reg_audit` → `trg_reg_guard_*`
+   감사에 남겨야 할 변경은 `trg_reg_audit`보다 **먼저** 돌아야 한다.
+
+6. **GENERATED 컬럼은 BEFORE 트리거에서 `NEW`가 항상 NULL이다.**
+   그래서 감사로그의 `after_value.fee`는 전부 NULL이고 `before_value.fee`만 실값이다.
+   (이 성질로 "납부 시점 청구액"을 복원해 환불 대상 46명을 찾아냈다)
+
+7. **생성컬럼 해제는 `ALTER COLUMN ... DROP EXPRESSION`.**
+   `DROP COLUMN`을 쓰면 CASCADE로 `v_payment_summary`가 함께 삭제돼 납부 화면이 즉시 죽는다.
+
+8. **신규 테이블은 `event_id` + RESTRICTIVE 정책을 갖고 태어나야 한다.**
+   안 걸면 다음 행사에서 지난 행사 데이터가 샌다.
+
+---
+
+## 5. 열린 항목
+
+### 🔴 사용자 확인 필요
+
+- **차액 46명 / 1,350,000원** — `/admin/payments`의 "차액 확인 필요" 섹션.
+  낸 돈이 현재 청구액보다 많은 사람들. **확정 채무가 아니라 계산상 차액**이다
+  (현장에서 이미 현금 정산했을 수 있음). 17명은 비고에 환불 언급이 있고,
+  **28명은 아무 언급이 없어 아무도 모르고 있었다.**
+  → 정산 완료 / 아직 안 드림을 구분해 주시면 환불 기록 남기는 기능을 붙일 수 있다.
+
+- **취소 처리가 안 된 기존 데이터** — 비고에 "취소"라 적힌 사람 중 일부는 아직
+  `participation_status='registered'`다. 자동 판정은 위험해서 안 했다.
+  화면에서 직접 취소 처리해야 좌석이 반납된다. 현재 취소자 0명.
+
+### 🟡 결정 대기
+
+- 다음 행사(리더십 캠프)에 **하행이 여러 편으로 나뉘는지** → Phase 3 우선순위 좌우
+- 캠퍼스 송금 등록 넛지 UI (총단 기록 1클릭 승인) — Phase 2-A에서 백엔드는 준비됐고
+  화면은 Phase 5로 미뤄둔 상태
+
+### 참고
+
+- **리더십 캠프 전환은 Phase 3 이후에** 하는 게 안전합니다. `/admin/control`의
+  "새 행사 시작"을 누르면 화면이 비워지지만, 지금 눌러도 되돌릴 수 있습니다
+  (지난 행사 데이터는 삭제되지 않음).
+
+---
+
+## 6. 참조
+
+- 코드: `~/Projects/carbus-web` · 운영: https://carbus-web.vercel.app
+- Supabase: `qqtqwyhclscfjlefkiqr` (Northeast Asia)
+- 백업: `~/Backups/carbus-web/` (PII 포함 — 로컬 전용)
+- 검증 도구: `scripts/local-verify/` (README 참고)
+- 개선안 목업: 이 작업 초기에 만든 아티팩트 (화면 7개 + 6단계 계획)
+
+### 이 작업에서 나온 주요 발견
+
+| 발견 | 실측 |
+|---|---|
+| 비고 사용률 | 599명 중 226명(37.7%) |
+| 비고에서 "타지구"의 두 가지 뜻 | 소속 63건 / 이용수단 80건 (**정반대 의미**) |
+| 감사로그 유령 이력 | 18,967건 중 73%가 실변경 없음 |
+| 출석률이 100%에 못 닿던 이유 | 분모가 신청 기준(376)인데 분자는 배차 기준(372) |
+| 환불 차액 | 46명 / 1,350,000원 (그중 28명은 아무 기록 없었음) |
+| 하드 삭제로 사라진 수납 기록 | 10건 / 225,000원 |
