@@ -49,7 +49,9 @@ export type CampusInfo = { id: string; name: string; display_order: number };
 export type BusInfo = {
   id: number;
   name: string;
-  departure_slot_id?: number;
+  /** 이 호차가 운행하는 편. 그 방향을 안 뛰면 null. 선택 필드로 만들지 말 것 — bus-options.ts 주석 참고. */
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   /** 정원(보조석 제외). 잔여석 표기 기준 — 배차 엔진·호차 화면과 동일하게 capacity 를 쓴다. */
   capacity: number;
 };
@@ -492,7 +494,7 @@ function Row({
     const options = busSelectOptions(
       buses,
       which,
-      r.up_trip_id,
+      which === "up" ? r.up_trip_id : r.down_trip_id,
       current,
       which === "up" ? upUsed : downUsed
     );

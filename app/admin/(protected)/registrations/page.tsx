@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
+// buses 는 캐스트 없이 그대로 넘긴다 — select 문에서 컬럼이 빠지면 tsc 가 잡게 하려는 것.
+// `as BusInfo[]` 로 감싸면 그 검사가 통째로 무력화된다 (bus-options.ts 주석의 사고 참고).
 import {
   RegistrationsPanel,
   type AdminRegRow,
   type CampusInfo,
-  type BusInfo,
 } from "@/components/admin/registrations-panel";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export default async function AdminRegistrationsPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, up_trip_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, down_trip_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("role_labels").select("label, color").order("display_order"),
@@ -70,7 +71,7 @@ export default async function AdminRegistrationsPage() {
       <RegistrationsPanel
         rows={(regRes.data ?? []) as AdminRegRow[]}
         campuses={campuses}
-        buses={(busRes.data ?? []) as BusInfo[]}
+        buses={busRes.data ?? []}
         roleLabels={(roleRes.data ?? []) as { label: string; color: string | null }[]}
         isMaster={isMaster}
         groupByBus={phase2}
