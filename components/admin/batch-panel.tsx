@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { runBatchAction, type BatchActionResult } from "@/app/admin/(protected)/batch/actions";
 import { setAssignment } from "@/lib/admin/registrations";
-import { slotLabel } from "@/lib/labels";
-import type { DepartureSlot } from "@/lib/supabase/types";
+import { busSelectOptions } from "@/lib/admin/bus-options";
+import { tripLabel } from "@/lib/labels";
+import type { EventTrip } from "@/lib/supabase/types";
 
 export type BatchRunRow = {
   id: string;
@@ -26,8 +27,22 @@ export type UnassignedRow = {
   name: string;
   student_id: string;
   campus_name: string;
+  /** 이 사람이 신청한 편. 드롭다운을 서버 판정과 같은 집합으로 좁히는 데 쓴다. */
+  up_trip_id: number | null;
+  down_trip_id: number | null;
 };
-export type BusOption = { id: number; name: string; up_trip_id: number | null };
+/**
+ * ⚠️ 편 컬럼은 **선택 필드로 만들지 마라** (커밋 ab31181 의 교훈).
+ * 옛 이름이 선택 필드로 남아 있던 탓에 상행 드롭다운이 통째로 비었고,
+ * tsc·단위 테스트·빌드가 전부 통과했다.
+ */
+export type BusOption = {
+  id: number;
+  name: string;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
+  capacity: number;
+};
 
 function fmt(iso: string | null): string {
   if (!iso) return "기록 없음";
@@ -47,7 +62,9 @@ export function BatchPanel({
   upUnassigned,
   downUnassigned,
   buses,
-  slots,
+  trips,
+  usedUp,
+  usedDown,
   lastBatchAt,
   currentPhase,
   runs,
@@ -60,7 +77,10 @@ export function BatchPanel({
   upUnassigned: UnassignedRow[];
   downUnassigned: UnassignedRow[];
   buses: BusOption[];
-  slots: Pick<DepartureSlot, "id" | "label">[];
+  trips: Pick<EventTrip, "id" | "label">[];
+  /** 호차 id → 그 방향의 현재 배정 인원. 잔여석 표시용. */
+  usedUp: Record<number, number>;
+  usedDown: Record<number, number>;
   lastBatchAt: string | null;
   currentPhase: string;
   runs: BatchRunRow[];
@@ -228,14 +248,16 @@ export function BatchPanel({
           mode="up"
           rows={upUnassigned}
           buses={buses}
-          slots={slots}
+          trips={trips}
+          used={usedUp}
         />
         <UnassignedList
           title="하행 미배정"
           mode="down"
           rows={downUnassigned}
           buses={buses}
-          slots={slots}
+          trips={trips}
+          used={usedDown}
         />
       </div>
 
@@ -291,19 +313,27 @@ export function BatchPanel({
   );
 }
 
-/** 미배정 인원 목록 + 호차 직접 배정 (master). */
+/**
+ * 미배정 인원 목록 + 호차 직접 배정 (master).
+ *
+ * 드롭다운은 `busSelectOptions` 로 만든다 — 서버(validateAssign)가 허용하는 집합과
+ * **정확히 같은 함수**다. 예전엔 전 호차를 그냥 나열해서, 편이 다른 호차를 고르면
+ * 서버가 거절했다(신청 화면에서 같은 문제가 blocker 로 잡혔다: 커밋 ab31181).
+ */
 function UnassignedList({
   title,
   mode,
   rows,
   buses,
-  slots,
+  trips,
+  used,
 }: {
   title: string;
   mode: "up" | "down";
   rows: UnassignedRow[];
   buses: BusOption[];
-  slots: Pick<DepartureSlot, "id" | "label">[];
+  trips: Pick<EventTrip, "id" | "label">[];
+  used: Record<number, number>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -325,6 +355,8 @@ function UnassignedList({
     });
   }
 
+  const usedMap = new Map(Object.entries(used).map(([k, v]) => [Number(k), v]));
+
   return (
     <Card title={title} subtitle={`${rows.length}명 — 배차 후 남은 인원`}>
       {err && (
@@ -334,30 +366,39 @@ function UnassignedList({
         <p className="px-5 py-6 text-sm text-success">미배정 없음 ✓</p>
       ) : (
         <div className="max-h-72 overflow-y-auto divide-y divide-border">
-          {rows.map((r) => (
-            <div key={r.id} className="flex items-center justify-between gap-2 px-5 py-2">
-              <span className="text-sm text-foreground">
-                {r.name}
-                <span className="ml-1.5 text-xs text-muted-2">
-                  {r.campus_name} · {r.student_id}
+          {rows.map((r) => {
+            const tripId = mode === "up" ? r.up_trip_id : r.down_trip_id;
+            const options = busSelectOptions(buses, mode, tripId, null, usedMap);
+            return (
+              <div key={r.id} className="flex items-center justify-between gap-2 px-5 py-2">
+                <span className="text-sm text-foreground">
+                  {r.name}
+                  <span className="ml-1.5 text-xs text-muted-2">
+                    {r.campus_name} · {r.student_id} · {tripLabel(tripId, trips)}
+                  </span>
                 </span>
-              </span>
-              <select
-                defaultValue=""
-                disabled={pending}
-                onChange={(e) => assign(r.id, e.target.value)}
-                className="text-xs border border-border-2 rounded-md px-1.5 py-1 bg-surface"
-              >
-                <option value="">호차 배정…</option>
-                {buses.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                    {mode === "up" ? ` (${slotLabel(b.up_trip_id, slots)})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+                {options.length === 0 ? (
+                  <span className="text-xs text-warning-700">
+                    이 편을 운행하는 호차가 없습니다
+                  </span>
+                ) : (
+                  <select
+                    defaultValue=""
+                    disabled={pending}
+                    onChange={(e) => assign(r.id, e.target.value)}
+                    className="text-xs border border-border-2 rounded-md px-1.5 py-1 bg-surface"
+                  >
+                    <option value="">호차 배정…</option>
+                    {options.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} (잔여 {b.seatsLeft})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </Card>

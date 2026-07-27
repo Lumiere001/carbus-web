@@ -21,16 +21,17 @@ export default async function AdminLeadersPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [busRes, campusRes, labelRes, slotRes] = await Promise.all([
+  const [busRes, campusRes, labelRes, tripRes] = await Promise.all([
     supabase
       .from("buses")
       .select(
-        "id, name, up_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
     supabase.from("role_labels").select("label"),
-    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
+    // 하행도 편을 갖는다(3-C). 상행만 가져오면 하행 호차를 편으로 거를 수 없다.
+    supabase.from("event_trips").select("id, label").order("display_order"),
   ]);
   const buses = busRes.data ?? [];
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
@@ -125,6 +126,7 @@ export default async function AdminLeadersPage() {
       roleBadges,
       primaryKind,
       up_trip_id: r.up_trip_id ?? null,
+      down_trip_id: r.down_trip_id ?? null,
       ridesUp,
       ridesDown,
       upKind,
@@ -144,13 +146,14 @@ export default async function AdminLeadersPage() {
     id: b.id,
     name: b.name,
     up_trip_id: b.up_trip_id,
+    down_trip_id: b.down_trip_id,
   }));
 
   return (
     <LeadersPanel
       leaders={leaders}
       buses={busOpts}
-      slots={slotRes.data ?? []}
+      trips={tripRes.data ?? []}
       isMaster={isMaster}
     />
   );

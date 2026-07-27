@@ -32,10 +32,17 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 #      로더는 백업 JSON 에 실제로 있는 컬럼만 INSERT 하므로, 백업보다 나중에 생긴
 #      컬럼은 전부 DEFAULT 가 된다. 플래그가 false/0 이면 짐차 특례가 꺼진 상태라
 #      골든 스냅샷 대조가 통째로 무의미해진다.
+#   ③ 위 재실행이 **나중 마이그레이션의 수정을 되돌리는** 경우.
+#      070000 이 v_down_capacity 를 만들고 100000 이 그것을 고쳤는데, 070000 만 다시
+#      돌리면 옛 정의로 되돌아간다. 그러면 로컬이 배포될 형상과 다른 채로
+#      "검증 통과"가 나온다. 되돌아간 것을 다시 덮도록 뒤에 붙인다.
+#      ⚠️ 여기에 마이그레이션을 추가할 때는, 그것이 되감는 것이 뒤에 있는지 확인하고
+#         있으면 그 뒤 마이그레이션도 **이 목록 끝에** 함께 넣을 것.
 MIGRATIONS=(
   "supabase/migrations/20260721020100_ledger_backfill.sql"   # Phase 2-A 장부 이관
   "supabase/migrations/20260721050000_bus_batch_flags.sql"   # Phase 3 배차 특례 플래그
   "supabase/migrations/20260721070000_event_trips.sql"       # Phase 3 하행 편 생성 + 차량 연결
+  "supabase/migrations/20260721100000_symmetric_views_guards.sql"  # 위가 되돌린 뷰·가드 복구
 )
 
 run_sql_file() {

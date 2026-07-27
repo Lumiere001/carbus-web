@@ -134,6 +134,20 @@ begin
       using errcode = 'restrict_violation';
   end if;
 
+  -- 취소자도 이 편을 계속 가리킨다(기록 보존이 취소 설계의 핵심이다).
+  -- 업무적으로 막을 이유는 없지만 FK 가 삭제를 막으므로, 여기서 안 잡으면
+  -- 화면에 raw FK 에러가 그대로 뜬다. 무엇이 막고 무엇을 하면 되는지 문장으로 돌려준다.
+  select count(*) into v_regs
+    from registrations
+   where (up_trip_id = old.id or down_trip_id = old.id)
+     and participation_status = 'cancelled';
+  if v_regs > 0 then
+    raise exception
+      '"%" 운행편은 취소된 신청 %건이 아직 가리키고 있어 지울 수 없습니다. 기록을 남겨야 하므로 삭제 대신 비활성으로 내려 주세요.',
+      old.label, v_regs
+      using errcode = 'restrict_violation';
+  end if;
+
   return old;
 end $$;
 

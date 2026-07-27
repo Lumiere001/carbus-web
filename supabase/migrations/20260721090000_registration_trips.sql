@@ -315,6 +315,8 @@ begin
   -- ④ 하행이 2편일 때, 구버전 경로가 이미 정해진 하행 편을 건드리지 않는다.
   --    예전 코드는 여기서 (a) 편을 갈아끼우거나 (b) "정할 수 없다"며 저장을 통째로
   --    막았다. 구버전 앱은 "탄다"만 말할 수 있을 뿐 편을 바꾸라고 한 적이 없다.
+  --    (활성 행사가 없는 빈 DB 에서는 만들 편이 없으므로 건너뛴다)
+  if active_event_id() is not null and v_slot is not null then
   insert into event_trips (key, label, display_order, active, event_id, direction)
   values ('__verify_down2', '__검증_하행2편', 900, true, active_event_id(), 'down')
   returning id into v_down2;
@@ -334,6 +336,7 @@ begin
     raise exception '구버전 경로가 상행 편을 못 채웠습니다 (up=%)', v_row.up_trip_id;
   end if;
   raise notice '검증 ④: 하행 2편에서 구버전 경로가 기존 하행 편 보존 OK';
+  end if;
 
   raise exception '__검증완료_롤백';
 exception when others then

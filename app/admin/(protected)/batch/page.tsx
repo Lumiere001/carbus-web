@@ -23,8 +23,21 @@ export default async function AdminBatchPage() {
     .single<{ role: UserRole }>();
   if (profile?.role !== "master") redirect("/admin");
 
+  // 취소자는 배차 대상이 아니다 — 엔진(actions.ts)은 이미 빼고 돌린다.
+  // 여기서 안 빼면 취소자가 "대상 인원"에 잡히는데, 취소하면 배정이 반납되므로
+  // **미배정 목록에 영원히 남는다.** 관리자가 안 가는 사람을 배차하려 하게 된다.
+  const notCancelled = <T extends { neq: (c: string, v: string) => unknown }>(q: T) =>
+    q.neq("participation_status", "cancelled") as ReturnType<T["neq"]>;
   const reg = () =>
-    supabase.from("registrations").select("id", { count: "exact", head: true });
+    notCancelled(
+      supabase.from("registrations").select("id", { count: "exact", head: true })
+    );
+  const unassigned = () =>
+    notCancelled(
+      supabase
+        .from("registrations")
+        .select("id, name, student_id, campus_id, up_trip_id, down_trip_id")
+    );
 
   const [
     upPartRes,
@@ -37,28 +50,19 @@ export default async function AdminBatchPage() {
     campusRes,
     runsRes,
     cfgRes,
-    slotRes,
+    tripRes,
+    assignedRes,
   ] = await Promise.all([
-    reg().not("departure_slot_id", "is", null),
-    reg().not("departure_slot_id", "is", null).not("assigned_up_bus_id", "is", null),
-    reg().eq("uses_return_bus", true),
-    reg().eq("uses_return_bus", true).not("assigned_down_bus_id", "is", null),
-    supabase
-      .from("registrations")
-      .select("id, name, student_id, campus_id")
-      .not("departure_slot_id", "is", null)
-      .is("assigned_up_bus_id", null)
-      .order("name"),
-    supabase
-      .from("registrations")
-      .select("id, name, student_id, campus_id")
-      .eq("uses_return_bus", true)
-      .is("assigned_down_bus_id", null)
-      .order("name"),
+    reg().not("up_trip_id", "is", null),
+    reg().not("up_trip_id", "is", null).not("assigned_up_bus_id", "is", null),
+    reg().not("down_trip_id", "is", null),
+    reg().not("down_trip_id", "is", null).not("assigned_down_bus_id", "is", null),
+    unassigned().not("up_trip_id", "is", null).is("assigned_up_bus_id", null).order("name"),
+    unassigned().not("down_trip_id", "is", null).is("assigned_down_bus_id", null).order("name"),
     supabase
       .from("buses")
       .select(
-        "id, name, up_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, down_trip_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
@@ -70,8 +74,23 @@ export default async function AdminBatchPage() {
       .order("run_at", { ascending: false })
       .limit(8),
     supabase.from("system_config").select("last_batch_at, current_phase").maybeSingle(),
-    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
+    // 하행도 편을 갖는다(3-C) — 상행만 가져오면 하행 호차에 라벨을 못 붙인다.
+    supabase.from("event_trips").select("id, label").order("display_order"),
+    // 호차별 사용 좌석 — 수동 배정 드롭다운의 잔여석 표시용.
+    supabase
+      .from("registrations")
+      .select("assigned_up_bus_id, assigned_down_bus_id")
+      .neq("participation_status", "cancelled"),
   ]);
+
+  const usedUp = new Map<number, number>();
+  const usedDown = new Map<number, number>();
+  for (const r of assignedRes.data ?? []) {
+    if (r.assigned_up_bus_id != null)
+      usedUp.set(r.assigned_up_bus_id, (usedUp.get(r.assigned_up_bus_id) ?? 0) + 1);
+    if (r.assigned_down_bus_id != null)
+      usedDown.set(r.assigned_down_bus_id, (usedDown.get(r.assigned_down_bus_id) ?? 0) + 1);
+  }
 
   // 고정(차량순장+고정탑승) 현황 + staleness: 지정됐지만 현재 배정이 지정 호차와
   // 다르면 = 마지막 배차에 미반영 → 재배차 필요. (스키마 변경 없이 배정 비교로 감지)
@@ -107,12 +126,24 @@ export default async function AdminBatchPage() {
   };
 
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
-  const toUn = (rows: { id: string; name: string; student_id: string; campus_id: string }[]) =>
+  const toUn = (
+    rows: {
+      id: string;
+      name: string;
+      student_id: string;
+      campus_id: string;
+      up_trip_id: number | null;
+      down_trip_id: number | null;
+    }[]
+  ): UnassignedRow[] =>
     rows.map((r) => ({
       id: r.id,
       name: r.name,
       student_id: r.student_id,
       campus_name: campusName.get(r.campus_id) ?? "—",
+      // 신청한 편 — 드롭다운을 서버 판정과 같은 집합으로 좁히는 데 쓴다.
+      up_trip_id: r.up_trip_id,
+      down_trip_id: r.down_trip_id,
     }));
 
   return (
@@ -121,10 +152,12 @@ export default async function AdminBatchPage() {
       upAssigned={upAssignedRes.count ?? 0}
       downParticipants={downPartRes.count ?? 0}
       downAssigned={downAssignedRes.count ?? 0}
-      upUnassigned={toUn(upUnRes.data ?? []) as UnassignedRow[]}
-      downUnassigned={toUn(downUnRes.data ?? []) as UnassignedRow[]}
+      upUnassigned={toUn(upUnRes.data ?? [])}
+      downUnassigned={toUn(downUnRes.data ?? [])}
       buses={(busRes.data ?? []) as BusOption[]}
-      slots={slotRes.data ?? []}
+      trips={tripRes.data ?? []}
+      usedUp={Object.fromEntries(usedUp)}
+      usedDown={Object.fromEntries(usedDown)}
       lastBatchAt={cfgRes.data?.last_batch_at ?? null}
       currentPhase={cfgRes.data?.current_phase ?? "phase1"}
       runs={(runsRes.data ?? []) as BatchRunRow[]}

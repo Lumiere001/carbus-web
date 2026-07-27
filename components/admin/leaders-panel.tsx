@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { TriangleAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { slotLabel } from "@/lib/labels";
-import type { DepartureSlot } from "@/lib/supabase/types";
+import { tripLabel } from "@/lib/labels";
+import type { EventTrip } from "@/lib/supabase/types";
 import { assignDriverBus, assignFixedBus } from "@/lib/admin/leaders";
 import { ROLE_DRIVER, ROLE_FIXED } from "@/lib/roles/special";
 
@@ -20,6 +20,8 @@ export type LeaderRow = {
   /** 새 방향 결박 시 기본 종류. 일반 역할만 있으면 null(호차 칸 비활성). */
   primaryKind: "driver" | "fixed" | null;
   up_trip_id: number | null;
+  /** 3-C 이후 하행도 편을 신청한다 — 호차 후보를 이 편으로 거른다. */
+  down_trip_id: number | null;
   ridesUp: boolean;
   ridesDown: boolean;
   /** 방향별 현재 바인딩 종류 (없으면 null). */
@@ -30,7 +32,13 @@ export type LeaderRow = {
   needUp: boolean;
   needDown: boolean;
 };
-export type BusOpt = { id: number; name: string; up_trip_id: number | null };
+/** ⚠️ 편 컬럼은 선택 필드로 만들지 마라 — 커밋 ab31181 의 교훈(드롭다운이 통째로 비었다). */
+export type BusOpt = {
+  id: number;
+  name: string;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
+};
 
 function badgeVariant(role: string): "warning" | "primary" | "mute" {
   if (role === ROLE_DRIVER) return "warning";
@@ -41,12 +49,12 @@ function badgeVariant(role: string): "warning" | "primary" | "mute" {
 export function LeadersPanel({
   leaders,
   buses,
-  slots,
+  trips,
   isMaster,
 }: {
   leaders: LeaderRow[];
   buses: BusOpt[];
-  slots: Pick<DepartureSlot, "id" | "label">[];
+  trips: Pick<EventTrip, "id" | "label">[];
   isMaster: boolean;
 }) {
   const router = useRouter();
@@ -82,7 +90,16 @@ export function LeadersPanel({
     // 이 방향의 결박 종류 (없으면 기본 종류로 새로 결박)
     const cellKind = (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind;
     if (!rides) return <span className="text-muted-2">해당 없음</span>;
-    const opts = mode === "up" ? buses.filter((b) => b.up_trip_id === row.up_trip_id) : buses;
+    // 서버(leaders.ts assertTripMatch)가 허용하는 집합과 **정확히 같아야** 한다.
+    // 예전엔 하행이 전 호차였다 — 그때는 서버도 하행을 안 봤지만, 3-C 이후엔
+    // 서버가 편을 검사하므로 목록에는 뜨는데 저장은 거부되는 상태가 된다.
+    // 현재 지정된 호차는 편이 어긋나도 남긴다(사라지면 select 표시가 깨진다).
+    const regTrip = mode === "up" ? row.up_trip_id : row.down_trip_id;
+    const opts = buses.filter((b) => {
+      if (b.id === cur) return true;
+      const busTrip = mode === "up" ? b.up_trip_id : b.down_trip_id;
+      return regTrip != null && busTrip != null && busTrip === regTrip;
+    });
     if (!isMaster) {
       const b = buses.find((x) => x.id === cur);
       return (
@@ -104,8 +121,7 @@ export function LeadersPanel({
         <option value="">미지정</option>
         {opts.map((b) => (
           <option key={b.id} value={b.id}>
-            {b.name}
-            {mode === "up" ? ` (${slotLabel(b.up_trip_id, slots)})` : ""}
+            {b.name} ({tripLabel(mode === "up" ? b.up_trip_id : b.down_trip_id, trips)})
           </option>
         ))}
       </select>

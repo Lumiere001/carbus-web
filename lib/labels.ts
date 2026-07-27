@@ -68,97 +68,14 @@ export const BOOL_FROM_KO: Record<string, boolean> = {
   체크: true,
 };
 
-/**
- * 참석 유형·상행 슬롯·하행 차량 이용을 한 셀로 묶은 조합 (SPEC §4.3).
- * 셀 인라인 편집 시 이 preset 단위로 선택하면 왕복/편도 CHECK 일관성이 항상 보장됨.
+/*
+ * (삭제됨) 참석 preset — 참석유형·상행슬롯·하행이용을 한 셀로 묶던 조합 모델.
  *
- * 슬롯이 데이터(departure_slots)라 preset 도 동적 생성: active 슬롯마다
- * {왕복·편도상행} 2개 + 공통 {편도하행} 1개. 슬롯 추가 = preset 자동 증가.
+ * 3-C 가 "상행 편 / 하행 편 두 개의 독립 선택"으로 바꾸면서 화면에서 전부 빠졌고,
+ * 남은 참조는 자기 자신을 테스트하는 테스트뿐이었다. 코드는 안 쓰이는데 테스트가
+ * 초록이면 다음 사람이 살아 있는 모델로 착각하고 되살린다. 그래서 지웠다.
+ * 왜 그 모델을 버렸는지는 아래 '운행편 선택' 절의 주석에 남아 있다.
  */
-export type AttendancePreset = {
-  key: string;
-  label: string;
-  attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
-};
-
-export const OW_DOWN_KEY = "ow_down";
-/** 버스 미이용(KTX·자차 등 개인 이동) 공통 preset. 배차·정산 통계 모두에서 제외. */
-export const SELF_KEY = "self";
-
-/** 하행편도 공통 preset (슬롯 무관). */
-const OW_DOWN_PRESET: AttendancePreset = {
-  key: OW_DOWN_KEY,
-  label: "편도 하행",
-  attendance_type: "oneway",
-  departure_slot_id: null,
-  uses_return_bus: true,
-};
-
-/** 버스 미이용 공통 preset (슬롯 무관, 하행 미이용). */
-const SELF_PRESET: AttendancePreset = {
-  key: SELF_KEY,
-  label: "참석 (버스 미이용)",
-  attendance_type: "self",
-  departure_slot_id: null,
-  uses_return_bus: false,
-};
-
-/** active 슬롯(display_order 순)으로 preset 목록 생성. 끝에 편도하행·미이용 공통 추가. */
-export function buildAttendancePresets(
-  slots: Pick<DepartureSlot, "id" | "key" | "label" | "active" | "display_order">[]
-): AttendancePreset[] {
-  const active = slots
-    .filter((s) => s.active)
-    .sort((a, b) => a.display_order - b.display_order);
-  const out: AttendancePreset[] = [];
-  for (const s of active) {
-    out.push({
-      key: `rt_${s.key}`,
-      label: `왕복 (${s.label})`,
-      attendance_type: "roundtrip",
-      departure_slot_id: s.id,
-      uses_return_bus: true,
-    });
-    out.push({
-      key: `ow_up_${s.key}`,
-      label: `편도 상행 (${s.label})`,
-      attendance_type: "oneway",
-      departure_slot_id: s.id,
-      uses_return_bus: false,
-    });
-  }
-  out.push(OW_DOWN_PRESET);
-  out.push(SELF_PRESET);
-  return out;
-}
-
-export function presetKeyOf(
-  row: {
-    attendance_type: AttendanceType;
-    departure_slot_id: number | null;
-    uses_return_bus: boolean;
-  },
-  presets: AttendancePreset[]
-): string | null {
-  return (
-    presets.find(
-      (p) =>
-        p.attendance_type === row.attendance_type &&
-        p.departure_slot_id === row.departure_slot_id &&
-        p.uses_return_bus === row.uses_return_bus
-    )?.key ?? null
-  );
-}
-
-export function presetByKey(
-  key: string,
-  presets: AttendancePreset[]
-): AttendancePreset | undefined {
-  return presets.find((p) => p.key === key);
-}
-
 
 // ── 운행편 선택 (Phase 3-C) ────────────────────────────────────
 // preset(조합 셀)을 대체한다. 왜 바꾸나:
