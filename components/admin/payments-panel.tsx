@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { setMasterReceived } from "@/lib/admin/payments";
+import { setMasterReceived, masterRemitFor } from "@/lib/admin/payments";
 
 export type ThreeWayRow = {
   campus_id: string | null;
@@ -35,9 +35,16 @@ export type BalanceRow = {
   registration_id: string;
   name: string;
   campus_name: string;
+  /** 납부 시점에 얼어붙은 청구액 (Phase 2-A). 편성을 바꿔도 안 움직인다. */
   charged_now: number;
+  /** **지금 참여 형태로 다시 계산한** 요금. 위와 다르면 그 차이가 돌려줄 돈이다. */
+  fee_now: number;
   paid_total: number;
   balance: number;
+  /** 지금 기준 돌려줘야 할 돈 (3-D). */
+  refund_due: number;
+  /** 'fee_dropped' = 낸 뒤 편성이 바뀜 · 'overpaid' = 청구보다 많이 받음 */
+  refund_reason: string | null;
   note: string | null;
 };
 
@@ -86,6 +93,27 @@ export function PaymentsPanel({
     setEditing(r.campus_id);
     setDraft({ total: String(r.master_received_total ?? 0), note: "" });
     setMsg(null);
+  }
+
+  /** 캠퍼스가 안 올린 송금분을 총단이 대신 등록. */
+  function remitFor(r: ThreeWayRow) {
+    const gap = r.diff_system_vs_campus ?? 0;
+    // 뷰가 나오는 값이라 campus_id 가 이론상 null 일 수 있다 — 그 행은 대상이 아니다.
+    if (gap <= 0 || !r.campus_id) return;
+    const campusId = r.campus_id;
+    if (
+      !confirm(
+        `${r.campus_name}가 아직 등록하지 않은 ${won(gap)}을 총단이 대신 등록합니다.\n` +
+          `실제로 돈이 들어온 것이 맞는지 통장에서 확인하셨나요?`
+      )
+    )
+      return;
+    startTransition(async () => {
+      const res = await masterRemitFor(campusId, gap);
+      if (!res.ok) return setMsg({ type: "err", text: res.message });
+      setMsg({ type: "ok", text: `${r.campus_name} 송금 ${won(gap)} 대리 등록 완료` });
+      router.refresh();
+    });
   }
 
   function save(r: ThreeWayRow) {
@@ -195,9 +223,28 @@ export function PaymentsPanel({
                           </Button>
                         </span>
                       ) : (
-                        <Button size="sm" variant="secondary" onClick={() => startEdit(r)}>
-                          입금 등록
-                        </Button>
+                        <span className="flex gap-1 justify-end">
+                          {/*
+                            캠퍼스가 송금 등록을 안 한 만큼(시스템 완납 − 캠퍼스 송금)을
+                            총단이 한 번에 대신 채운다. 실측 0행이던 기록을 살리는 장치다.
+                          */}
+                          {(r.diff_system_vs_campus ?? 0) > 0 && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={pending}
+                              title={`캠퍼스가 아직 등록하지 않은 ${won(
+                                r.diff_system_vs_campus ?? 0
+                              )}을 총단이 대신 등록합니다`}
+                              onClick={() => remitFor(r)}
+                            >
+                              송금 대신 등록
+                            </Button>
+                          )}
+                          <Button size="sm" variant="secondary" onClick={() => startEdit(r)}>
+                            입금 등록
+                          </Button>
+                        </span>
                       )}
                     </td>
                   )}
@@ -240,13 +287,17 @@ export function PaymentsPanel({
         <Card
           title="차액 확인 필요"
           subtitle={`${balances.length}명 · 합계 ${won(
-            balances.reduce((s, b) => s + b.balance, 0)
-          )}원 — 낸 금액이 현재 청구액보다 많습니다`}
+            balances.reduce((s, b) => s + b.refund_due, 0)
+          )}원 — 낸 금액이 지금 청구액보다 많습니다`}
         >
           <div className="px-5 pt-4 text-xs text-muted leading-relaxed">
             왕복으로 내고 나서 하행을 타지구 차량으로 바꾸거나 참석을 취소한 경우입니다.
             <b className="text-foreground"> 현장에서 이미 돌려드렸을 수 있으니</b> 확인이
             필요합니다. 비고에 환불이라고 적어두지 않은 분도 포함돼 있습니다.
+            <br />
+            <b className="text-foreground">편성 변경</b> 표시는 <b>납부 후에 편을 비우거나
+            줄인</b> 경우입니다 — 예전에는 이런 사람이 이 목록에 아예 안 떠서, 돌려줄 돈이
+            있는 줄도 몰랐습니다.
           </div>
           <div className="mt-3 max-h-96 overflow-y-auto divide-y divide-border">
             {balances.map((b) => (
@@ -256,13 +307,19 @@ export function PaymentsPanel({
                     {b.campus_name}
                   </Badge>
                   <span className="text-sm text-foreground">{b.name}</span>
+                  {b.refund_reason === "fee_dropped" && (
+                    <Badge variant="warning" dot={false}>편성 변경</Badge>
+                  )}
                   <span className="ml-auto text-sm font-medium text-warning tabular-nums">
-                    +{won(b.balance)}원
+                    +{won(b.refund_due)}원
                   </span>
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-2">
                   <span className="tabular-nums">
-                    낸 돈 {won(b.paid_total)}원 · 현재 청구 {won(b.charged_now)}원
+                    낸 돈 {won(b.paid_total)}원 · 지금 청구 {won(b.fee_now)}원
+                    {b.charged_now !== b.fee_now && (
+                      <> (납부 당시 {won(b.charged_now)}원)</>
+                    )}
                   </span>
                   {b.note && (
                     <span className="truncate max-w-full">· {b.note}</span>

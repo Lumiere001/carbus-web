@@ -307,6 +307,41 @@ export function CampusPaymentsPanel({
         )}
       </Card>
 
+      {/*
+        송금 등록 유도 (사용자 피드백: "임역원이 송금 등록을 안 하더라").
+        실측으로 운영 `campus_remittances` 가 **0행**이었다 — 기능은 있는데 아무도 안 썼다.
+        원인은 "내 일이 끝난 뒤 추가로 하는 일"이라 미뤄지는 것이라, 걷은 돈이 손에
+        남아 있는 동안 계속 눈에 띄게 하고, **한 번 눌러 전액 등록**할 수 있게 한다.
+      */}
+      {balance > 0 && (
+        <div className="rounded-lg border border-warning-border bg-warning-bg px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-warning">
+              걷은 돈 중 <b className="tabular-nums">{won(balance)}원</b>이 아직 총단에
+              등록되지 않았습니다.
+              <span className="block text-xs mt-0.5 text-warning/90">
+                실제로 보냈더라도 여기 등록해야 총단 장부와 맞춰집니다 — 나중에 돈 흐름을
+                따라갈 때 이 기록이 근거가 됩니다.
+              </span>
+            </div>
+            <Button
+              size="sm"
+              disabled={pending}
+              onClick={() => {
+                setDraft({ amount: String(balance), note: "" });
+                // 금액만 채워주고 저장은 사람이 누르게 둔다 — 실제로 보냈는지는
+                // 시스템이 알 수 없다(현금·계좌이체가 섞인다).
+                document
+                  .getElementById("remit-amount")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              {won(balance)}원 등록하기
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* 총단 송금 추가 */}
         <Card title="총단에게 송금 등록" subtitle="이번에 총단 통장으로 보낸 금액을 추가">
@@ -314,6 +349,7 @@ export function CampusPaymentsPanel({
             <label className="block text-sm">
               <span className="text-muted">보낸 금액</span>
               <input
+                id="remit-amount"
                 type="number"
                 value={draft.amount}
                 onChange={(e) =>

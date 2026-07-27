@@ -37,9 +37,13 @@ export default async function AdminPaymentsPage() {
     // 청구액이 줄었는데 이미 받은 돈은 그대로인 경우 — 환불 확인 대상.
     supabase
       .from("v_payment_balance")
-      .select("registration_id, name, campus_id, charged_now, paid_total, balance, note")
-      .gt("balance", 0)
-      .order("balance", { ascending: false }),
+      .select(
+        "registration_id, name, campus_id, charged_now, fee_now, paid_total, balance, refund_due, refund_reason, note"
+      )
+      // 3-D: 장부 잔액이 아니라 **지금 기준 환불 대상**으로 고른다. 납부 후 편성을
+      // 바꾼 사람은 장부가 안 움직여서 예전엔 이 목록에 아예 안 떴다.
+      .gt("refund_due", 0)
+      .order("refund_due", { ascending: false }),
   ]);
 
   const orderOf = new Map(
@@ -79,8 +83,11 @@ export default async function AdminPaymentsPage() {
     name: (b.name as string) ?? "—",
     campus_name: campusName.get(b.campus_id as string) ?? "—",
     charged_now: b.charged_now ?? 0,
+    fee_now: b.fee_now ?? 0,
     paid_total: b.paid_total ?? 0,
     balance: b.balance ?? 0,
+    refund_due: b.refund_due ?? 0,
+    refund_reason: b.refund_reason ?? null,
     note: b.note ?? null,
   }));
 
