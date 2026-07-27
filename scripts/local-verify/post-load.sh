@@ -57,6 +57,29 @@ for m in "${MIGRATIONS[@]}"; do
   run_sql_file "$REPO_ROOT/$m"
 done
 
+echo "── ENABLE ALWAYS 복구"
+# ⚠️ 위 마이그레이션들의 backfill 이 `alter table … enable trigger user` 를 쓴다.
+#    그 한 줄이 **ENABLE ALWAYS 트리거를 조용히 ORIGIN 으로 내린다.** 그러면
+#    다음 백업 적재(replica 모드)에서 파생·가드 트리거가 통째로 안 돌고,
+#    행사 쓰기 가드는 방어선이 사라진 줄도 모르게 없어진다.
+#    재실행 순서상 여기가 마지막이므로 여기서 다시 올린다.
+docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q <<'SQL'
+do $$
+declare t text;
+begin
+  alter table public.registrations enable always trigger trg_reg_000_derive;
+  alter table public.registrations enable always trigger trg_reg_event_scope;
+  alter table public.events        enable always trigger trg_events_sync_active;
+  foreach t in array array[
+    'registrations','buses','event_trips','batch_runs',
+    'campus_payment_settlements','campus_remittances','registration_audit','payment_ledger'
+  ] loop
+    execute format('alter table public.%I enable always trigger trg_%s_event_writable', t, t);
+  end loop;
+end $$;
+SQL
+echo "  OK — 파생·가드 트리거 ENABLE ALWAYS"
+
 echo "── 정합성 확인"
 # 행수만 보면 "적재 성공"인데 실제로는 망가진 상태가 있다.
 # 실제 사례: 컬럼 rename(buses.departure_slot_id → up_trip_id)을 로더가 못 따라가
@@ -111,6 +134,20 @@ begin
   if v_bad > 0 then
     raise exception
       '활성인데 쓰기 불가 상태인 행사 %건 — 동기화 트리거가 ENABLE ALWAYS 인지 확인하세요', v_bad;
+  end if;
+
+  -- 행사 쓰기 가드가 전부 살아 있는가. 하나라도 ORIGIN 이면 그 테이블은
+  -- 다음 적재에서 무방비다(그리고 그 사실이 아무 데도 안 드러난다).
+  select count(*) into v_bad
+    from unnest(array['registrations','buses','event_trips','batch_runs',
+                      'campus_payment_settlements','campus_remittances',
+                      'registration_audit','payment_ledger']) as t(name)
+   where not exists (
+     select 1 from pg_trigger tg join pg_class c on c.oid = tg.tgrelid
+      where c.relname = t.name and tg.tgname = 'trg_' || t.name || '_event_writable'
+        and tg.tgenabled = 'A');
+  if v_bad > 0 then
+    raise exception '행사 쓰기 가드가 ENABLE ALWAYS 가 아닌 테이블 %개', v_bad;
   end if;
 end $$;
 SQL

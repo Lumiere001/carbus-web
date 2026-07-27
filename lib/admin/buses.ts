@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { writableEventId } from "@/lib/events/current";
+import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type BusRow = Database["public"]["Tables"]["buses"]["Row"];
@@ -96,7 +96,7 @@ export async function createBus(
     0
   );
 
-  const ev = await writableEventId(supabase); // Phase 4-3 — 기본값에 기대지 않는다
+  const ev = await currentEventId(supabase); // Phase 4-3 — 기본값에 기대지 않는다
   if (!ev.ok) return { ok: false, message: ev.message };
 
   const { data, error } = await supabase

@@ -1,7 +1,28 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { eventIdFromPath } from "@/lib/events/route";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Client = SupabaseClient<Database>;
+
+/**
+ * 이 화면의 쓰기가 향해야 할 행사.
+ *
+ * **화면이 보는 행사와 저장 대상은 같아야 한다.** 관리자 화면은 주소창이
+ * `/admin/e/<행사>/...` 라 거기서 읽고, 임역원 화면처럼 행사가 주소에 없는 곳은
+ * 진행 중 행사로 간다.
+ *
+ * 이게 어긋나면 DB 가 거부한다(guard_event_writable 의 열람·쓰기 대조). 즉
+ * "화면은 지난 행사를 보는데 저장은 진행 중 행사로 조용히 성공"이 불가능해진다 —
+ * 폴더화에서 가장 발견하기 어려운 사고가 바로 그거였다.
+ */
+export async function currentEventId(
+  supabase: Client
+): Promise<{ ok: true; id: string } | { ok: false; message: string }> {
+  const fromUrl =
+    typeof window === "undefined" ? null : eventIdFromPath(window.location.pathname);
+  if (fromUrl) return { ok: true, id: fromUrl };
+  return writableEventId(supabase);
+}
 
 /**
  * 지금 **쓰기가 허용된** 행사 id.

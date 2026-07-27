@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { writableEventId } from "@/lib/events/current";
+import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type TripRow = Database["public"]["Tables"]["event_trips"]["Row"];
@@ -64,7 +64,7 @@ export async function createTrip(input: NewTripInput): Promise<Result<TripRow>> 
     0
   );
 
-  const ev = await writableEventId(supabase);
+  const ev = await currentEventId(supabase);
   if (!ev.ok) return { ok: false, message: ev.message };
 
   const { data, error } = await supabase

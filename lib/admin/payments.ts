@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { writableEventId } from "@/lib/events/current";
+import { currentEventId } from "@/lib/events/current";
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -19,7 +19,7 @@ export async function setMasterReceived(
   //    맡기고 페이로드에서 뺐는데, 4-4 에서 그 기본값을 지운다. 그때 이 upsert 가
   //    조용히 깨지면 **금전 사고**다(입금액이 엉뚱한 행사에 붙거나 아예 안 들어간다).
   //    그래서 명시로 바꾼다. 지금 값은 기본값이 넣던 것과 같다.
-  const ev = await writableEventId(supabase);
+  const ev = await currentEventId(supabase);
   if (!ev.ok) return ev;
   const { error } = await supabase
     .from("campus_payment_settlements")

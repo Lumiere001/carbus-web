@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { writableEventId } from "@/lib/events/current";
+import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type RegistrationRow =
@@ -24,7 +24,7 @@ export async function insertRegistration(
   // 그 기본값을 지운다. 호출부가 이미 넣어줬으면 그대로 존중한다.
   let event_id = input.event_id;
   if (!event_id) {
-    const ev = await writableEventId(supabase);
+    const ev = await currentEventId(supabase);
     if (!ev.ok) return { ok: false, message: ev.message };
     event_id = ev.id;
   }
