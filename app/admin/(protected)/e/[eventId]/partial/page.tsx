@@ -1,45 +1,60 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { attendanceSummary } from "@/lib/labels";
-import type { AttendanceType, DepartureSlot } from "@/lib/supabase/types";
+import {
+  transportBadge,
+  type TransportMode,
+  type TransportStatus,
+} from "@/lib/transport/labels";
+import type { EventTrip } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
-type SlotMini = Pick<DepartureSlot, "id" | "label">;
-type CampusMini = { id: string; name: string; display_order: number };
-type Reg = {
-  id: string;
-  name: string;
-  student_id: string;
-  campus_id: string;
-  attendance_type: AttendanceType;
-  up_trip_id: number | null;
-  down_trip_id: number | null;
-  note: string | null;
-};
+/**
+ * 부분 참석 · 개인 이동 (4단계 재설계).
+ *
+ * 사용자 피드백: **"부분참도 따로 모아서 볼 수 있어서 괜찮았는데 정보가 너무
+ * 산발적이라 보기가 어려웠었어."**
+ *
+ * 무엇이 산발적이었나 — 편도/미이용을 두 섹션으로 나누고, 각 섹션을 **캠퍼스마다
+ * 카드로 또 쪼갰다.** 16개 캠퍼스면 카드가 최대 32개가 되고, "누가 왜 버스를 안 타나"를
+ * 보려면 그걸 다 훑어야 했다. 세로로 흩어진 것은 서로 비교가 안 된다.
+ *
+ * 그래서 **한 표**로 합쳤다. 캠퍼스는 열 하나가 되고, 유형은 필터가 된다.
+ * 그리고 이동 수단을 비고 텍스트가 아니라 3단계에서 만든 구조(transport_legs)에서
+ * 읽는다 — "무엇으로 오는지 모르는 사람"을 눈으로 찾지 않아도 된다.
+ */
 
-function onewayLabel(r: Reg, slots: SlotMini[]): string {
-  // 편도: 상행만(하행 미이용) 또는 하행만(슬롯 없음)
-  // 하행도 편 이름을 보여준다 — 여러 편으로 나뉘면 어느 편인지가 중요해진다.
-  return attendanceSummary(r.up_trip_id, r.down_trip_id, slots);
-  return "편도";
-}
+type Filter = "all" | "oneway" | "self" | "pending" | "missing";
 
-/** 캠퍼스 id 기준 그룹핑. */
-function groupByCampus(regs: Reg[]): Map<string, Reg[]> {
-  const m = new Map<string, Reg[]>();
-  for (const r of regs) {
-    const list = m.get(r.campus_id) ?? [];
-    list.push(r);
-    m.set(r.campus_id, list);
-  }
-  return m;
-}
+const FILTERS: { key: Filter; label: string; hint: string }[] = [
+  { key: "all", label: "전체", hint: "편도 + 개인 이동 전부" },
+  { key: "oneway", label: "편도", hint: "갈 때나 올 때 한쪽만 버스를 타는 사람" },
+  { key: "self", label: "개인 이동", hint: "우리 버스를 아예 안 타는 사람" },
+  {
+    key: "pending",
+    label: "확정 대기",
+    hint: "타지구 차량인데 아직 확정 안 됨 — 좌석을 잡아둔 상태",
+  },
+  {
+    key: "missing",
+    label: "수단 미확인",
+    hint: "버스를 안 타는데 무엇으로 오는지 기록이 없음",
+  },
+];
 
-export default async function AdminPartialPage() {
+export default async function AdminPartialPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ f?: string }>;
+}) {
+  const { f } = await searchParams;
+  const filter: Filter = FILTERS.some((x) => x.key === f) ? (f as Filter) : "all";
+
   const supabase = await createClient();
-  const [regRes, campusRes, slotRes] = await Promise.all([
+  const [regRes, campusRes, tripRes, legRes, unitRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
@@ -48,178 +63,191 @@ export default async function AdminPartialPage() {
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
       .in("attendance_type", ["oneway", "self"])
-      .order("campus_id"),
+      .order("name"),
     supabase.from("campuses").select("id, name, display_order"),
     supabase.from("event_trips").select("id, label").order("direction").order("display_order"),
+    supabase
+      .from("transport_legs")
+      .select("registration_id, direction, mode, status, via_unit_id"),
+    supabase.from("org_units").select("id, name"),
   ]);
-  const all = (regRes.data ?? []) as Reg[];
-  const slots = (slotRes.data ?? []) as SlotMini[];
-  const campuses = ((campusRes.data ?? []) as CampusMini[]).sort(
-    (a, b) => a.display_order - b.display_order
+
+  const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
+  const campusOrder = new Map(
+    (campusRes.data ?? []).map((c) => [c.id, c.display_order])
   );
+  const trips = (tripRes.data ?? []) as Pick<EventTrip, "id" | "label">[];
+  const unitName = new Map((unitRes.data ?? []).map((u) => [u.id, u.name]));
 
-  const oneway = all.filter((r) => r.attendance_type === "oneway");
-  const self = all.filter((r) => r.attendance_type === "self");
-  const onewayByCampus = groupByCampus(oneway);
-  const selfByCampus = groupByCampus(self);
+  type Leg = { mode: TransportMode; status: TransportStatus; via: string | null };
+  const legs = new Map<string, Leg>();
+  for (const l of legRes.data ?? []) {
+    legs.set(`${l.registration_id}:${l.direction}`, {
+      mode: l.mode as TransportMode,
+      status: l.status as TransportStatus,
+      via: l.via_unit_id ? unitName.get(l.via_unit_id) ?? null : null,
+    });
+  }
 
-  // 칩 집계: 비고 텍스트 파싱 없이 컬럼값만으로 계산 (의미 분류는 스키마 생긴 뒤에).
-  const onewayUp = oneway.filter(
-    (r) => r.up_trip_id !== null && r.down_trip_id === null
-  ).length;
-  const onewayDown = oneway.filter(
-    (r) => r.up_trip_id === null && r.down_trip_id !== null
-  ).length;
-  const selfMissingNote = self.filter((r) => !r.note?.trim()).length;
+  const rows = (regRes.data ?? []).map((r) => {
+    const up = legs.get(`${r.id}:up`) ?? null;
+    const down = legs.get(`${r.id}:down`) ?? null;
+    const pending = up?.status === "pending" || down?.status === "pending";
+    // "무엇으로 오는지 모른다" = 우리 버스를 아예 안 타는데(self) 이동수단 기록도
+    // 비고도 없는 사람. 예전엔 비고 유무로만 판단해서, 비고에 딴 얘기가 적혀 있으면
+    // 기재된 것으로 쳤다.
+    const missing = r.attendance_type === "self" && !up && !down && !r.note?.trim();
+    return {
+      ...r,
+      up,
+      down,
+      pending,
+      missing,
+      campus: campusName.get(r.campus_id) ?? "—",
+      order: campusOrder.get(r.campus_id) ?? 999,
+    };
+  });
+
+  const counts: Record<Filter, number> = {
+    all: rows.length,
+    oneway: rows.filter((r) => r.attendance_type === "oneway").length,
+    self: rows.filter((r) => r.attendance_type === "self").length,
+    pending: rows.filter((r) => r.pending).length,
+    missing: rows.filter((r) => r.missing).length,
+  };
+
+  const shown = rows
+    .filter((r) => {
+      if (filter === "all") return true;
+      if (filter === "oneway") return r.attendance_type === "oneway";
+      if (filter === "self") return r.attendance_type === "self";
+      if (filter === "pending") return r.pending;
+      return r.missing;
+    })
+    .sort((a, b) => a.order - b.order || (a.name < b.name ? -1 : 1));
+
+  const chip = (active: boolean) =>
+    "px-3 py-1 rounded-lg text-sm border transition " +
+    (active
+      ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+      : "border-border text-muted hover:bg-surface-2");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-foreground">
-          부분 참석자 · 개인 이동
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground">부분 참석 · 개인 이동</h2>
         <p className="text-sm text-muted mt-0.5">
-          편도(상행만 / 하행만) 신청자 + 버스 미이용(KTX·자차 등)을 한 화면에서 확인.
+          한쪽만 버스를 타거나, 우리 버스를 아예 안 타는 사람을 한 표에서 봅니다.
         </p>
       </div>
 
-      {/* 섹션 1: 편도 (부분 참석) */}
-      <section className="space-y-3">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <h3 className="text-base font-semibold text-foreground">
-            부분 참석자 (편도)
-          </h3>
-          <span className="text-sm text-muted">
-            <b className="tabular-nums text-foreground">{oneway.length}</b>명
-          </span>
-          <Badge variant="mute">상행만 {onewayUp}</Badge>
-          <Badge variant="mute">하행만 {onewayDown}</Badge>
-        </div>
-        {oneway.length === 0 ? (
-          <Card className="p-5">
-            <p className="text-sm text-muted">편도 신청자가 없습니다.</p>
-          </Card>
-        ) : (
-          campuses
-            .filter((c) => (onewayByCampus.get(c.id)?.length ?? 0) > 0)
-            .map((c) => {
-              const members = onewayByCampus.get(c.id) ?? [];
-              return (
-                <Card key={c.id} title={c.name} subtitle={`${members.length}명`}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[520px] text-sm">
-                      <thead>
-                        <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
-                          <th className="px-4 py-2.5">이름</th>
-                          <th className="px-4 py-2.5">학번</th>
-                          <th className="px-4 py-2.5">유형</th>
-                          <th className="px-4 py-2.5">비고</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {members.map((r) => (
-                          <tr key={r.id} className="border-t border-border">
-                            <td className="px-4 py-2 text-foreground whitespace-nowrap">
-                              {r.name}
-                            </td>
-                            <td className="px-4 py-2 text-muted-2">{r.student_id}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <Badge variant="mute">{onewayLabel(r, slots)}</Badge>
-                            </td>
-                            <td className="px-4 py-2 text-muted-2 whitespace-pre-wrap break-words max-w-[20rem]">
-                              {r.note?.trim() ? r.note : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </Card>
-              );
-            })
-        )}
-      </section>
-
-      {/* 섹션 2: 미이용 (개인 이동) */}
-      <section className="space-y-3">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <h3 className="text-base font-semibold text-foreground">
-            개인 이동 (버스 미이용)
-          </h3>
-          <span className="text-sm text-muted">
-            <b className="tabular-nums text-foreground">{self.length}</b>명
-          </span>
-          {selfMissingNote > 0 && (
-            <Badge variant="warning">비고 미기재 {selfMissingNote}</Badge>
+      {(counts.missing > 0 || counts.pending > 0) && (
+        <div className="flex flex-col gap-2">
+          {counts.missing > 0 && (
+            <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
+              <b>{counts.missing}명</b>이 우리 버스를 안 타는데{" "}
+              <b>무엇으로 오는지 기록이 없습니다.</b> 전체 순장/순원 화면에서 이동수단을
+              지정해 주세요 — 현장에서 “안 왔는데 왜 안 왔는지 모르는” 상황을 막습니다.
+            </div>
           )}
-          <span className="text-xs text-muted-2">
-            · KTX·자차 등 버스 안 타는 분 (전체 참석)
-          </span>
+          {counts.pending > 0 && (
+            <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
+              타지구 차량 <b>확정 대기 {counts.pending}명</b> — 그동안 우리 버스 좌석을
+              잡아두고 있습니다. 확정되면 그 방향 운행편을 비워 자리를 반납하세요.
+            </div>
+          )}
         </div>
-        {self.length === 0 ? (
-          <Card className="p-5">
-            <p className="text-sm text-muted">버스 미이용 신청자가 없습니다.</p>
-          </Card>
-        ) : (
-          campuses
-            .filter((c) => (selfByCampus.get(c.id)?.length ?? 0) > 0)
-            .map((c) => {
-              const members = selfByCampus.get(c.id) ?? [];
-              const missingNote = members.filter((m) => !m.note?.trim()).length;
-              return (
-                <Card
-                  key={c.id}
-                  title={c.name}
-                  subtitle={
-                    missingNote > 0
-                      ? `${members.length}명 · 이동 수단 미기재 ${missingNote}건`
-                      : `${members.length}명`
-                  }
-                >
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[480px] text-sm">
-                      <thead>
-                        <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
-                          <th className="px-4 py-2.5">이름</th>
-                          <th className="px-4 py-2.5">학번</th>
-                          <th className="px-4 py-2.5">이동 수단 (비고)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {members.map((r) => {
-                          const empty = !r.note?.trim();
-                          return (
-                            <tr
-                              key={r.id}
-                              className={
-                                "border-t border-border " +
-                                (empty ? "bg-warning-bg/30" : "")
-                              }
+      )}
+
+      <div className="flex flex-wrap gap-1.5">
+        {FILTERS.map((x) => (
+          <Link
+            key={x.key}
+            href={x.key === "all" ? "?" : `?f=${x.key}`}
+            className={chip(filter === x.key)}
+            title={x.hint}
+          >
+            {x.label} <span className="tabular-nums text-xs">{counts[x.key]}</span>
+          </Link>
+        ))}
+      </div>
+
+      <Card
+        title={FILTERS.find((x) => x.key === filter)!.label}
+        subtitle={`${shown.length}명 · 캠퍼스 순`}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
+                <th className="px-4 py-2.5">캠퍼스</th>
+                <th className="px-4 py-2.5">이름</th>
+                <th className="px-4 py-2.5">학번</th>
+                <th className="px-4 py-2.5">버스 이용</th>
+                <th className="px-4 py-2.5">이동 수단</th>
+                <th className="px-4 py-2.5">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center text-muted-2 py-8">
+                    해당하는 사람이 없습니다.
+                  </td>
+                </tr>
+              )}
+              {shown.map((r) => {
+                const upB = transportBadge(r.up?.mode, r.up?.status, r.up?.via);
+                const downB = transportBadge(r.down?.mode, r.down?.status, r.down?.via);
+                return (
+                  <tr
+                    key={r.id}
+                    className={
+                      "border-t border-border " + (r.missing ? "bg-warning-bg/30" : "")
+                    }
+                  >
+                    <td className="px-4 py-2 text-muted-2 whitespace-nowrap">{r.campus}</td>
+                    <td className="px-4 py-2 text-foreground whitespace-nowrap">{r.name}</td>
+                    <td className="px-4 py-2 text-muted-2">{r.student_id}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <Badge variant="mute" dot={false}>
+                        {attendanceSummary(r.up_trip_id, r.down_trip_id, trips)}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2">
+                      {upB || downB ? (
+                        <span className="inline-flex flex-wrap gap-1">
+                          {upB && (
+                            <Badge variant={upB.tone} dot={false} title={`갈 때 — ${upB.title}`}>
+                              갈 {upB.text}
+                            </Badge>
+                          )}
+                          {downB && (
+                            <Badge
+                              variant={downB.tone}
+                              dot={false}
+                              title={`올 때 — ${downB.title}`}
                             >
-                              <td className="px-4 py-2 text-foreground whitespace-nowrap">
-                                {r.name}
-                              </td>
-                              <td className="px-4 py-2 text-muted-2">{r.student_id}</td>
-                              <td className="px-4 py-2 text-muted-2 whitespace-pre-wrap break-words max-w-[24rem]">
-                                {empty ? (
-                                  <span className="text-warning">
-                                    ⚠ 이동 수단 미기재 — 비고에 적어주세요
-                                  </span>
-                                ) : (
-                                  r.note
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </Card>
-              );
-            })
-        )}
-      </section>
+                              올 {downB.text}
+                            </Badge>
+                          )}
+                        </span>
+                      ) : r.missing ? (
+                        <span className="text-warning text-xs">⚠ 기록 없음</span>
+                      ) : (
+                        <span className="text-muted-2">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-muted-2 whitespace-pre-wrap break-words max-w-[22rem]">
+                      {r.note?.trim() ? r.note : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

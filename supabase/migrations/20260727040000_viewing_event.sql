@@ -180,14 +180,14 @@ begin
   end if;
   raise notice '검증 ④: 열람·쓰기 대조 OK';
 
-  perform set_config('request.headers', '', true);
+  perform set_config('request.headers', '{}', true);
 
   -- ⑤ 뷰가 헤더를 따라간다 — 지난 행사를 보면 그 행사 기준으로 센다
   perform set_config('request.headers',
                      json_build_object('x-carbus-event', v_past::text)::text, true);
   select count(*) into v_cnt from v_campus_stats;
   raise notice '검증 ⑤: 지난 행사 뷰 조회 %행 (예외 없이 동작)', v_cnt;
-  perform set_config('request.headers', '', true);
+  perform set_config('request.headers', '{}', true);
 
   raise exception '__검증완료_롤백';
 exception when others then

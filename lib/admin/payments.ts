@@ -41,3 +41,26 @@ export async function setMasterReceived(
   }
   return { ok: true };
 }
+
+/**
+ * 총단이 캠퍼스를 대신해 송금을 등록한다 (4단계 — 송금 등록 유도).
+ *
+ * 왜 필요한가: 실측으로 운영 `campus_remittances` 가 **0행**이었다. 임역원이 안 해서
+ * 돈 흐름 추적이 통째로 비어 있었다. 기능을 없애자니 나중에 흐름을 못 따라가고,
+ * 두자니 안 채워진다 — 그래서 **총단이 통장 내역을 보고 대신 채운다.**
+ * 등록 주체는 note 에 남아 나중에 구분된다.
+ */
+export async function masterRemitFor(
+  campusId: string,
+  amount: number,
+  note?: string | null
+): Promise<Result> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("master_remit_add", {
+    p_campus_id: campusId,
+    p_amount: amount,
+    p_note: note ?? undefined,
+  });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}

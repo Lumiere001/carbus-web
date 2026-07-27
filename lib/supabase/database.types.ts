@@ -1278,13 +1278,6 @@ export type Database = {
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["up_trip_id"]
-            isOneToOne: false
-            referencedRelation: "departure_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "departure_slots"
@@ -1294,7 +1287,7 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
-            referencedRelation: "event_trips"
+            referencedRelation: "departure_slots"
             referencedColumns: ["id"]
           },
           {
@@ -1308,8 +1301,8 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
-            referencedRelation: "v_day_capacity"
-            referencedColumns: ["slot_id"]
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
@@ -1321,13 +1314,20 @@ export type Database = {
           {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["departure_slot_id"]
+            columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
@@ -1440,10 +1440,13 @@ export type Database = {
           charged_now: number | null
           charged_total: number | null
           event_id: string | null
+          fee_now: number | null
           name: string | null
           note: string | null
           paid_total: number | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
+          refund_due: number | null
+          refund_reason: string | null
           refunded_total: number | null
           registration_id: string | null
           waived_total: number | null
@@ -1595,6 +1598,10 @@ export type Database = {
       }
       is_event_writable: { Args: { p_event: string }; Returns: boolean }
       lock_event_writes: { Args: { p_event_id: string }; Returns: undefined }
+      master_remit_add: {
+        Args: { p_amount: number; p_campus_id: string; p_note?: string }
+        Returns: undefined
+      }
       set_attendance: {
         Args: { p_field: string; p_reg_id: string; p_value: boolean }
         Returns: undefined
