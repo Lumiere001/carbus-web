@@ -18,11 +18,14 @@ export default async function AdminProtectedLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single<{ role: UserRole }>();
+  const [{ data: profile }, { data: event }] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", user.id).single<{ role: UserRole }>(),
+    // 지금 어느 행사를 보고 있는지 — 헤더에 상시 표시한다.
+    // 지금까지 행사 이름이 보이는 화면은 /admin/control 하나뿐이었다. 그래서
+    // master 가 행사를 전환하면 **다른 사람 화면도 같이 바뀌는데 아무도 그걸 몰랐다.**
+    // 행사 폴더화(Phase 4)의 첫 단계이자, 어떤 설계로 가든 버려지지 않는 작업이다.
+    supabase.from("events").select("name, is_active").eq("is_active", true).maybeSingle(),
+  ]);
 
   const role: UserRole = profile?.role ?? "guest";
   if (role !== "viewer" && role !== "master") {
@@ -52,6 +55,14 @@ export default async function AdminProtectedLayout({
                 {role}
               </span>
             </h1>
+            {/* 지금 보고 있는 행사. 전환은 전역이라, 이게 안 보이면 화면이 언제
+                과거로 갔는지 알 방법이 없다. */}
+            <span
+              className="text-xs px-2 py-0.5 rounded-md bg-primary-700/70 text-primary-100 whitespace-nowrap shrink-0 max-w-[14rem] truncate"
+              title={event?.name ?? undefined}
+            >
+              {event?.name ?? "진행 중 행사 없음"}
+            </span>
             <span className="hidden md:inline text-xs text-primary-400">|</span>
             <nav className="flex gap-3.5 w-full md:w-auto overflow-x-auto whitespace-nowrap pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
               <a href="/admin" className={navLink}>

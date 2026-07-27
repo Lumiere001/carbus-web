@@ -487,6 +487,9 @@ export type Database = {
           origin: string | null
           starts_on: string | null
           subtitle: string | null
+          unlock_reason: string | null
+          unlock_until: string | null
+          write_mode: Database["public"]["Enums"]["event_write_mode"]
         }
         Insert: {
           created_at?: string
@@ -500,6 +503,9 @@ export type Database = {
           origin?: string | null
           starts_on?: string | null
           subtitle?: string | null
+          unlock_reason?: string | null
+          unlock_until?: string | null
+          write_mode?: Database["public"]["Enums"]["event_write_mode"]
         }
         Update: {
           created_at?: string
@@ -513,6 +519,9 @@ export type Database = {
           origin?: string | null
           starts_on?: string | null
           subtitle?: string | null
+          unlock_reason?: string | null
+          unlock_until?: string | null
+          write_mode?: Database["public"]["Enums"]["event_write_mode"]
         }
         Relationships: []
       }
@@ -1458,9 +1467,14 @@ export type Database = {
           reg_count: number
         }[]
       }
+      lock_event_writes: { Args: { p_event_id: string }; Returns: undefined }
       set_attendance: {
         Args: { p_field: string; p_reg_id: string; p_value: boolean }
         Returns: undefined
+      }
+      unlock_event_writes: {
+        Args: { p_event_id: string; p_minutes?: number; p_reason: string }
+        Returns: string
       }
       update_event_fares: {
         Args: {
@@ -1470,9 +1484,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      writable_event_id: { Args: never; Returns: string }
     }
     Enums: {
       attendance_type: "roundtrip" | "oneway" | "self"
+      event_write_mode: "live" | "closed"
       participation_status: "registered" | "cancelled"
       payment_status: "unpaid" | "paid" | "waived"
       request_type: "insert" | "update" | "delete"
@@ -1609,6 +1625,7 @@ export const Constants = {
   public: {
     Enums: {
       attendance_type: ["roundtrip", "oneway", "self"],
+      event_write_mode: ["live", "closed"],
       participation_status: ["registered", "cancelled"],
       payment_status: ["unpaid", "paid", "waived"],
       request_type: ["insert", "update", "delete"],
