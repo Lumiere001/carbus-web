@@ -8,14 +8,75 @@
 """
 import json, subprocess, sys, pathlib
 
-BACKUP = pathlib.Path("/Users/east_star/Backups/carbus-web/2026-07-21_0038-pre-phase1")
+BACKUP_ROOT = pathlib.Path("/Users/east_star/Backups/carbus-web")
+
+
+def latest_backup() -> pathlib.Path:
+    """가장 최근 백업 디렉터리. 인자로 경로를 주면 그걸 쓴다.
+
+    상수로 박아두면 Phase 가 넘어갈 때마다 낡는다(실제로 pre-phase1 을 가리킨 채
+    Phase 2-B 까지 왔다). 디렉터리명이 YYYY-MM-DD_HHMM 접두사라 이름순 정렬이
+    곧 시간순이다.
+    """
+    if len(sys.argv) > 1:
+        p = pathlib.Path(sys.argv[1]).expanduser()
+        if not p.is_dir():
+            sys.exit(f"백업 경로가 없습니다: {p}")
+        return p
+    dirs = sorted((d for d in BACKUP_ROOT.iterdir()
+                   if d.is_dir() and (d / "_manifest.json").exists()),
+                  key=lambda d: d.name)
+    if not dirs:
+        sys.exit(f"백업이 없습니다: {BACKUP_ROOT}")
+    return dirs[-1]
+
+
+BACKUP = latest_backup()
 CONTAINER = "supabase_db_carbus-web"
 # FK 순서 무관(replica 모드)이지만 가독성을 위해 논리 순서대로
 TABLES = [
-    "campuses", "departure_slots", "buses", "profiles", "registrations",
-    "role_labels", "system_config", "batch_runs", "registration_audit",
-    "campus_remittances", "campus_payment_settlements",
+    "events", "campuses", "org_units", "event_trips", "buses",
+    "profiles", "registrations", "role_labels", "system_config",
+    "batch_runs", "registration_audit",
+    "campus_remittances", "campus_payment_settlements", "payment_ledger",
 ]
+
+# 백업하지 않아도 되는 테이블 (마이그레이션이 전량 생성 = 데이터가 아니라 스키마의 일부)
+NO_BACKUP_NEEDED: set[str] = set()
+
+# 테이블이 rename 된 경우, 그 전에 뜬 백업 파일의 옛 이름.
+# 옛 백업으로도 재현이 되어야 한다 — 운영이 아직 rename 전일 수도 있으므로.
+# 백업 JSON 에 없는 컬럼은 로더가 자동으로 빼므로 신규 컬럼은 DEFAULT 가 채운다
+# (예: event_trips.direction 은 'up' 으로 앉는다 — 옛 departure_slots 가 곧 상행이었다).
+RENAMED_FROM = {
+    "event_trips": "departure_slots",
+}
+
+# 컬럼이 rename 된 경우: {테이블: {백업의 옛 키: 현재 컬럼명}}.
+# 테이블 rename 만 처리하면 컬럼은 조용히 버려진다 — jsonb_populate_recordset 은
+# JSON 키를 컬럼명으로 매칭하므로, 옛 키는 어떤 컬럼에도 안 붙고 NULL 이 된다.
+# 실제로 buses.departure_slot_id → up_trip_id 를 놓쳐 전 차량 상행 편이 NULL 이 됐고,
+# 상행 배차가 0건이 되는데도 적재는 "PASS" 로 끝났다(행수만 보므로).
+RENAMED_COLUMNS = {
+    "buses": {"departure_slot_id": "up_trip_id"},
+}
+
+# 어떤 테이블을 넣은 **직후** 돌려야 하는 SQL.
+# 왜 필요한가: registrations 의 파생 트리거가 "하행 편"을 찾는데, 백업은 3-A 이전에
+# 떠서 하행 편 행이 없다. 그 편은 마이그레이션이 events 를 보고 만드는데, 그건
+# 적재가 다 끝난 뒤(post-load.sh)라 순서가 뒤집힌다.
+# → event_trips 를 넣은 직후 하행 편을 만들어 둔다. 마이그레이션과 같은 SQL 이라
+#   나중에 다시 돌아도 (where not exists) 아무 일도 안 일어난다.
+AFTER_TABLE_SQL = {
+    "event_trips": """
+        insert into public.event_trips (key, label, display_order, active, event_id, direction)
+        select 'return', '귀가', 100, true, e.id, 'down'
+          from public.events e
+         where not exists (
+           select 1 from public.event_trips t
+            where t.event_id = e.id and t.direction = 'down');
+    """,
+}
 
 
 def psql(sql: str, tuples_only=True) -> str:
@@ -40,7 +101,49 @@ def insertable_columns(table: str) -> list[str]:
     return [c for c in out.splitlines() if c]
 
 
+def check_coverage() -> None:
+    """DB 테이블 ⊆ 백업 대상인지 검사.
+
+    backup-prod.mjs 의 테이블 목록이 하드코딩이라 새 Phase 가 테이블을 추가해도
+    조용히 빠진다. 실제로 events·org_units·payment_ledger 가 그렇게 누락됐고,
+    적재는 replica 모드(FK 끔) 덕에 성공한 척하다가 뒤늦게 FK 위반으로 터졌다.
+    여기서 먼저, 크게 실패시킨다.
+    """
+    db_tables = {t for t in psql(
+        "select tablename from pg_tables where schemaname='public'"
+    ).splitlines() if t}
+    missing = db_tables - set(TABLES) - NO_BACKUP_NEEDED
+    if missing:
+        sys.exit(
+            f"❌ 백업 대상에 빠진 테이블: {', '.join(sorted(missing))}\n"
+            f"   backup-prod.mjs 의 TABLES 와 이 파일의 TABLES 양쪽에 추가한 뒤\n"
+            f"   운영 백업을 다시 뜨세요. 지금 백업으로는 복구도 재현도 안 됩니다."
+        )
+
+    no_file = [t for t in TABLES if backup_file(t) is None]
+    if no_file:
+        sys.exit(
+            f"❌ 백업 '{BACKUP.name}' 에 파일이 없는 테이블: {', '.join(no_file)}\n"
+            f"   이 백업은 해당 테이블이 생기기 전에 뜬 것입니다.\n"
+            f"   운영 백업을 다시 뜨거나(권장), 더 최신 백업 경로를 인자로 주세요."
+        )
+
+
+def backup_file(table: str) -> pathlib.Path | None:
+    """이 테이블의 백업 JSON. rename 이전 백업이면 옛 이름으로 찾는다."""
+    p = BACKUP / f"{table}.json"
+    if p.exists():
+        return p
+    old = RENAMED_FROM.get(table)
+    if old:
+        p = BACKUP / f"{old}.json"
+        if p.exists():
+            return p
+    return None
+
+
 def main():
+    check_coverage()
     # 마이그레이션이 마스터데이터(campuses·slots·role_labels·system_config)를 시드하므로
     # 운영 백업으로 갈아끼우기 위해 먼저 비운다. 로컬 전용 작업.
     stmts = [
@@ -49,7 +152,14 @@ def main():
     ]
     summary = []
     for t in TABLES:
-        rows = json.loads((BACKUP / f"{t}.json").read_text())
+        rows = json.loads(backup_file(t).read_text())
+        # 컬럼 rename 이 있었으면 백업의 옛 키를 현재 컬럼명으로 바꿔 끼운다.
+        colmap = RENAMED_COLUMNS.get(t)
+        if colmap and rows:
+            for r in rows:
+                for old_c, new_c in colmap.items():
+                    if old_c in r and new_c not in r:
+                        r[new_c] = r.pop(old_c)
         if not rows:
             summary.append((t, 0))
             continue
@@ -66,6 +176,8 @@ def main():
             f"SELECT {collist} FROM jsonb_populate_recordset(null::public.{t}, '{payload}'::jsonb);"
         )
         summary.append((t, len(rows)))
+        if t in AFTER_TABLE_SQL:
+            stmts.append(AFTER_TABLE_SQL[t])
     stmts.append("SET session_replication_role = DEFAULT;")
 
     # 시퀀스/identity 를 최대값으로 올린다.
@@ -91,13 +203,16 @@ def main():
 
     psql("\n".join(stmts), tuples_only=False)
 
-    print("=== 적재 결과 (백업 vs 로컬 DB) ===")
+    print(f"=== 적재 결과 (백업 {BACKUP.name} vs 로컬 DB) ===")
     ok = True
     for t, n in summary:
         actual = int(psql(f"select count(*) from public.{t}"))
-        match = actual == n
+        # AFTER_TABLE_SQL 이 행을 더 만드는 테이블은 DB 가 백업보다 많은 게 정상이다
+        # (예: event_trips 에 하행 편을 만들어 넣는다). 적기만 하면 여전히 실패.
+        match = actual >= n if t in AFTER_TABLE_SQL else actual == n
         ok &= match
-        print(f"  {'OK ' if match else 'MISMATCH'} {t:28} 백업 {n:6} / DB {actual:6}")
+        extra = f" (+{actual - n} 생성)" if t in AFTER_TABLE_SQL and actual > n else ""
+        print(f"  {'OK ' if match else 'MISMATCH'} {t:28} 백업 {n:6} / DB {actual:6}{extra}")
     print()
     print("적재 무결성:", "PASS ✅" if ok else "FAIL ❌")
     return 0 if ok else 1

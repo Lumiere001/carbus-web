@@ -49,14 +49,14 @@ export async function runBatchAction(
     supabase
       .from("registrations")
       .select(
-        "id, name, campus_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, roles"
+        "id, name, campus_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, roles"
       )
       // 취소자는 배차 대상이 아니다. 빼지 않으면 좌석을 차지하는 유령 승객이 된다.
       .neq("participation_status", "cancelled"),
     supabase
       .from("buses")
       .select(
-        "id, name, capacity, hard_cap, departure_slot_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, capacity, hard_cap, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids, is_cohesion_exempt, fill_priority"
       ),
   ]);
   if (regRes.error) return { ok: false, message: regRes.error.message };
@@ -67,8 +67,8 @@ export async function runBatchAction(
     name: r.name,
     campus: r.campus_id,
     attendance_type: r.attendance_type,
-    departure_slot_id: r.departure_slot_id,
-    uses_return_bus: r.uses_return_bus,
+    up_trip_id: r.up_trip_id,
+    down_trip_id: r.down_trip_id,
     fixed_up_bus_id: null,
   }));
   const buses: Bus[] = (busRes.data ?? []).map((b) => ({ ...b }));
@@ -93,7 +93,7 @@ export async function runBatchAction(
   const assignMap = mode === "up" ? result.up_assignments : result.down_assignments;
   // 그 방향 참여자만 대상 (상행=요일 있음 / 하행=uses_return_bus)
   const participants = passengers.filter((p) =>
-    mode === "up" ? p.departure_slot_id !== null : p.uses_return_bus === true
+    mode === "up" ? p.up_trip_id !== null : p.down_trip_id !== null
   );
   const groups = new Map<number | null, string[]>();
   for (const p of participants) {

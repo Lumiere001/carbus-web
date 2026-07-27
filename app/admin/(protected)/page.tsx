@@ -104,11 +104,11 @@ export default async function AdminDashboardPage() {
         .from("registration_audit")
         .select("id", { count: "exact", head: true })
         .gte("created_at", since),
-      supabase.from("departure_slots").select("id, label").order("display_order"),
+      supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
       supabase
         .from("registrations")
         .select("id", { count: "exact", head: true })
-        .eq("uses_return_bus", true),
+        .not("down_trip_id", "is", null),
     ]);
 
   const campuses = campusRes.data ?? [];
@@ -133,10 +133,10 @@ export default async function AdminDashboardPage() {
   // total_passengers 는 좌석 수요(잔여석) 지표라 그대로 두고, 출석률만 이 값을 쓴다.
   const assignedBySlot = new Map<number, number>();
   for (const b of buses) {
-    if (b.departure_slot_id == null) continue;
+    if (b.up_trip_id == null) continue;
     assignedBySlot.set(
-      b.departure_slot_id,
-      (assignedBySlot.get(b.departure_slot_id) ?? 0) + (b.up_passengers ?? 0)
+      b.up_trip_id,
+      (assignedBySlot.get(b.up_trip_id) ?? 0) + (b.up_passengers ?? 0)
     );
   }
   const downAssigned = buses.reduce((s, b) => s + (b.down_passengers ?? 0), 0);

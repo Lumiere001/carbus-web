@@ -22,23 +22,28 @@ export default async function AdminBusesPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [busRes, regRes, campusRes, slotRes] = await Promise.all([
+  const [busRes, regRes, campusRes, tripRes] = await Promise.all([
     supabase
       .from("buses")
       .select(
-        "id, name, departure_slot_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, up_trip_id, down_trip_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, name, student_id, campus_id, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
       .order("name"),
     supabase.from("campuses").select("id, name"),
-    supabase.from("departure_slots").select("id, label, active, display_order").order("display_order"),
+    // 3-C 이후 하행도 편을 갖는다. 상행만 가져오면 하행 카드가 편을 모르는 채로
+    // 그려져 "6시 차 승객을 3시 차 순장으로" 같은 지정이 화면에서 통과한다.
+    supabase
+      .from("event_trips")
+      .select("id, label, active, display_order, direction")
+      .order("display_order"),
   ]);
 
   const campusName = new Map(
@@ -47,7 +52,7 @@ export default async function AdminBusesPage() {
 
   const upByBus = new Map<number, PaxData[]>();
   const downByBus = new Map<number, PaxData[]>();
-  // 차량순장·고정탑승 사전 지정용 후보(전체 명단). 호차 카드에서 방향·요일로 필터.
+  // 차량순장·고정탑승 사전 지정용 후보(전체 명단). 호차 카드에서 방향·편으로 필터.
   const candidates: CandidateData[] = [];
   for (const r of regRes.data ?? []) {
     const pax: PaxData = {
@@ -58,8 +63,8 @@ export default async function AdminBusesPage() {
     };
     candidates.push({
       ...pax,
-      departure_slot_id: r.departure_slot_id,
-      uses_return_bus: r.uses_return_bus,
+      up_trip_id: r.up_trip_id,
+      down_trip_id: r.down_trip_id,
     });
     if (r.assigned_up_bus_id != null) {
       const list = upByBus.get(r.assigned_up_bus_id) ?? [];
@@ -87,7 +92,7 @@ export default async function AdminBusesPage() {
           {buses.length}대 · 상행/하행 명단{isMaster ? " · 차량순장·고정 탑승자 지정(상행·하행 각각)" : " (보기 전용)"}
         </p>
       </div>
-      <BusesPanel buses={buses} candidates={candidates} slots={slotRes.data ?? []} isMaster={isMaster} />
+      <BusesPanel buses={buses} candidates={candidates} trips={tripRes.data ?? []} isMaster={isMaster} />
     </div>
   );
 }

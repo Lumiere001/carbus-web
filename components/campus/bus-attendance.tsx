@@ -18,7 +18,7 @@ type Member = {
   checked_out: boolean;
   campus?: string; // 관리자(전 캠퍼스) 뷰에서 소속 표시용
 };
-type BusInfo = { id: number; name: string; departure_slot_id: number };
+type BusInfo = { id: number; name: string; up_trip_id: number | null };
 type Group = [number, Member[]];
 type SlotMini = Pick<DepartureSlot, "id" | "label">;
 type CheckField = "checked_in" | "checked_out";
@@ -154,7 +154,7 @@ export function BusAttendance({
                   {info?.name ?? `${busId}호차`}
                   {accent === "up" && info && (
                     <span className="text-xs font-normal text-muted-2">
-                      {slotLabel(info.departure_slot_id, slots)} 출발
+                      {slotLabel(info.up_trip_id, slots)} 출발
                     </span>
                   )}
                   {accent === "down" && (
@@ -234,7 +234,7 @@ export function BusAttendance({
   // 요약 카드용 라이브 집계 (state 기반 → 토글/Realtime 즉시 반영)
   const slotArrived = new Map<number, number>();
   for (const [busId, members] of upGroups) {
-    const slotId = busName.get(busId)?.departure_slot_id;
+    const slotId = busName.get(busId)?.up_trip_id;
     if (slotId == null) continue;
     let c = 0;
     for (const m of members) if (state[m.id]?.checked_in) c += 1;

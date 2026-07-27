@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { slotLabel } from "@/lib/labels";
+import { attendanceSummary } from "@/lib/labels";
 import type { AttendanceType, DepartureSlot } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -14,16 +14,15 @@ type Reg = {
   student_id: string;
   campus_id: string;
   attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   note: string | null;
 };
 
 function onewayLabel(r: Reg, slots: SlotMini[]): string {
   // 편도: 상행만(하행 미이용) 또는 하행만(슬롯 없음)
-  if (r.departure_slot_id !== null && !r.uses_return_bus)
-    return `편도 상행 (${slotLabel(r.departure_slot_id, slots)})`;
-  if (r.departure_slot_id === null && r.uses_return_bus) return "편도 하행";
+  // 하행도 편 이름을 보여준다 — 여러 편으로 나뉘면 어느 편인지가 중요해진다.
+  return attendanceSummary(r.up_trip_id, r.down_trip_id, slots);
   return "편도";
 }
 
@@ -44,14 +43,14 @@ export default async function AdminPartialPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, departure_slot_id, uses_return_bus, note"
+        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, note"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
       .in("attendance_type", ["oneway", "self"])
       .order("campus_id"),
     supabase.from("campuses").select("id, name, display_order"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("event_trips").select("id, label").order("direction").order("display_order"),
   ]);
   const all = (regRes.data ?? []) as Reg[];
   const slots = (slotRes.data ?? []) as SlotMini[];
@@ -66,10 +65,10 @@ export default async function AdminPartialPage() {
 
   // 칩 집계: 비고 텍스트 파싱 없이 컬럼값만으로 계산 (의미 분류는 스키마 생긴 뒤에).
   const onewayUp = oneway.filter(
-    (r) => r.departure_slot_id !== null && !r.uses_return_bus
+    (r) => r.up_trip_id !== null && r.down_trip_id === null
   ).length;
   const onewayDown = oneway.filter(
-    (r) => r.departure_slot_id === null && r.uses_return_bus
+    (r) => r.up_trip_id === null && r.down_trip_id !== null
   ).length;
   const selfMissingNote = self.filter((r) => !r.note?.trim()).length;
 

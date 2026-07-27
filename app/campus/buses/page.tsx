@@ -10,14 +10,14 @@ import { BusAttendance } from "@/components/campus/bus-attendance";
 export const dynamic = "force-dynamic";
 
 type SlotMini = Pick<DepartureSlot, "id" | "label">;
-type BusInfo = { id: number; name: string; departure_slot_id: number };
+type BusInfo = { id: number; name: string; up_trip_id: number | null };
 type Reg = {
   id: string;
   name: string;
   student_id: string;
   attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   assigned_up_bus_id: number | null;
   assigned_down_bus_id: number | null;
   checked_in: boolean;
@@ -58,14 +58,14 @@ export default async function CampusBusesPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, attendance_type, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
+        "id, name, student_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
       .eq("campus_id", campusId)
       .order("name"),
-    supabase.from("buses").select("id, name, departure_slot_id").order("id"),
-    supabase.from("departure_slots").select("id, label").order("display_order"),
+    supabase.from("buses").select("id, name, up_trip_id").order("id"),
+    supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
   ]);
 
   const buses = (busRes.data ?? []) as BusInfo[];
@@ -75,11 +75,11 @@ export default async function CampusBusesPage() {
   const upGroups = groupBy(regs, (r) => r.assigned_up_bus_id);
   const downGroups = groupBy(regs, (r) => r.assigned_down_bus_id);
 
-  // 배차 대기: 상행 필요(슬롯 있음)인데 미배정 / 하행 필요(uses_return_bus)인데 미배정
+  // 배차 대기: 그 방향 편을 신청했는데 아직 좌석이 없는 사람 (상·하행 대칭)
   const waiting = regs
     .map((r) => {
-      const upPending = r.departure_slot_id !== null && r.assigned_up_bus_id == null;
-      const downPending = r.uses_return_bus && r.assigned_down_bus_id == null;
+      const upPending = r.up_trip_id !== null && r.assigned_up_bus_id == null;
+      const downPending = r.down_trip_id !== null && r.assigned_down_bus_id == null;
       return { r, upPending, downPending };
     })
     .filter((w) => w.upPending || w.downPending);

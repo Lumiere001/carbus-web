@@ -5,7 +5,7 @@ import { Bus, Star, Pin, ChevronDown, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { DepartureSlot } from "@/lib/supabase/types";
+import type { EventTrip } from "@/lib/supabase/types";
 import { setDriver, setFixedPassengers } from "@/lib/admin/buses";
 import { sortRoster } from "@/lib/registrations/roster-sort";
 
@@ -16,16 +16,25 @@ export type PaxData = {
   campus_name: string;
 };
 
-/** 차량순장·고정탑승 사전 지정 후보 (전체 명단). 방향·슬롯으로 필터해 선택. */
+/**
+ * 차량순장·고정탑승 사전 지정 후보 (전체 명단). 방향·편으로 필터해 선택.
+ *
+ * ⚠️ 두 필드 다 **선택 필드로 만들지 마라.** 서버(leaders.ts)가 "신청한 편 =
+ * 차량의 편"으로 판정하므로, 화면이 다른 기준으로 후보를 뽑으면 목록에는 뜨는데
+ * 저장은 거부되는 상태가 된다. 필수로 두면 컬럼이 또 바뀔 때 tsc 가 즉시 잡는다.
+ */
 export type CandidateData = PaxData & {
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
 };
 
 export type BusData = {
   id: number;
   name: string;
-  departure_slot_id: number;
+  /** 이 차량의 상행 편. NULL 이면 상행을 운행하지 않는다. */
+  up_trip_id: number | null;
+  /** 이 차량의 하행 편. NULL 이면 하행을 운행하지 않는다. */
+  down_trip_id: number | null;
   capacity: number;
   hard_cap: number;
   driver_registration_id: string | null;
@@ -41,12 +50,13 @@ type Msg = { type: "ok" | "err"; text: string } | null;
 export function BusesPanel({
   buses: initial,
   candidates,
-  slots,
+  trips,
   isMaster,
 }: {
   buses: BusData[];
   candidates: CandidateData[];
-  slots: Pick<DepartureSlot, "id" | "label" | "active" | "display_order">[];
+  /** 상·하행 전 운행편. 두 방향 모두 편별로 그룹을 만든다. */
+  trips: Pick<EventTrip, "id" | "label" | "active" | "display_order" | "direction">[];
   isMaster: boolean;
 }) {
   const [buses, setBuses] = useState(initial);
@@ -65,10 +75,19 @@ export function BusesPanel({
       ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
       : "border-border text-muted hover:bg-surface-2");
 
-  // 상행: 슬롯별 그룹(active·display_order 순) / 하행: 전 호차 (호차순)
-  const activeSlots = [...slots]
-    .filter((s) => s.active)
+  // 상·하행 모두 **편별 그룹**이다. 3-C 로 하행도 편을 갖게 됐으므로,
+  // 하행을 전 호차 한 덩어리로 그리면 편이 여럿일 때 어느 차가 몇 시 차인지 안 보인다.
+  const activeTrips = [...trips]
+    .filter((t) => t.active && t.direction === view)
     .sort((a, b) => a.display_order - b.display_order);
+
+  const busTrip = (b: BusData) => (view === "up" ? b.up_trip_id : b.down_trip_id);
+  // 활성 편에 안 걸린 차량 — 그냥 빼면 화면에서 조용히 사라져 "차가 없어졌다"가 된다.
+  const shownTripIds = new Set(activeTrips.map((t) => t.id));
+  const hiddenBuses = buses.filter((b) => {
+    const t = busTrip(b);
+    return t == null || !shownTripIds.has(t);
+  });
 
   return (
     <div className="space-y-6">
@@ -97,59 +116,46 @@ export function BusesPanel({
         </button>
       </div>
 
-      {view === "up"
-        ? activeSlots.map((slot) => {
-            const slotBuses = buses.filter((b) => b.departure_slot_id === slot.id);
-            if (slotBuses.length === 0) return null;
-            return (
-              <section key={slot.id}>
-                <h3 className="text-sm font-medium text-muted mb-3">
-                  {slot.label} 출발 · {slotBuses.length}대
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {slotBuses.map((b) => (
-                    <BusCard
-                      key={b.id}
-                      bus={b}
-                      mode="up"
-                      passengers={b.passengers}
-                      candidates={candidates}
-                      buses={buses}
-                      dayText={`${slot.label} 출발`}
-                      isMaster={isMaster}
-                      onPatch={(f) => patch(b.id, f)}
-                      onMsg={setMsg}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })
-        : (
-          <section>
+      {activeTrips.map((trip) => {
+        const tripBuses = buses
+          .filter((b) => busTrip(b) === trip.id)
+          .sort((a, b) => a.id - b.id);
+        if (tripBuses.length === 0) return null;
+        const dayText =
+          view === "up" ? `${trip.label} 출발` : `${trip.label} (내려올 때)`;
+        return (
+          <section key={trip.id}>
             <h3 className="text-sm font-medium text-muted mb-3">
-              하행 (내려올 때) · {buses.length}대 (상행과 독립 배차)
+              {dayText} · {tripBuses.length}대
+              {view === "down" && " (상행과 독립 배차)"}
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {[...buses]
-                .sort((a, b) => a.id - b.id)
-                .map((b) => (
-                  <BusCard
-                    key={b.id}
-                    bus={b}
-                    mode="down"
-                    passengers={b.downPassengers}
-                    candidates={candidates}
-                    buses={buses}
-                    dayText="하행 (내려올 때)"
-                    isMaster={isMaster}
-                    onPatch={(f) => patch(b.id, f)}
-                    onMsg={setMsg}
-                  />
-                ))}
+              {tripBuses.map((b) => (
+                <BusCard
+                  key={b.id}
+                  bus={b}
+                  mode={view}
+                  passengers={view === "up" ? b.passengers : b.downPassengers}
+                  candidates={candidates}
+                  buses={buses}
+                  dayText={dayText}
+                  isMaster={isMaster}
+                  onPatch={(f) => patch(b.id, f)}
+                  onMsg={setMsg}
+                />
+              ))}
             </div>
           </section>
-        )}
+        );
+      })}
+
+      {hiddenBuses.length > 0 && (
+        <p className="text-xs text-muted-2">
+          {view === "up" ? "상행" : "하행"}을 운행하지 않거나 비활성 편에 걸린 차량{" "}
+          {hiddenBuses.length}대는 여기 안 나옵니다 (
+          {hiddenBuses.map((b) => b.name).join(", ")}). 편성 화면에서 운행편을 지정하세요.
+        </p>
+      )}
     </div>
   );
 }
@@ -194,18 +200,25 @@ function BusCard({
   const fixedIds =
     mode === "up" ? bus.fixed_passenger_ids : bus.down_fixed_passenger_ids;
 
-  // 사전 지정 후보(A): 상행=호차 요일 일치자, 하행=하행 이용자. 이름순.
+  // 사전 지정 후보 — 서버(leaders.ts assertTripMatch)와 **같은 술어**:
+  // "그 방향으로 신청한 편 = 이 차량의 그 방향 편".
+  // 예전엔 하행만 `uses_return_bus === true` 로 봐서, 하행이 두 편이면 6시 차 승객이
+  // 3시 차 순장 후보로 떴다. 지정은 화면에서 통과하고 배차에서 조용히 탈락했다.
   const candidateMap = new Map(candidates.map((c) => [c.id, c]));
+  const busTripId = mode === "up" ? bus.up_trip_id : bus.down_trip_id;
   const pinPool = candidates
-    .filter((c) =>
-      mode === "up"
-        ? c.departure_slot_id === bus.departure_slot_id
-        : c.uses_return_bus === true
-    )
+    .filter((c) => {
+      const regTrip = mode === "up" ? c.up_trip_id : c.down_trip_id;
+      return regTrip != null && busTripId != null && regTrip === busTripId;
+    })
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   // 차량순장·고정 표시는 후보 전체에서 조회(배차 전이라 pax에 없을 수 있음).
   const driver = driverId ? candidateMap.get(driverId) : undefined;
+  // 이미 지정된 순장이 편 필터에 안 걸리면(예전 데이터·편 변경) select 의 value 가
+  // 목록에 없어 "미지정"처럼 보인다. 실제로는 지정돼 있으므로 남기고 표시만 경고한다.
+  const driverPool =
+    driver && !pinPool.some((p) => p.id === driver.id) ? [driver, ...pinPool] : pinPool;
   const fixed = fixedIds
     .map((id) => candidateMap.get(id))
     .filter((p): p is CandidateData => !!p);
@@ -345,9 +358,12 @@ function BusCard({
                   className="text-xs border border-border-2 rounded-md px-2 py-1 bg-surface max-w-[12rem]"
                 >
                   <option value="">미지정</option>
-                  {pinPool.map((p) => (
+                  {driverPool.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.campus_name})
+                      {p.id === driverId && !pinPool.some((q) => q.id === p.id)
+                        ? " — 편 불일치"
+                        : ""}
                     </option>
                   ))}
                 </select>

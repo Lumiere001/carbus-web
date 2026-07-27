@@ -10,9 +10,10 @@ export type AttendanceType = "roundtrip" | "oneway" | "self";
 /**
  * 신청자 (registrations Row → 순수 입력으로 투영).
  *
- * - roundtrip + departure_slot_id(상행 슬롯) + uses_return_bus=true : 완참
- * - oneway + departure_slot_id(상행 슬롯) + uses_return_bus=false  : 편도-상행
- * - oneway + departure_slot_id=null + uses_return_bus=true          : 편도-하행
+ * 참여 형태는 두 편의 조합으로 **완전히 결정된다**(attendance_type 은 파생값):
+ * - up_trip_id O + down_trip_id O : 왕복
+ * - 정확히 하나만 O               : 편도(상행 또는 하행)
+ * - 둘 다 X                       : 버스 미이용
  */
 export interface Passenger {
   id: string;
@@ -20,10 +21,14 @@ export interface Passenger {
   /** 캠퍼스 식별자 (UUID 또는 라벨). 같은 값끼리 같은 호차 우선 묶음. */
   campus: string;
   attendance_type: AttendanceType;
-  /** 상행 출발 슬롯 id. 편도-하행은 null. */
-  departure_slot_id: number | null;
-  /** 하행 차량 이용 여부. */
-  uses_return_bus: boolean;
+  /** 신청한 **상행 편** id. NULL = 상행 미이용. (옛 departure_slot_id) */
+  up_trip_id: number | null;
+  /**
+   * 신청한 **하행 편** id. NULL = 하행 미이용.
+   * 예전엔 uses_return_bus 불린이라 "탄다/안 탄다"만 말할 수 있었고,
+   * 그래서 하행을 여러 편으로 나눠도 신청자가 편을 고를 수 없었다.
+   */
+  down_trip_id: number | null;
   /**
    * 고정 상행 호차 id. driver_registration_id / fixed_passenger_ids 에서 유도.
    * null 이면 자유 배정 대상.
@@ -34,7 +39,7 @@ export interface Passenger {
 /**
  * 호차 (buses Row → 순수 입력으로 투영).
  *
- * 상행은 호차별 출발 슬롯(departure_slot_id)으로 운행. 하행은 슬롯 무관 전 호차 운행.
+ * 차량은 상·하행 편을 각각 갖는다. NULL 이면 그 방향을 운행하지 않는다.
  */
 export interface Bus {
   id: number;
@@ -43,8 +48,13 @@ export interface Bus {
   capacity: number;
   /** 최대 정원 (기본 45). capacity 초과 시 fallback 한계. */
   hard_cap: number;
-  /** 상행 운행 슬롯 id. */
-  departure_slot_id: number;
+  /**
+   * 이 차량이 운행하는 **상행 편** id. NULL 이면 상행을 운행하지 않는다.
+   * (예전 departure_slot_id. 하행이 대칭 승격되면서 이름과 nullability 가 바뀌었다.)
+   */
+  up_trip_id: number | null;
+  /** 이 차량이 운행하는 **하행 편** id. NULL 이면 하행을 운행하지 않는다. */
+  down_trip_id: number | null;
   /** 상행 차량순장 신청자 id. 해당 호차에서 절대 이동 X. */
   driver_registration_id: string | null;
   /** 상행 고정 탑승자 id 목록. 해당 호차에서 절대 이동 X. */
@@ -53,6 +63,20 @@ export interface Bus {
   down_driver_registration_id: string | null;
   /** 하행 고정 탑승자 id 목록 (상행과 별개). 해당 호차에서 절대 이동 X. */
   down_fixed_passenger_ids: string[];
+  /**
+   * 차량순장 캠퍼스 우선 배치(응집, 3-1)에서 제외할 호차.
+   * 여러 캠퍼스가 섞이는 차(임원·총단 차)에 켠다. 상·하행 모두에 적용.
+   *
+   * 예전엔 `name === "1호차"` 로 판정했다. 이름은 코드에 박힌 값이라
+   * 다른 행사에서 짐차 이름이 바뀌면 **에러 없이 조용히** 특례가 사라졌다.
+   */
+  is_cohesion_exempt: boolean;
+  /**
+   * 채움 순서. 클수록 나중에 채운다(0 = 보통).
+   * 짐을 함께 싣는 차는 1 이상으로 두어 빈자리를 최대한 남긴다.
+   * 좌석이 부족하면 후순위 차도 결국 쓰인다 — 미배정을 만들지는 않는다.
+   */
+  fill_priority: number;
 }
 
 /** 한 신청자의 상·하행 배정 결과. */

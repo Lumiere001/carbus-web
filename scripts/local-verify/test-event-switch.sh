@@ -73,6 +73,28 @@ select '차량순장 로그인 재매핑: '||count(*)||'명이 새 호차를 가
   from profiles p join buses b on b.id=p.driver_bus_id where b.event_id='$NEW';
 select '진행단계 초기화: '||current_phase||' / batch_enabled='||batch_enabled from system_config;"
 
+# 배차 특례 플래그가 복제되는가 — 한 번 실제로 깨졌던 지점이다.
+# 20260721050000 이 특례를 이름("1호차")에서 플래그 컬럼으로 옮겼는데
+# create_event 의 차량 복제 INSERT 는 컬럼 목록이 하드코딩이라 플래그를 안 옮겼다.
+# 그 결과 새 행사 차량이 전부 DEFAULT(false/0)로 태어나 **짐차 특례가 조용히 사라졌다**.
+# engine.ts 의 assertBusFlags() 는 타입만 보므로 통과하고(NOT NULL DEFAULT),
+# 골든 스냅샷은 지난 행사 형상이라 범위 밖이다. 즉 아무도 못 잡는다 — 그래서 여기서 잡는다.
+OLDEV_F=$(Q "select id from events where id <> '$NEW' order by created_at limit 1")
+echo -n "  배차 특례 플래그 복제: "
+Q "select case
+     when (select count(*) from buses where event_id='$OLDEV_F' and (is_cohesion_exempt or fill_priority>0)) = 0
+       then 'SKIP (원본 행사에 특례 차량 없음)'
+     when exists (
+       select 1 from buses o
+        where o.event_id='$OLDEV_F' and (o.is_cohesion_exempt or o.fill_priority>0)
+          and not exists (
+            select 1 from buses n
+             where n.event_id='$NEW' and n.name=o.name
+               and n.is_cohesion_exempt=o.is_cohesion_exempt
+               and n.fill_priority=o.fill_priority))
+       then 'FAIL ← 새 행사에서 짐차 특례가 사라졌다 (create_event 복제 목록 확인)'
+     else 'PASS' end"
+
 echo
 echo "### 7. 뷰가 새 행사 기준인가"
 AS "$MASTER" "select 'v_campus_stats 신청합 '||coalesce(sum(total),0) from v_campus_stats;

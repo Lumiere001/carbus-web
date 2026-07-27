@@ -5,27 +5,25 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  presetKeyOf,
-  presetByKey,
   PAYMENT_LABELS,
   PAYMENT_STATUSES,
-  type AttendancePreset,
+  tripOptions,
+  attendanceSummary,
 } from "@/lib/labels";
 import {
   createRegistration,
   updateRegistrationFields,
   type RegFormFields,
 } from "@/lib/admin/registrations";
-import type { AttendanceType, PaymentStatus } from "@/lib/supabase/types";
+import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
 
 export type RegFormInitial = {
   id: string;
   name: string;
   student_id: string;
   campus_id: string;
-  attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   payment_status: PaymentStatus;
   note: string | null;
 };
@@ -35,13 +33,13 @@ export function RegForm({
   mode,
   initial,
   campuses,
-  presets,
+  trips,
   onClose,
 }: {
   mode: "new" | "edit";
   initial?: RegFormInitial;
   campuses: { id: string; name: string }[];
-  presets: AttendancePreset[];
+  trips: EventTrip[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -50,8 +48,11 @@ export function RegForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [studentId, setStudentId] = useState(initial?.student_id ?? "");
   const [campusId, setCampusId] = useState(initial?.campus_id ?? campuses[0]?.id ?? "");
-  const [presetKey, setPresetKey] = useState(
-    (initial ? presetKeyOf(initial, presets) : null) ?? presets[0]?.key ?? ""
+  // 상·하행을 각각 고른다. 참여 형태(attendance_type)는 DB 가 두 편에서 파생하므로
+  // 화면이 보내지 않는다 — 조합 셀 시절의 "폴백이 신청을 덮어쓰는" 사고가 구조적으로 사라진다.
+  const [upTripId, setUpTripId] = useState<number | null>(initial?.up_trip_id ?? null);
+  const [downTripId, setDownTripId] = useState<number | null>(
+    initial?.down_trip_id ?? null
   );
   const [payment, setPayment] = useState<PaymentStatus>(
     initial?.payment_status ?? "unpaid"
@@ -60,15 +61,12 @@ export function RegForm({
 
   function submit() {
     setErr(null);
-    const preset = presetByKey(presetKey, presets);
-    if (!preset) return setErr("참석 일정을 선택하세요");
     const fields: RegFormFields = {
       name: name.trim(),
       student_id: studentId.trim(),
       campus_id: campusId,
-      attendance_type: preset.attendance_type,
-      departure_slot_id: preset.departure_slot_id,
-      uses_return_bus: preset.uses_return_bus,
+      up_trip_id: upTripId,
+      down_trip_id: downTripId,
       payment_status: payment,
       note: note.trim() || null,
     };
@@ -119,19 +117,54 @@ export function RegForm({
               ))}
             </select>
           </label>
-          <label className="text-xs text-muted space-y-1 block">
-            참석 일정
-            <select className={inputCls} value={presetKey} onChange={(e) => setPresetKey(e.target.value)}>
-              {presets.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            <span className="block text-[11px] text-muted-2 leading-snug">
-              💡 「참석 (버스 미이용)」은 KTX·자차 등 버스를 <b>전혀</b> 이용하지 않는 분만. 한쪽만 이용하면 「편도 상행/하행」 선택.
-            </span>
-          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-xs text-muted space-y-1 block">
+              상행 (가는 편)
+              <select
+                className={inputCls}
+                value={upTripId === null ? "" : String(upTripId)}
+                onChange={(e) =>
+                  setUpTripId(e.target.value === "" ? null : Number(e.target.value))
+                }
+              >
+                {/* 현재 값이 비활성 편이어도 목록에 남긴다 — 사라지면 조용히 덮어써진다. */}
+                {tripOptions(trips, "up", initial?.up_trip_id ?? null).map((o) => (
+                  <option key={o.id ?? "none"} value={o.id === null ? "" : String(o.id)}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs text-muted space-y-1 block">
+              하행 (오는 편)
+              <select
+                className={inputCls}
+                value={downTripId === null ? "" : String(downTripId)}
+                onChange={(e) =>
+                  setDownTripId(e.target.value === "" ? null : Number(e.target.value))
+                }
+              >
+                {tripOptions(trips, "down", initial?.down_trip_id ?? null).map((o) => (
+                  <option key={o.id ?? "none"} value={o.id === null ? "" : String(o.id)}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="text-[11px] text-muted-2 leading-snug">
+            {attendanceSummary(upTripId, downTripId, trips)}
+            {upTripId === null && downTripId === null &&
+              " — KTX·자차 등 버스를 전혀 이용하지 않는 분입니다."}
+          </p>
+          {initial &&
+            payment === "paid" &&
+            (upTripId !== initial.up_trip_id || downTripId !== initial.down_trip_id) && (
+              <p className="text-[11px] text-warning-700 leading-snug">
+                ⚠ 이미 납부한 신청입니다. 편을 바꿔도 <b>청구액은 자동으로 바뀌지 않습니다</b> —
+                환불이 필요한지 따로 확인하세요.
+              </p>
+            )}
           <label className="text-xs text-muted space-y-1 block">
             납부
             <select
@@ -154,7 +187,7 @@ export function RegForm({
               onChange={(e) => setNote(e.target.value)}
               placeholder="예: 평창역 17:30 도착 / 금요일 저녁 KTX 귀가"
             />
-            {presetKey === "self" && !note.trim() && (
+            {upTripId === null && downTripId === null && !note.trim() && (
               <span className="block text-[11px] text-warning leading-snug">
                 ⚠ 미이용 선택 시 이동 수단(KTX·자차 등)을 비고에 적어주세요.
               </span>

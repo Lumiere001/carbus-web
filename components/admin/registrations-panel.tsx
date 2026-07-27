@@ -6,19 +6,13 @@ import { Trash2, X, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  ATTENDANCE_LABELS,
   PAYMENT_LABELS,
   paymentDisplayOverride,
-  slotLabel,
-  presetKeyOf,
-  presetByKey,
-  type AttendancePreset,
+  attendanceSummary,
 } from "@/lib/labels";
 import type {
   AttendanceType,
-  DepartureSlot,
-  PaymentStatus,
-} from "@/lib/supabase/types";
+  PaymentStatus, EventTrip } from "@/lib/supabase/types";
 import {
   setAssignment,
   excludeRegistration,
@@ -38,8 +32,8 @@ export type AdminRegRow = {
   student_id: string;
   campus_id: string;
   attendance_type: AttendanceType;
-  departure_slot_id: number | null;
-  uses_return_bus: boolean;
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   /** GENERATED 컬럼 — 미이용(self)은 0. 납부 배지 '해당없음/환불 대기' 판정에 씀. */
   fee: number | null;
   payment_status: PaymentStatus;
@@ -55,7 +49,9 @@ export type CampusInfo = { id: string; name: string; display_order: number };
 export type BusInfo = {
   id: number;
   name: string;
-  departure_slot_id?: number;
+  /** 이 호차가 운행하는 편. 그 방향을 안 뛰면 null. 선택 필드로 만들지 말 것 — bus-options.ts 주석 참고. */
+  up_trip_id: number | null;
+  down_trip_id: number | null;
   /** 정원(보조석 제외). 잔여석 표기 기준 — 배차 엔진·호차 화면과 동일하게 capacity 를 쓴다. */
   capacity: number;
 };
@@ -106,12 +102,9 @@ function sortRows(arr: AdminRegRow[], groupByBus: boolean): AdminRegRow[] {
 
 function attendanceLabel(
   r: AdminRegRow,
-  presets: AttendancePreset[],
-  slots: Pick<DepartureSlot, "id" | "label">[]
+  trips: Pick<EventTrip, "id" | "label">[]
 ): string {
-  const key = presetKeyOf(r, presets);
-  if (key) return presetByKey(key, presets)?.label ?? ATTENDANCE_LABELS[r.attendance_type];
-  return `${ATTENDANCE_LABELS[r.attendance_type]} ${slotLabel(r.departure_slot_id, slots)}`;
+  return attendanceSummary(r.up_trip_id, r.down_trip_id, trips);
 }
 
 const ALL = "__all__";
@@ -127,8 +120,7 @@ export function RegistrationsPanel({
   groupByBus,
   driverIds,
   fixedIds,
-  presets,
-  slots,
+  trips,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -140,8 +132,7 @@ export function RegistrationsPanel({
   driverIds: Set<string>;
   /** 호차에 고정탑승으로 묶인 reg id (상/하행) — 역할 파생용. */
   fixedIds: Set<string>;
-  presets: AttendancePreset[];
-  slots: Pick<DepartureSlot, "id" | "label">[];
+  trips: EventTrip[];
 }) {
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -252,7 +243,7 @@ export function RegistrationsPanel({
           mode={form.mode}
           initial={form.mode === "edit" ? form.row : undefined}
           campuses={campuses}
-          presets={presets}
+          trips={trips}
           onClose={() => setForm(null)}
         />
       )}
@@ -332,9 +323,8 @@ export function RegistrationsPanel({
                         onEdit={(row) => setForm({ mode: "edit", row })}
                         driverIds={driverIds}
                         fixedIds={fixedIds}
-                        presets={presets}
-                        slots={slots}
-                      />
+                        trips={trips}
+                                              />
                     ))}
                   </Fragment>
                 ))
@@ -353,9 +343,8 @@ export function RegistrationsPanel({
                         onEdit={(row) => setForm({ mode: "edit", row })}
                         driverIds={driverIds}
                         fixedIds={fixedIds}
-                        presets={presets}
-                        slots={slots}
-                  />
+                        trips={trips}
+                                          />
                 ))
               )}
             </tbody>
@@ -385,8 +374,7 @@ function Row({
   onEdit,
   driverIds,
   fixedIds,
-  presets,
-  slots,
+  trips,
 }: {
   r: AdminRegRow;
   busName: Map<number, string>;
@@ -401,8 +389,7 @@ function Row({
   onEdit: (row: AdminRegRow) => void;
   driverIds: Set<string>;
   fixedIds: Set<string>;
-  presets: AttendancePreset[];
-  slots: Pick<DepartureSlot, "id" | "label">[];
+  trips: EventTrip[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -434,9 +421,9 @@ function Row({
       startTransition(async () => {
         const res = await setLeaderRole({
           regId: r.id,
-          ridesUp: r.departure_slot_id !== null,
+          ridesUp: r.up_trip_id !== null,
           upBusId: r.assigned_up_bus_id,
-          ridesDown: r.uses_return_bus === true,
+          ridesDown: r.down_trip_id !== null,
           downBusId: r.assigned_down_bus_id,
           kind,
           on,
@@ -507,7 +494,7 @@ function Row({
     const options = busSelectOptions(
       buses,
       which,
-      r.departure_slot_id,
+      which === "up" ? r.up_trip_id : r.down_trip_id,
       current,
       which === "up" ? upUsed : downUsed
     );
@@ -596,7 +583,7 @@ function Row({
         </div>
       </td>
       <td className="px-4 py-2.5 text-muted-2">{r.student_id}</td>
-      <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{attendanceLabel(r, presets, slots)}</td>
+      <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{attendanceLabel(r, trips)}</td>
       <td className="px-4 py-2.5">
         {(() => {
           // 차량비 0원(버스 미이용)이면 완납/미납 대신 '해당없음' — 환불 대기는 드러낸다.

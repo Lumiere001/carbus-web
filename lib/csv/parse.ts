@@ -4,8 +4,13 @@ import {
   fieldErrors,
   type RegistrationInput,
 } from "@/lib/validators/registration";
-import { ATTENDANCE_FROM_KO, BOOL_FROM_KO } from "@/lib/labels";
-import type { DepartureSlot } from "@/lib/supabase/types";
+import {
+  ATTENDANCE_FROM_KO,
+  ATTENDANCE_LABELS,
+  BOOL_FROM_KO,
+  deriveAttendance,
+} from "@/lib/labels";
+import type { EventTrip } from "@/lib/supabase/types";
 
 /**
  * CSV·복붙 import 파싱 (reference/validators.md §5·7).
@@ -19,9 +24,11 @@ const HEADER_MAP: Record<string, string> = {
   이름: "name",
   학번: "student_id",
   "참석 유형": "attendance_type",
-  "상행 출발": "departure_slot_id",
-  "상행 요일": "departure_slot_id",
-  "하행 차량 이용": "uses_return_bus",
+  "상행 출발": "up_trip_id",
+  "상행 요일": "up_trip_id",
+  // 하행은 O/X 였다. 이제 편 라벨도 받는다 — 둘 다 아래에서 해석한다.
+  "하행 차량 이용": "down_trip_id",
+  "하행 출발": "down_trip_id",
   비고: "note",
 };
 
@@ -44,16 +51,34 @@ const MAX_ROWS = 1000;
 export function parseRegistrationsCsv(
   csv: string,
   campusId: string,
-  slots: Pick<DepartureSlot, "id" | "key" | "label">[]
+  trips: Pick<EventTrip, "id" | "key" | "label" | "direction" | "active">[]
 ): CsvParseResult {
-  // 상행 출발 입력값(라벨 또는 key) → slot id. 트림·소문자 허용.
-  const slotIdFromInput = (raw: string): number | null | undefined => {
+  const dirTrips = (d: "up" | "down") => trips.filter((t) => t.direction === d);
+
+  /** 편 입력값(라벨 또는 key) → 편 id. 트림·소문자 허용. 미인식은 undefined. */
+  const tripIdFromInput = (
+    raw: string,
+    direction: "up" | "down"
+  ): number | null | undefined => {
     const v = raw.trim();
-    if (v === "") return null; // 미입력 = 상행 미이용(하행편도)
-    const hit = slots.find(
-      (s) => s.label === v || s.key === v || s.key === v.toLowerCase()
+    if (v === "") return null; // 미입력 = 그 방향 미이용
+    const pool = dirTrips(direction);
+    const hit = pool.find(
+      (t) => t.label === v || t.key === v || t.key === v.toLowerCase()
     );
-    return hit ? hit.id : undefined; // 미인식 → undefined(검증 실패로 표면화)
+    if (hit) return hit.id;
+
+    // ── 하위호환: 하행이 O/X 불린이던 시절의 CSV ──────────────
+    // 임역원들이 쓰던 템플릿이 전부 O/X 다. 그걸 계속 받아야 한다.
+    // O 는 "탄다"만 말하므로 편이 하나일 때만 해석할 수 있다.
+    // 여러 편이면 조용히 아무 편이나 꽂지 않고 미인식으로 두어 사람이 고치게 한다
+    // (조용히 꽂으면 엉뚱한 시각 버스에 배차된다).
+    if (direction === "down" && v in BOOL_FROM_KO) {
+      if (!BOOL_FROM_KO[v]) return null; // X → 하행 미이용
+      const active = pool.filter((t) => t.active);
+      return active.length === 1 ? active[0].id : undefined;
+    }
+    return undefined; // 미인식 → 검증 실패로 표면화
   };
 
   const parsed = Papa.parse<Record<string, string>>(csv, {
@@ -92,22 +117,61 @@ export function parseRegistrationsCsv(
       mapped.attendance_type =
         ATTENDANCE_FROM_KO[mapped.attendance_type] ?? mapped.attendance_type;
     }
-    if ("departure_slot_id" in mapped) {
-      mapped.departure_slot_id = slotIdFromInput(
-        (mapped.departure_slot_id as string) ?? ""
-      );
-    } else {
-      mapped.departure_slot_id = null;
-    }
-    if ("uses_return_bus" in mapped) {
-      const b = (mapped.uses_return_bus as string) ?? "";
-      if (b === "") mapped.uses_return_bus = false;
-      else if (b in BOOL_FROM_KO) mapped.uses_return_bus = BOOL_FROM_KO[b];
-      else mapped.uses_return_bus = undefined; // 인식 불가 값 → 검증 실패로 표면화(조용히 false로 두지 않음)
-    } else {
-      mapped.uses_return_bus = false;
-    }
+    const hasDownColumn = "down_trip_id" in mapped;
+    mapped.up_trip_id =
+      "up_trip_id" in mapped
+        ? tripIdFromInput((mapped.up_trip_id as string) ?? "", "up")
+        : null;
+    mapped.down_trip_id = hasDownColumn
+      ? tripIdFromInput((mapped.down_trip_id as string) ?? "", "down")
+      : null;
     if (mapped.note === "") mapped.note = null;
+
+    // ── '참석 유형' 열 처리 ────────────────────────────────
+    // attendance_type 은 3-C 에서 파생값이 됐다(DB 트리거가 두 편에서 계산).
+    // 그런데 임역원 템플릿에는 이 열이 그대로 있고, 예전엔 읽어서 **조용히 버렸다.**
+    // 그 결과 하행 열이 없는 옛 CSV 의 "왕복" 이 편도 상행으로 등록됐다 —
+    // 학우는 왕복 요금을 냈는데 귀가 버스에서 빠진다.
+    // 그래서 지금은 ① 하행 열이 없을 때 참석 유형으로 하행을 정하고,
+    // ② 정할 수 없거나 두 편과 어긋나면 **실패로 표면화**한다.
+    const declared = mapped.attendance_type;
+    const up = mapped.up_trip_id;
+    const down = mapped.down_trip_id;
+    let attendanceError: string | null = null;
+
+    if (typeof declared === "string" && declared !== "" && !(declared in ATTENDANCE_LABELS)) {
+      attendanceError = `참석 유형: '${declared}' 을 알 수 없습니다 (왕복 / 편도 / 버스 미이용)`;
+    } else if (
+      typeof declared === "string" &&
+      declared !== "" &&
+      up !== undefined &&
+      down !== undefined
+    ) {
+      const wantsDown = declared === "roundtrip" || (declared === "oneway" && up === null);
+      if (!hasDownColumn && wantsDown) {
+        // 하행 열이 아예 없는 옛 포맷. "탄다"까지는 알지만 어느 편인지는 모른다.
+        const active = dirTrips("down").filter((t) => t.active);
+        if (active.length === 1) mapped.down_trip_id = active[0].id;
+        else
+          attendanceError =
+            active.length === 0
+              ? "참석 유형: 하행 운행편이 없습니다 (편성에서 먼저 만들어 주세요)"
+              : `참석 유형: 하행 편이 ${active.length}개라 "왕복/편도"만으로는 정할 수 없습니다 — '하행 출발' 열에 편을 적어주세요`;
+      }
+      if (!attendanceError) {
+        const derived = deriveAttendance(
+          mapped.up_trip_id as number | null,
+          mapped.down_trip_id as number | null
+        );
+        if (derived !== declared)
+          attendanceError = `참석 유형: '${ATTENDANCE_LABELS[declared as keyof typeof ATTENDANCE_LABELS]}' 인데 상·하행 입력은 '${ATTENDANCE_LABELS[derived]}' 입니다 — 한쪽을 고쳐주세요`;
+      }
+    }
+
+    if (attendanceError) {
+      failures.push({ row: idx + 2, reason: attendanceError, raw: rawRow });
+      return;
+    }
 
     const candidate = { ...mapped, campus_id: campusId, roles: [] };
     const result = RegistrationSchema.safeParse(candidate);
