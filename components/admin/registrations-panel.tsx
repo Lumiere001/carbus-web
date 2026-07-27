@@ -168,6 +168,54 @@ export function RegistrationsPanel({
 
   const colCount = isMaster ? 8 : 7;
 
+  /**
+   * 한 사람의 행. 수정 중이면 **바로 아래에** 폼을 펼친다.
+   * 표가 자체 스크롤 영역(max-h) 안에 있어서, 폼을 화면 맨 위에 띄우면
+   * 명단이 길수록 되돌아가는 거리가 길어졌다.
+   */
+  const renderRow = (r: AdminRegRow) => {
+    const editing = isMaster && form?.mode === "edit" && form.row.id === r.id;
+    return (
+      <Fragment key={r.id}>
+        <Row
+          r={r}
+          busName={busName}
+          buses={buses}
+          upUsed={seatUsed.up}
+          downUsed={seatUsed.down}
+          roleLabels={roleLabels}
+          isMaster={isMaster}
+          onMsg={setMsg}
+          onEdit={(row) =>
+            // 같은 사람의 "수정"을 다시 누르면 접는다 (토글).
+            setForm((cur) =>
+              cur?.mode === "edit" && cur.row.id === row.id
+                ? null
+                : { mode: "edit", row }
+            )
+          }
+          editing={!!editing}
+          driverIds={driverIds}
+          fixedIds={fixedIds}
+          trips={trips}
+        />
+        {editing && (
+          <tr className="bg-primary-50/40">
+            <td colSpan={colCount} className="p-3">
+              <RegForm
+                mode="edit"
+                initial={r}
+                campuses={campuses}
+                trips={trips}
+                onClose={() => setForm(null)}
+              />
+            </td>
+          </tr>
+        )}
+      </Fragment>
+    );
+  };
+
   // 검색 중이면 캠퍼스 탭 무시하고 이름·학번으로 전체에서 찾음.
   const q = query.trim().toLowerCase();
   const searching = q.length > 0;
@@ -237,11 +285,14 @@ export function RegistrationsPanel({
         )}
       </div>
 
-      {/* master 추가·수정 폼 */}
-      {isMaster && form && (
+      {/* 추가 폼만 위에 둔다 — "추가" 버튼이 바로 위라 시선이 이어진다.
+          **수정 폼은 그 사람 행 바로 아래에서 열린다.** 예전엔 수정도 여기 떴는데,
+          인원이 많아지자 고칠 사람을 찾은 뒤 화면 맨 위까지 다시 올라가야 했다
+          (사용자 피드백). 표가 max-h 안에서 스크롤되므로 위로 올라가는 거리가
+          곧 명단 길이였다. */}
+      {isMaster && form?.mode === "new" && (
         <RegForm
-          mode={form.mode}
-          initial={form.mode === "edit" ? form.row : undefined}
+          mode="new"
           campuses={campuses}
           trips={trips}
           onClose={() => setForm(null)}
@@ -309,43 +360,11 @@ export function RegistrationsPanel({
                         </span>
                       </td>
                     </tr>
-                    {members.map((r) => (
-                      <Row
-                        key={r.id}
-                        r={r}
-                        busName={busName}
-                        buses={buses}
-                        upUsed={seatUsed.up}
-                        downUsed={seatUsed.down}
-                        roleLabels={roleLabels}
-                        isMaster={isMaster}
-                        onMsg={setMsg}
-                        onEdit={(row) => setForm({ mode: "edit", row })}
-                        driverIds={driverIds}
-                        fixedIds={fixedIds}
-                        trips={trips}
-                                              />
-                    ))}
+                    {members.map(renderRow)}
                   </Fragment>
                 ))
               ) : (
-                flatRows.map((r) => (
-                  <Row
-                    key={r.id}
-                    r={r}
-                    busName={busName}
-                    buses={buses}
-                    upUsed={seatUsed.up}
-                    downUsed={seatUsed.down}
-                    roleLabels={roleLabels}
-                    isMaster={isMaster}
-                    onMsg={setMsg}
-                        onEdit={(row) => setForm({ mode: "edit", row })}
-                        driverIds={driverIds}
-                        fixedIds={fixedIds}
-                        trips={trips}
-                                          />
-                ))
+                flatRows.map(renderRow)
               )}
             </tbody>
           </table>
@@ -372,6 +391,7 @@ function Row({
   isMaster,
   onMsg,
   onEdit,
+  editing,
   driverIds,
   fixedIds,
   trips,
@@ -387,6 +407,8 @@ function Row({
   isMaster: boolean;
   onMsg: (m: Msg) => void;
   onEdit: (row: AdminRegRow) => void;
+  /** 이 행 아래에 수정 폼이 펼쳐져 있는가. */
+  editing: boolean;
   driverIds: Set<string>;
   fixedIds: Set<string>;
   trips: EventTrip[];
@@ -619,8 +641,13 @@ function Row({
               type="button"
               disabled={pending}
               onClick={() => onEdit(r)}
-              className="text-muted-2 hover:text-primary-700"
-              aria-label="수정"
+              className={
+                editing
+                  ? "text-primary-700"
+                  : "text-muted-2 hover:text-primary-700"
+              }
+              aria-label={editing ? "수정 닫기" : "수정"}
+              aria-expanded={editing}
             >
               <Pencil size={14} />
             </button>

@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -1303,6 +1298,7 @@ export type Database = {
         Row: {
           departs_at: string | null
           display_order: number | null
+          remaining_seats: number | null
           returned: number | null
           total_capacity: number | null
           total_passengers: number | null
@@ -1389,6 +1385,36 @@ export type Database = {
           waived_count: number | null
         }
         Relationships: []
+      }
+      v_registration_changes: {
+        Row: {
+          campus_id: string | null
+          change_type: Database["public"]["Enums"]["request_type"] | null
+          changed_by: string | null
+          changed_fields: string[] | null
+          created_at: string | null
+          event_id: string | null
+          id: string | null
+          person_name: string | null
+          registration_id: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_audit_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_audit_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
