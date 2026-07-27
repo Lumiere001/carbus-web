@@ -28,7 +28,7 @@ echo "### 1. 전환 전 (master 화면 기준)"
 AS "$MASTER" "select '활성행사 '||name from events where is_active;
 select '신청 '||count(*) from registrations;
 select '호차 '||count(*) from buses;
-select '운행편 '||count(*) from departure_slots;
+select '운행편 '||count(*) from event_trips;
 select '정산행 '||count(*) from campus_payment_settlements;"
 
 echo
@@ -46,7 +46,7 @@ echo "### 4. 전환 후 — 화면에 보이는 것 (전부 0/복제분이어야
 AS "$MASTER" "select '활성행사 '||name from events where is_active;
 select '신청 '||count(*) from registrations;
 select '호차 '||count(*) from buses;
-select '운행편 '||count(*) from departure_slots;
+select '운행편 '||count(*) from event_trips;
 select '정산행 '||count(*) from campus_payment_settlements;
 select '감사로그 '||count(*) from registration_audit;"
 
@@ -60,10 +60,10 @@ echo
 echo "### 6. 복제 결과"
 NEW=$(Q "select id from events where is_active")
 Q "select '새 호차: '||count(*)||'대' from buses where event_id='$NEW';
-select '새 운행편: '||string_agg(label,',' order by display_order) from departure_slots where event_id='$NEW';
+select '새 운행편: '||string_agg(direction||' '||label,', ' order by direction, display_order) from event_trips where event_id='$NEW';
 select '호차→운행편 연결 정상: '||case when count(*)=0 then 'YES' else 'NO('||count(*)||')' end
   from buses b where b.event_id='$NEW'
-   and not exists (select 1 from departure_slots s where s.id=b.departure_slot_id and s.event_id='$NEW');
+   and not exists (select 1 from event_trips s where s.id=b.up_trip_id and s.event_id='$NEW');
 select '차량순장/고정 비움: '||case when count(*)=0 then 'YES' else 'NO('||count(*)||')' end
   from buses where event_id='$NEW'
    and (driver_registration_id is not null or down_driver_registration_id is not null
@@ -105,16 +105,18 @@ select 'v_payment_summary 인원합 '||coalesce(sum(paid_count+unpaid_count+waiv
 echo
 echo "### 8. 지난 행사의 같은 학우를 새 행사에 다시 신청할 수 있는가 (UNIQUE 범위)"
 # chk_roundtrip: 왕복은 출발편·하행이용이 모두 있어야 한다 → 테스트도 지켜야 함
-SLOT=$(Q "select id from departure_slots where event_id=(select id from events where is_active) order by display_order limit 1")
+NEWEV=$(Q "select id from events where is_active")
+SLOT=$(Q "select id from event_trips where event_id='$NEWEV' and direction='up' order by display_order limit 1")
+DOWN=$(Q "select id from event_trips where event_id='$NEWEV' and direction='down' and active order by display_order limit 1")
 OLDEV=$(Q "select id from events where not is_active order by created_at limit 1")
 DUP=$(Q "select campus_id||'|'||student_id||'|'||name from registrations where event_id='$OLDEV' limit 1")
 IFS='|' read -r C S N <<< "$DUP"
 echo -n "  지난 행사 학우를 새 행사에 등록: "
-Q "insert into registrations (campus_id, student_id, name, attendance_type, departure_slot_id, uses_return_bus)
-   values ('$C','$S','$N','roundtrip',$SLOT,true) returning 'OK'" 2>&1 | tail -1
+Q "insert into registrations (event_id, campus_id, student_id, name, up_trip_id, down_trip_id)
+   values ('$NEWEV','$C','$S','$N',$SLOT,$DOWN) returning 'OK'" 2>&1 | tail -1
 echo -n "  같은 행사 안 중복은 여전히 거부되는가: "
-DUPOUT=$(Q "insert into registrations (campus_id, student_id, name, attendance_type, departure_slot_id, uses_return_bus)
-   values ('$C','$S','$N','roundtrip',$SLOT,true)" 2>&1 || true)
+DUPOUT=$(Q "insert into registrations (event_id, campus_id, student_id, name, up_trip_id, down_trip_id)
+   values ('$NEWEV','$C','$S','$N',$SLOT,$DOWN)" 2>&1 || true)
 case "$DUPOUT" in
   *uq_registrations_identity*) echo "YES (정상 거부)" ;;
   *) echo "NO ← 문제: $DUPOUT" ;;

@@ -14,11 +14,16 @@ export default async function CampusLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, campus_id, display_name")
-    .eq("id", user.id)
-    .single<ProfileMini>();
+  const [{ data: profile }, { data: event }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role, campus_id, display_name")
+      .eq("id", user.id)
+      .single<ProfileMini>(),
+    // 임역원 화면에는 행사 이름이 **한 군데도** 없었다. master 가 행사를 넘기면
+    // 명단이 빈 화면으로 바뀌는데, 임역원은 자기 입력이 사라진 줄 안다.
+    supabase.from("events").select("name").eq("is_active", true).maybeSingle(),
+  ]);
 
   if (!profile || profile.role !== "campus_admin") {
     redirect(profile?.role === "guest" ? "/pending" : "/admin");
@@ -32,6 +37,12 @@ export default async function CampusLayout({
             <h1 className="text-sm font-semibold text-foreground whitespace-nowrap shrink-0">
               임역원 · {profile.display_name ?? "(이름 없음)"}
             </h1>
+            <span
+              className="shrink-0 max-w-[14rem] truncate rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted"
+              title={event?.name ?? undefined}
+            >
+              {event?.name ?? "진행 중 행사 없음"}
+            </span>
             <span className="hidden md:inline text-border-2">|</span>
             <nav className="flex w-full gap-1 overflow-x-auto whitespace-nowrap pb-1 text-sm md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
               <a

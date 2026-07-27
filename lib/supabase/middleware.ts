@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { EVENT_HEADER, eventIdFromPath } from "@/lib/events/route";
 import type { Database } from "./database.types";
 import type { UserRole } from "./types";
 
@@ -9,8 +10,18 @@ import type { UserRole } from "./types";
  * @see SPEC §3.1 역할 4종
  */
 export async function updateSession(request: NextRequest) {
+  // 주소창의 행사 id 를 요청 헤더로 심는다 (Phase 4-5).
+  // 서버 컴포넌트는 URL 을 직접 못 보지만 헤더는 볼 수 있고, Supabase 클라이언트가
+  // 이걸 그대로 PostgREST 로 넘겨 DB 가 "화면이 보는 행사"를 알게 된다.
+  // ⚠️ 이 헤더는 **권한을 주지 않는다.** 의도를 재확인하는 채널일 뿐이라,
+  //    없거나 위조돼도 RLS·트리거가 여전히 진짜 방어선이다(§8-C).
+  const requestHeaders = new Headers(request.headers);
+  const viewingEventId = eventIdFromPath(request.nextUrl.pathname);
+  if (viewingEventId) requestHeaders.set(EVENT_HEADER, viewingEventId);
+  else requestHeaders.delete(EVENT_HEADER); // 클라이언트가 보낸 값을 그대로 믿지 않는다
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   });
 
   const supabase = createServerClient<Database>(
@@ -26,7 +37,7 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
-            request,
+            request: { headers: requestHeaders },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)

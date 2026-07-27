@@ -6,7 +6,7 @@ import { Play, CircleCheck, TriangleAlert, Clock, ArrowUp, ArrowDown } from "luc
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { runBatchAction, type BatchActionResult } from "@/app/admin/(protected)/batch/actions";
+import { runBatchAction, type BatchActionResult } from "@/app/admin/(protected)/e/[eventId]/batch/actions";
 import { setAssignment } from "@/lib/admin/registrations";
 import { busSelectOptions } from "@/lib/admin/bus-options";
 import { tripLabel } from "@/lib/labels";

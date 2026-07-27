@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { EVENT_HEADER } from "@/lib/events/route";
 import type { Database } from "./database.types";
 
 /**
@@ -8,11 +9,17 @@ import type { Database } from "./database.types";
  */
 export async function createClient() {
   const cookieStore = await cookies();
+  // 미들웨어가 주소창에서 뽑아 심어둔 "지금 보는 행사". DB 가 열람·쓰기 대조에 쓴다.
+  // 미들웨어를 안 타는 경로(정적 자산 등)에서는 없을 수 있다 — 없으면 안 보낸다.
+  const viewingEventId = (await headers()).get(EVENT_HEADER);
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      ...(viewingEventId
+        ? { global: { headers: { [EVENT_HEADER]: viewingEventId } } }
+        : {}),
       cookies: {
         getAll() {
           return cookieStore.getAll();

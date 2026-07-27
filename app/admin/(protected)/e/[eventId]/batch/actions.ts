@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runBatch } from "@/lib/batch/engine";
+import { writableEventId } from "@/lib/events/current";
+import { viewingEventId } from "@/lib/events/server";
 import type { Passenger, Bus } from "@/lib/batch/types";
 import type { UserRole } from "@/lib/supabase/types";
 
@@ -139,7 +141,15 @@ export async function runBatchAction(
   }
 
   const success = result.errors.length === 0;
+  // Phase 4-3/4-5 — 배차 실행 기록도 행사를 명시한다. 이 행이 엉뚱한 행사에 붙으면
+  // "이 행사에서 배차를 언제 돌렸나"가 통째로 틀린다.
+  // 서버 액션이라 주소창을 직접 못 본다 — 미들웨어가 심어둔 헤더를 쓰고,
+  // 없으면(행사 경로 밖에서 호출) 진행 중 행사로 떨어진다.
+  const viewing = await viewingEventId();
+  const fallback = await writableEventId(supabase);
+  const eventId = viewing ?? (fallback.ok ? fallback.id : null);
   await supabase.from("batch_runs").insert({
+    ...(eventId ? { event_id: eventId } : {}),
     run_by: user.id,
     success,
     total_assigned: result.total_assigned,

@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { currentEventId } from "@/lib/events/current";
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -14,18 +15,22 @@ export async function setMasterReceived(
   note: string | null
 ): Promise<Result> {
   const supabase = createClient();
+  // ⚠️ 정산 행의 키는 (event_id, campus_id) 다. 예전엔 event_id 를 컬럼 기본값에
+  //    맡기고 페이로드에서 뺐는데, 4-4 에서 그 기본값을 지운다. 그때 이 upsert 가
+  //    조용히 깨지면 **금전 사고**다(입금액이 엉뚱한 행사에 붙거나 아예 안 들어간다).
+  //    그래서 명시로 바꾼다. 지금 값은 기본값이 넣던 것과 같다.
+  const ev = await currentEventId(supabase);
+  if (!ev.ok) return ev;
   const { error } = await supabase
     .from("campus_payment_settlements")
     .upsert(
       {
+        event_id: ev.id,
         campus_id: campusId,
         master_received_total: total,
         master_received_note: note,
         master_received_at: new Date().toISOString(),
       },
-      // 정산 행의 키는 (event_id, campus_id) 다. campus_id 만 주면
-      // "ON CONFLICT 에 맞는 제약이 없다"로 실패한다.
-      // event_id 는 컬럼 기본값(활성 행사)이 채우므로 페이로드에 넣지 않는다.
       { onConflict: "event_id,campus_id" }
     );
   if (error) {

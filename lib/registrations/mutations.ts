@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type RegistrationRow =
@@ -19,9 +20,17 @@ export async function insertRegistration(
   input: RegistrationInsert
 ): Promise<Result<RegistrationRow>> {
   const supabase = createClient();
+  // event_id 를 명시한다 (Phase 4-3). 지금까지는 컬럼 기본값이 채웠는데 4-4 에서
+  // 그 기본값을 지운다. 호출부가 이미 넣어줬으면 그대로 존중한다.
+  let event_id = input.event_id;
+  if (!event_id) {
+    const ev = await currentEventId(supabase);
+    if (!ev.ok) return { ok: false, message: ev.message };
+    event_id = ev.id;
+  }
   const { data, error } = await supabase
     .from("registrations")
-    .insert(input)
+    .insert({ ...input, event_id })
     .select()
     .single();
 
