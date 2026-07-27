@@ -65,6 +65,8 @@ export function BusAttendance({
     return s;
   });
   const [err, setErr] = useState<string | null>(null);
+  /** 선택한 호차. null = 전체 (지금까지의 동작). */
+  const [selBus, setSelBus] = useState<number | null>(null);
 
   // Realtime: 같은 캠퍼스 다른 기기의 체크를 자동 반영 (본인 echo 도 idempotent).
   useEffect(() => {
@@ -231,6 +233,41 @@ export function BusAttendance({
     );
   }
 
+  /**
+   * 호차 바로가기 — 사용자 피드백: "호차가 많고 인원이 많은 경우 계속 밑으로 스크롤을
+   * 내렸어야 하는데 그게 많이 불편했다. 호차별 버튼이 있어서 거기로 바로바로 화면이
+   * 바뀌어서 볼 수 있었으면."
+   *
+   * 기본은 전체(지금까지의 동작)로 두고, 호차를 고르면 그 호차만 보여준다.
+   * 칩에 진행률을 같이 띄운다 — 현장에서 필요한 건 "어느 호차가 아직 안 끝났나"이고,
+   * 그건 목록을 다 내려봐야만 알 수 있었다.
+   */
+  const busIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const [id] of upGroups) ids.add(id);
+    for (const [id] of downGroups) ids.add(id);
+    return [...ids].sort((a, b) => a - b);
+  }, [upGroups, downGroups]);
+
+  const progressOf = (busId: number) => {
+    let done = 0;
+    let total = 0;
+    for (const [id, members] of upGroups)
+      if (id === busId) {
+        total += members.length;
+        done += members.filter((m) => state[m.id]?.checked_in).length;
+      }
+    for (const [id, members] of downGroups)
+      if (id === busId) {
+        total += members.length;
+        done += members.filter((m) => state[m.id]?.checked_out).length;
+      }
+    return { done, total };
+  };
+
+  const onlySelected = (groups: Group[]) =>
+    selBus == null ? groups : groups.filter(([id]) => id === selBus);
+
   // 요약 카드용 라이브 집계 (state 기반 → 토글/Realtime 즉시 반영)
   const slotArrived = new Map<number, number>();
   for (const [busId, members] of upGroups) {
@@ -277,8 +314,59 @@ export function BusAttendance({
           {err}
         </div>
       )}
-      {renderSection(upGroups, "checked_in", "up")}
-      {renderSection(downGroups, "checked_out", "down")}
+      {busIds.length > 1 && (
+        <div className="sticky top-0 z-20 -mx-1 px-1 py-2 bg-surface/95 backdrop-blur border-b border-border">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            <button
+              type="button"
+              onClick={() => setSelBus(null)}
+              className={cn(
+                "shrink-0 px-3 py-1.5 rounded-lg text-sm border transition",
+                selBus == null
+                  ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+                  : "border-border text-muted hover:bg-surface-2"
+              )}
+            >
+              전체
+            </button>
+            {busIds.map((id) => {
+              const { done, total } = progressOf(id);
+              const complete = total > 0 && done === total;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSelBus(id)}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 rounded-lg text-sm border transition whitespace-nowrap",
+                    selBus === id
+                      ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+                      : complete
+                        ? "border-success-border bg-success-bg text-success"
+                        : "border-border text-muted hover:bg-surface-2"
+                  )}
+                >
+                  {busName.get(id)?.name ?? `${id}호차`}{" "}
+                  <span className="tabular-nums text-xs">
+                    {done}/{total}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {renderSection(onlySelected(upGroups), "checked_in", "up")}
+      {renderSection(onlySelected(downGroups), "checked_out", "down")}
+
+      {selBus != null &&
+        onlySelected(upGroups).length === 0 &&
+        onlySelected(downGroups).length === 0 && (
+          <p className="text-sm text-muted-2 py-6 text-center">
+            이 호차에 배정된 인원이 없습니다.
+          </p>
+        )}
     </div>
   );
 }
