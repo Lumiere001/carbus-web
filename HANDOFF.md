@@ -315,7 +315,10 @@ pnpm tsc --noEmit && pnpm vitest run && pnpm eslint app components lib && pnpm b
 ### 운영 반영
 
 ```bash
-# 백업 먼저. 실패하면 exit 1 이라 && 뒤가 안 돈다 (2026-07-27 수정, §7-E)
+# ⚠️ set -o pipefail 이 **필수**다. 백업 출력을 | tail 로 줄이면 파이프의 종료 코드는
+#    tail 것이라, exit 1 안전장치가 통째로 삼켜지고 db push 가 그대로 진행된다.
+#    2026-07-28 에 실제로 그렇게 넘어갔다.
+set -o pipefail
 node scripts/local-verify/backup-prod.mjs ~/Backups/carbus-web/$(date +%Y-%m-%d_%H%M)-pre-phaseN \
   && supabase db push          # link 되어 있음 (project ref qqtqwyhclscfjlefkiqr)
 ```
