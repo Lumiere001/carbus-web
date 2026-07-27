@@ -53,7 +53,7 @@ export type Database = {
           elapsed_ms?: number | null
           empty_seats?: Json | null
           error_message?: string | null
-          event_id?: string
+          event_id: string
           id?: string
           run_at?: string
           run_by?: string | null
@@ -115,7 +115,7 @@ export type Database = {
           down_fixed_passenger_ids?: string[]
           down_trip_id?: number | null
           driver_registration_id?: string | null
-          event_id?: string
+          event_id: string
           fill_priority?: number
           fixed_passenger_ids?: string[]
           hard_cap?: number
@@ -160,6 +160,13 @@ export type Database = {
             columns: ["down_driver_registration_id"]
             isOneToOne: false
             referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "buses_down_driver_registration_id_fkey"
+            columns: ["down_driver_registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
             referencedColumns: ["registration_id"]
           },
           {
@@ -209,6 +216,13 @@ export type Database = {
             columns: ["driver_registration_id"]
             isOneToOne: false
             referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "buses_driver_registration_id_fkey"
+            columns: ["driver_registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
             referencedColumns: ["registration_id"]
           },
           {
@@ -267,7 +281,7 @@ export type Database = {
           campus_remitted_by?: string | null
           campus_remitted_note?: string | null
           campus_remitted_total?: number
-          event_id?: string
+          event_id: string
           master_received_at?: string | null
           master_received_note?: string | null
           master_received_total?: number
@@ -345,7 +359,7 @@ export type Database = {
           campus_id: string
           created_at?: string
           created_by?: string | null
-          event_id?: string
+          event_id: string
           id?: string
           note?: string | null
         }
@@ -445,7 +459,7 @@ export type Database = {
           destination?: string | null
           direction?: string
           display_order?: number
-          event_id?: string
+          event_id: string
           id?: never
           key: string
           label: string
@@ -569,7 +583,7 @@ export type Database = {
           actor?: string | null
           amount: number
           created_at?: string
-          event_id?: string
+          event_id: string
           id?: string
           kind: string
           occurred_at?: string
@@ -623,6 +637,13 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
             referencedColumns: ["registration_id"]
           },
         ]
@@ -720,7 +741,7 @@ export type Database = {
           change_type: Database["public"]["Enums"]["request_type"]
           changed_by?: string | null
           created_at?: string
-          event_id?: string
+          event_id: string
           id?: string
           registration_id: string
         }
@@ -795,7 +816,7 @@ export type Database = {
           created_by?: string | null
           departure_slot_id?: number | null
           down_trip_id?: number | null
-          event_id?: string
+          event_id: string
           fee?: number | null
           home_unit_id?: string | null
           id?: string
@@ -1064,6 +1085,88 @@ export type Database = {
         }
         Relationships: []
       }
+      transport_legs: {
+        Row: {
+          created_at: string
+          direction: string
+          event_id: string
+          id: number
+          mode: Database["public"]["Enums"]["transport_mode"]
+          note: string | null
+          registration_id: string
+          status: Database["public"]["Enums"]["transport_status"]
+          updated_at: string
+          via_unit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          event_id: string
+          id?: never
+          mode: Database["public"]["Enums"]["transport_mode"]
+          note?: string | null
+          registration_id: string
+          status?: Database["public"]["Enums"]["transport_status"]
+          updated_at?: string
+          via_unit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          event_id?: string
+          id?: never
+          mode?: Database["public"]["Enums"]["transport_mode"]
+          note?: string | null
+          registration_id?: string
+          status?: Database["public"]["Enums"]["transport_status"]
+          updated_at?: string
+          via_unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_legs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_via_unit_id_fkey"
+            columns: ["via_unit_id"]
+            isOneToOne: false
+            referencedRelation: "org_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       departure_slots: {
@@ -1175,13 +1278,6 @@ export type Database = {
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["departure_slot_id"]
-            isOneToOne: false
-            referencedRelation: "departure_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "departure_slots"
@@ -1191,7 +1287,7 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
-            referencedRelation: "event_trips"
+            referencedRelation: "departure_slots"
             referencedColumns: ["id"]
           },
           {
@@ -1205,8 +1301,8 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
-            referencedRelation: "v_day_capacity"
-            referencedColumns: ["slot_id"]
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
@@ -1218,13 +1314,20 @@ export type Database = {
           {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["up_trip_id"]
+            columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
@@ -1425,6 +1528,29 @@ export type Database = {
           },
         ]
       }
+      v_transport_summary: {
+        Row: {
+          down_mode: Database["public"]["Enums"]["transport_mode"] | null
+          down_status: Database["public"]["Enums"]["transport_status"] | null
+          down_via_unit: string | null
+          event_id: string | null
+          has_pending: boolean | null
+          registration_id: string | null
+          up_mode: Database["public"]["Enums"]["transport_mode"] | null
+          up_status: Database["public"]["Enums"]["transport_status"] | null
+          up_via_unit: string | null
+          uses_other_transport: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       activate_event: { Args: { p_event_id: string }; Returns: undefined }
@@ -1467,6 +1593,7 @@ export type Database = {
           reg_count: number
         }[]
       }
+      is_event_writable: { Args: { p_event: string }; Returns: boolean }
       lock_event_writes: { Args: { p_event_id: string }; Returns: undefined }
       set_attendance: {
         Args: { p_field: string; p_reg_id: string; p_value: boolean }
@@ -1484,6 +1611,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      viewing_event_id: { Args: never; Returns: string }
       writable_event_id: { Args: never; Returns: string }
     }
     Enums: {
@@ -1493,6 +1621,8 @@ export type Database = {
       payment_status: "unpaid" | "paid" | "waived"
       request_type: "insert" | "update" | "delete"
       system_phase: "phase1" | "phase2"
+      transport_mode: "our_bus" | "other_district" | "ktx" | "own_car" | "other"
+      transport_status: "confirmed" | "pending"
       user_role: "guest" | "campus_admin" | "viewer" | "master"
     }
     CompositeTypes: {
@@ -1630,6 +1760,8 @@ export const Constants = {
       payment_status: ["unpaid", "paid", "waived"],
       request_type: ["insert", "update", "delete"],
       system_phase: ["phase1", "phase2"],
+      transport_mode: ["our_bus", "other_district", "ktx", "own_car", "other"],
+      transport_status: ["confirmed", "pending"],
       user_role: ["guest", "campus_admin", "viewer", "master"],
     },
   },

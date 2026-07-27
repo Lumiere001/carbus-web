@@ -39,6 +39,7 @@ TABLES = [
     "profiles", "registrations", "role_labels", "system_config",
     "batch_runs", "registration_audit",
     "campus_remittances", "campus_payment_settlements", "payment_ledger",
+    "transport_legs",
 ]
 
 # 백업하지 않아도 되는 테이블 (마이그레이션이 전량 생성 = 데이터가 아니라 스키마의 일부)
@@ -120,12 +121,36 @@ def check_coverage() -> None:
             f"   운영 백업을 다시 뜨세요. 지금 백업으로는 복구도 재현도 안 됩니다."
         )
 
-    no_file = [t for t in TABLES if backup_file(t) is None]
-    if no_file:
+    # 파일이 없는 테이블은 두 경우로 갈린다. 섞으면 안 된다:
+    #   ① 백업을 뜰 때 **이미 있었는데** 파일이 없다 → 백업이 깨진 것. 크게 실패.
+    #   ② 백업을 뜬 **뒤에 생긴** 테이블이다 → 시간 순서상 당연하고, 빈 채로 두면 된다.
+    # 구분은 manifest 로 한다. manifest 는 그 백업이 무엇을 대상으로 삼았는지의 기록이라,
+    # 거기 이름이 있는데 파일이 없으면 그건 사고다.
+    manifest_tables: set[str] = set()
+    mf = BACKUP / "_manifest.json"
+    if mf.exists():
+        try:
+            manifest_tables = set(json.loads(mf.read_text()).get("tables", {}).keys())
+        except Exception:
+            manifest_tables = set()
+
+    broken, newer = [], []
+    for t in TABLES:
+        if backup_file(t) is not None:
+            continue
+        names = {t, RENAMED_FROM.get(t, "")} - {""}
+        (broken if names & manifest_tables else newer).append(t)
+
+    if broken:
         sys.exit(
-            f"❌ 백업 '{BACKUP.name}' 에 파일이 없는 테이블: {', '.join(no_file)}\n"
-            f"   이 백업은 해당 테이블이 생기기 전에 뜬 것입니다.\n"
-            f"   운영 백업을 다시 뜨거나(권장), 더 최신 백업 경로를 인자로 주세요."
+            f"❌ 백업 '{BACKUP.name}' 이 대상으로 삼았는데 파일이 없는 테이블: "
+            f"{', '.join(broken)}\n"
+            f"   백업이 불완전합니다. 다시 뜨세요."
+        )
+    if newer:
+        print(
+            f"⚠️  이 백업보다 나중에 생긴 테이블이라 비어 있습니다: {', '.join(newer)}\n"
+            f"   (백업: {BACKUP.name}) — 다음 백업부터는 포함됩니다."
         )
 
 
@@ -152,7 +177,12 @@ def main():
     ]
     summary = []
     for t in TABLES:
-        rows = json.loads(backup_file(t).read_text())
+        f = backup_file(t)
+        if f is None:
+            # 이 백업보다 나중에 생긴 테이블 — 위 check_coverage 가 이미 경고했다.
+            summary.append((t, 0))
+            continue
+        rows = json.loads(f.read_text())
         # 컬럼 rename 이 있었으면 백업의 옛 키를 현재 컬럼명으로 바꿔 끼운다.
         colmap = RENAMED_COLUMNS.get(t)
         if colmap and rows:

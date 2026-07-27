@@ -23,7 +23,8 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes] = await Promise.all([
+  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes] =
+    await Promise.all([
     supabase
       .from("registrations")
       .select(
@@ -40,6 +41,12 @@ export default async function AdminRegistrationsPage() {
     supabase.from("role_labels").select("label, color").order("display_order"),
     supabase.from("system_config").select("current_phase").maybeSingle(),
     supabase.from("event_trips").select("*").order("direction").order("display_order"),
+    // 타지구 차량일 때 고를 지구 목록.
+    supabase.from("org_units").select("id, name").order("display_order"),
+    // 방향별 이동수단 — 명단에 배지로 띄우고, 수정 폼의 초기값이 된다.
+    supabase
+      .from("transport_legs")
+      .select("registration_id, direction, mode, status, via_unit_id"),
   ]);
   const trips = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
@@ -59,6 +66,22 @@ export default async function AdminRegistrationsPage() {
     for (const id of b.down_fixed_passenger_ids ?? []) fixedIds.add(id);
   }
 
+  const units = unitRes.data ?? [];
+  const unitName = new Map(units.map((u) => [u.id, u.name]));
+  // 사람 → 방향별 이동수단. 없으면 우리 버스(기본값)라 행을 안 만든다.
+  const legs = new Map<
+    string,
+    { mode: string; status: string; via: string | null }
+  >();
+  for (const l of legRes.data ?? []) {
+    legs.set(`${l.registration_id}:${l.direction}`, {
+      mode: l.mode,
+      status: l.status,
+      via: l.via_unit_id ? unitName.get(l.via_unit_id) ?? null : null,
+    });
+  }
+  const pendingCount = (legRes.data ?? []).filter((l) => l.status === "pending").length;
+
   return (
     <div className="space-y-5">
       <div>
@@ -67,6 +90,12 @@ export default async function AdminRegistrationsPage() {
           캠퍼스별 신청·납부·배차 현황
           {isMaster ? " · 배정 수정·제외 가능" : " (보기 전용)"}
         </p>
+        {pendingCount > 0 && (
+          <p className="text-sm text-warning mt-1">
+            타지구 차량 <b>확정 대기 {pendingCount}건</b> — 그동안 우리 버스 좌석을
+            잡아두고 있습니다. 확정되면 그 방향 운행편을 비워 자리를 반납하세요.
+          </p>
+        )}
       </div>
       <RegistrationsPanel
         rows={(regRes.data ?? []) as AdminRegRow[]}
@@ -78,6 +107,8 @@ export default async function AdminRegistrationsPage() {
         driverIds={driverIds}
         fixedIds={fixedIds}
         trips={trips}
+        units={units}
+        legs={Object.fromEntries(legs)}
       />
     </div>
   );

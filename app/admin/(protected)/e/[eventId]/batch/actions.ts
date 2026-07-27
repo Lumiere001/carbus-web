@@ -148,8 +148,13 @@ export async function runBatchAction(
   const viewing = await viewingEventId();
   const fallback = await writableEventId(supabase);
   const eventId = viewing ?? (fallback.ok ? fallback.id : null);
+  // event_id 는 이제 필수다(4-4 에서 컬럼 기본값을 지웠다). 못 구하면 실행 기록을
+  // 남길 수 없는데, 배정은 이미 저장됐으므로 조용히 건너뛰지 않고 알린다.
+  if (!eventId) {
+    return { ok: false, message: "행사를 확인할 수 없어 실행 기록을 남기지 못했습니다." };
+  }
   await supabase.from("batch_runs").insert({
-    ...(eventId ? { event_id: eventId } : {}),
+    event_id: eventId,
     run_by: user.id,
     success,
     total_assigned: result.total_assigned,
