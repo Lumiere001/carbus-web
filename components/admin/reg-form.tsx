@@ -15,6 +15,12 @@ import {
   updateRegistrationFields,
   type RegFormFields,
 } from "@/lib/admin/registrations";
+import { setTransportLeg } from "@/lib/admin/transport";
+import {
+  TransportPicker,
+  DEFAULT_LEG,
+  type LegValue,
+} from "@/components/admin/transport-picker";
 import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
 
 export type RegFormInitial = {
@@ -26,6 +32,9 @@ export type RegFormInitial = {
   down_trip_id: number | null;
   payment_status: PaymentStatus;
   note: string | null;
+  /** 방향별 이동수단 (3단계). 없으면 우리 버스. */
+  up_leg?: LegValue;
+  down_leg?: LegValue;
 };
 
 /** master 전용 순장/순원 추가·수정 폼. */
@@ -34,12 +43,15 @@ export function RegForm({
   initial,
   campuses,
   trips,
+  units,
   onClose,
 }: {
   mode: "new" | "edit";
   initial?: RegFormInitial;
   campuses: { id: string; name: string }[];
   trips: EventTrip[];
+  /** 타지구 차량일 때 고를 지구 목록 (org_units). */
+  units: { id: string; name: string }[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -58,6 +70,8 @@ export function RegForm({
     initial?.payment_status ?? "unpaid"
   );
   const [note, setNote] = useState(initial?.note ?? "");
+  const [upLeg, setUpLeg] = useState<LegValue>(initial?.up_leg ?? DEFAULT_LEG);
+  const [downLeg, setDownLeg] = useState<LegValue>(initial?.down_leg ?? DEFAULT_LEG);
 
   function submit() {
     setErr(null);
@@ -78,6 +92,22 @@ export function RegForm({
           ? await createRegistration(fields)
           : await updateRegistrationFields(initial!.id, fields);
       if (!res.ok) return setErr(res.message);
+
+      // 이동수단은 별도 테이블이라 따로 저장한다. 신규는 방금 만든 행의 id 가
+      // 필요해서 수정 때만 반영한다 — 추가 직후 다시 열어 고르면 된다.
+      if (mode === "edit" && initial) {
+        for (const [dir, leg] of [
+          ["up", upLeg],
+          ["down", downLeg],
+        ] as const) {
+          const r = await setTransportLeg(initial.id, dir, {
+            mode: leg.mode,
+            viaUnitId: leg.viaUnitId,
+            status: leg.status,
+          });
+          if (!r.ok) return setErr(r.message);
+        }
+      }
       onClose();
       router.refresh();
     });
@@ -179,6 +209,29 @@ export function RegForm({
               ))}
             </select>
           </label>
+          {mode === "edit" && (
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-border bg-surface-2/40 p-3">
+              <p className="sm:col-span-2 text-xs text-muted-2 leading-snug">
+                <b className="text-foreground">이동수단</b> — 우리 버스가 아니면 여기서 고르세요.
+                예전엔 비고에 적었는데, 그러면 “타지구”가 <b>소속</b>인지 <b>얻어 타는 차</b>인지
+                구분되지 않았습니다(지난 수련회에서 두 뜻이 63건·80건으로 섞였습니다).
+              </p>
+              <TransportPicker
+                label="갈 때 (상행)"
+                value={upLeg}
+                units={units}
+                disabled={pending}
+                onChange={setUpLeg}
+              />
+              <TransportPicker
+                label="올 때 (하행)"
+                value={downLeg}
+                units={units}
+                disabled={pending}
+                onChange={setDownLeg}
+              />
+            </div>
+          )}
           <label className="text-xs text-muted space-y-1 block sm:col-span-2">
             비고 (부분참 일정·특이사항 등 자유 기록)
             <textarea

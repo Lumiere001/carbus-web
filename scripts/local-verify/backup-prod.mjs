@@ -60,6 +60,7 @@ const TABLES = [
   { name: "campus_remittances" },
   { name: "campus_payment_settlements" },
   { name: "payment_ledger" },
+  { name: "transport_legs" },
 ];
 
 /** 테이블 전체를 1000행씩 읽는다. 없는 테이블이면 null. */
@@ -94,6 +95,16 @@ for (const t of TABLES) {
     }
   }
   if (res.error) {
+    // "아직 없는 테이블"과 "백업 실패"는 다르다. 새 기능을 올리기 **직전**에 백업을
+    // 뜨면 그 기능의 테이블은 당연히 아직 없다 — 그걸 실패로 세면 배포가 막히고,
+    // 막으려던 진짜 사고(있는데 못 뜬 것)와 구분이 안 된다.
+    const notThereYet =
+      /does not exist|Could not find the table|PGRST205/i.test(res.error);
+    if (notThereYet) {
+      console.log(`  · ${t.name.padEnd(28)} 아직 운영에 없음 (건너뜀)`);
+      manifest.tables[t.name] = { absent: true };
+      continue;
+    }
     console.log(`  ✗ ${t.name}: ${res.error}`);
     manifest.tables[t.name] = { error: res.error };
     failed++;

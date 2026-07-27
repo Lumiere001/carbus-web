@@ -21,6 +21,9 @@ import {
 } from "@/lib/admin/registrations";
 import { busSelectOptions } from "@/lib/admin/bus-options";
 import { RegForm } from "@/components/admin/reg-form";
+import { TransportBadges } from "@/components/admin/transport-picker";
+import type { LegValue } from "@/components/admin/transport-picker";
+import type { TransportMode, TransportStatus } from "@/lib/transport/labels";
 import { Button } from "@/components/ui/button";
 import { Pencil, Plus } from "lucide-react";
 import { setLeaderRole } from "@/lib/admin/leaders";
@@ -121,6 +124,8 @@ export function RegistrationsPanel({
   driverIds,
   fixedIds,
   trips,
+  units,
+  legs,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -133,6 +138,10 @@ export function RegistrationsPanel({
   /** 호차에 고정탑승으로 묶인 reg id (상/하행) — 역할 파생용. */
   fixedIds: Set<string>;
   trips: EventTrip[];
+  /** 타지구 차량일 때 고를 지구 목록 (org_units). */
+  units: { id: string; name: string }[];
+  /** "<신청id>:<방향>" → 이동수단. 행이 없으면 우리 버스(기본값). */
+  legs: Record<string, { mode: string; status: string; via: string | null }>;
 }) {
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -173,6 +182,26 @@ export function RegistrationsPanel({
    * 표가 자체 스크롤 영역(max-h) 안에 있어서, 폼을 화면 맨 위에 띄우면
    * 명단이 길수록 되돌아가는 거리가 길어졌다.
    */
+  /** legs 맵에서 한 방향 값을 꺼낸다. 없으면 우리 버스(기본값). */
+  const legOf = (regId: string, dir: "up" | "down"): LegValue => {
+    const raw = legs[`${regId}:${dir}`];
+    if (!raw) return { mode: "our_bus", viaUnitId: null, status: "confirmed" };
+    const unit = units.find((u) => u.name === raw.via);
+    return {
+      mode: raw.mode as LegValue["mode"],
+      viaUnitId: unit?.id ?? null,
+      status: raw.status as LegValue["status"],
+    };
+  };
+  const badgeOf = (regId: string, dir: "up" | "down") => {
+    const raw = legs[`${regId}:${dir}`];
+    return {
+      mode: (raw?.mode ?? null) as TransportMode | null,
+      status: (raw?.status ?? null) as TransportStatus | null,
+      via: raw?.via ?? null,
+    };
+  };
+
   const renderRow = (r: AdminRegRow) => {
     const editing = isMaster && form?.mode === "edit" && form.row.id === r.id;
     return (
@@ -198,15 +227,22 @@ export function RegistrationsPanel({
           driverIds={driverIds}
           fixedIds={fixedIds}
           trips={trips}
+          upLeg={badgeOf(r.id, "up")}
+          downLeg={badgeOf(r.id, "down")}
         />
         {editing && (
           <tr className="bg-primary-50/40">
             <td colSpan={colCount} className="p-3">
               <RegForm
                 mode="edit"
-                initial={r}
+                initial={{
+                  ...r,
+                  up_leg: legOf(r.id, "up"),
+                  down_leg: legOf(r.id, "down"),
+                }}
                 campuses={campuses}
                 trips={trips}
+                units={units}
                 onClose={() => setForm(null)}
               />
             </td>
@@ -295,6 +331,7 @@ export function RegistrationsPanel({
           mode="new"
           campuses={campuses}
           trips={trips}
+          units={units}
           onClose={() => setForm(null)}
         />
       )}
@@ -395,6 +432,8 @@ function Row({
   driverIds,
   fixedIds,
   trips,
+  upLeg,
+  downLeg,
 }: {
   r: AdminRegRow;
   busName: Map<number, string>;
@@ -412,6 +451,9 @@ function Row({
   driverIds: Set<string>;
   fixedIds: Set<string>;
   trips: EventTrip[];
+  /** 이 사람의 방향별 이동수단 — 우리 버스면 배지를 안 그린다. */
+  upLeg: { mode: TransportMode | null; status: TransportStatus | null; via: string | null };
+  downLeg: { mode: TransportMode | null; status: TransportStatus | null; via: string | null };
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -632,7 +674,10 @@ function Row({
             : "—"}
       </td>
       <td className="px-4 py-2.5 text-muted-2 max-w-[14rem] whitespace-pre-wrap break-words">
-        {r.note?.trim() ? r.note : "—"}
+        <span className="flex flex-wrap items-center gap-1.5">
+          <TransportBadges up={upLeg} down={downLeg} />
+          <span>{r.note?.trim() ? r.note : upLeg.mode || downLeg.mode ? "" : "—"}</span>
+        </span>
       </td>
       {isMaster && (
         <td className="px-4 py-2.5">

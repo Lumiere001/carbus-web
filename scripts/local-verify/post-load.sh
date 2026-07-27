@@ -72,10 +72,12 @@ begin
   alter table public.events        enable always trigger trg_events_sync_active;
   foreach t in array array[
     'registrations','buses','event_trips','batch_runs',
-    'campus_payment_settlements','campus_remittances','registration_audit','payment_ledger'
+    'campus_payment_settlements','campus_remittances','registration_audit','payment_ledger',
+    'transport_legs'
   ] loop
     execute format('alter table public.%I enable always trigger trg_%s_event_writable', t, t);
   end loop;
+  alter table public.transport_legs enable always trigger trg_transport_legs_scope;
 end $$;
 SQL
 echo "  OK — 파생·가드 트리거 ENABLE ALWAYS"
@@ -141,7 +143,7 @@ begin
   select count(*) into v_bad
     from unnest(array['registrations','buses','event_trips','batch_runs',
                       'campus_payment_settlements','campus_remittances',
-                      'registration_audit','payment_ledger']) as t(name)
+                      'registration_audit','payment_ledger','transport_legs']) as t(name)
    where not exists (
      select 1 from pg_trigger tg join pg_class c on c.oid = tg.tgrelid
       where c.relname = t.name and tg.tgname = 'trg_' || t.name || '_event_writable'

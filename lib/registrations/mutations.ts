@@ -17,7 +17,9 @@ type Result<T> =
  * 신규 순장/순원 INSERT. campus_id는 호출부에서 본인 캠퍼스로 강제 (RLS WITH CHECK도 이중 차단).
  */
 export async function insertRegistration(
-  input: RegistrationInsert
+  // event_id 는 호출부가 몰라도 된다 — 이 함수가 "지금 보는 행사"로 채운다.
+  // (4-4 에서 컬럼 기본값을 지웠지만, 그 지식을 화면마다 퍼뜨리지 않는다)
+  input: Omit<RegistrationInsert, "event_id"> & { event_id?: string }
 ): Promise<Result<RegistrationRow>> {
   const supabase = createClient();
   // event_id 를 명시한다 (Phase 4-3). 지금까지는 컬럼 기본값이 채웠는데 4-4 에서
