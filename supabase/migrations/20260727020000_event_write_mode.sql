@@ -58,7 +58,18 @@ create unique index if not exists uq_events_single_live
 create or replace function public.sync_event_active()
 returns trigger language plpgsql as $$
 begin
-  if tg_op = 'INSERT' or new.write_mode is distinct from old.write_mode then
+  if tg_op = 'INSERT' then
+    -- ⚠️ INSERT 에서는 "둘 중 하나라도 살아 있다고 말하면 진행 중"으로 본다.
+    --    write_mode 를 안 주면 DEFAULT 'closed' 가 앉는데, 그걸 곧이곧대로 믿으면
+    --    **is_active=true 인 백업 행을 넣는 순간 그 행사가 죽는다**(아래 참고).
+    if new.is_active or new.write_mode = 'live' then
+      new.is_active  := true;
+      new.write_mode := 'live';
+    else
+      new.is_active  := false;
+      new.write_mode := 'closed';
+    end if;
+  elsif new.write_mode is distinct from old.write_mode then
     new.is_active := (new.write_mode = 'live');
   elsif new.is_active is distinct from old.is_active then
     new.write_mode := case when new.is_active then 'live' else 'closed' end;
@@ -71,11 +82,25 @@ create trigger trg_events_sync_active
   before insert or update on public.events
   for each row execute function public.sync_event_active();
 
+-- ⚠️ ENABLE ALWAYS 인 이유 — 이걸 빼면 **백업을 복원한 뒤 아무 데도 쓸 수 없게 된다.**
+--    load-backup.py 는 session_replication_role = replica 로 트리거를 끄고 넣는다.
+--    백업은 write_mode 컬럼이 생기기 전에 뜬 것이라 그 값이 없고, 트리거가 꺼져 있으면
+--    DEFAULT 'closed' 가 그대로 앉는다. 결과: is_active=true 인데 write_mode='closed' 인
+--    행사 — 화면에는 정상으로 보이는데 4-4 의 쓰기 가드가 전부 막는다.
+--    **실측으로 겪었다.** trg_reg_000_derive 가 ALWAYS 인 것과 똑같은 이유다:
+--    이건 업무 로직이 아니라 한 사실의 두 표현을 맞춰주는 구조 유지 장치다.
+alter table public.events enable always trigger trg_events_sync_active;
+
 -- ── 3. 지금 쓸 수 있는 행사 ─────────────────────────────────
 -- active_event_id() 는 그대로 둔다(읽기용, 4-6 에서 viewing_event_id() 로 간다).
 -- 이건 **쓰기용**이다. 둘을 나누는 게 Phase 4 의 핵심이다.
+-- ⚠️ SECURITY DEFINER 인 이유: 형제 함수 active_event_id() 와 같아야 한다.
+--    invoker 로 두면 events 읽기 정책에 의존하게 되는데, 지금은 events_select 가
+--    `using true` 라 우연히 동작할 뿐이다. 그 정책을 조이는 순간 임역원의 명단
+--    입력이 통째로 막힌다(event_id 를 못 구해서). 읽는 값이 "지금 쓰기 가능한
+--    행사 id" 하나뿐이라 정보 노출도 없다.
 create or replace function public.writable_event_id()
-returns uuid language sql stable set search_path = public as $$
+returns uuid language sql stable security definer set search_path = public as $$
   select id from public.events
    where write_mode = 'live'
       or (unlock_until is not null and unlock_until > now())
@@ -128,6 +153,7 @@ begin
    where id = p_event_id;
 end $$;
 
+grant execute on function public.writable_event_id() to authenticated;
 grant execute on function public.unlock_event_writes(uuid, text, int) to authenticated;
 grant execute on function public.lock_event_writes(uuid) to authenticated;
 
@@ -184,11 +210,12 @@ end $$;
 -- ── 5. 자체검증 ─────────────────────────────────────────────
 do $$
 declare
-  v_live    int;
-  v_id      uuid;
-  v_write   uuid;
-  v_active  boolean;
-  v_ok      boolean;
+  v_live     int;
+  v_id       uuid;
+  v_restored uuid;
+  v_write    uuid;
+  v_active   boolean;
+  v_ok       boolean;
 begin
   -- ① 진행 중 행사는 정확히 1개이고, is_active 와 일치한다
   select count(*) into v_live from events where write_mode = 'live';
@@ -232,6 +259,37 @@ begin
   end if;
   raise notice '검증 ④: is_active ↔ write_mode 양방향 동기화 OK';
 
+  -- ⑤ 임역원(authenticated) 권한으로도 값이 나오는가.
+  --    앱의 모든 INSERT 가 이 함수로 event_id 를 구한다(Phase 4-3). 여기서 NULL 이
+  --    나오면 **임역원의 명단 입력이 통째로 막힌다** — 화면에는 "행사가 없습니다"만
+  --    뜨고 원인은 안 보인다. SECURITY DEFINER 라 events 읽기 정책과 무관해야 한다.
+  set local role authenticated;
+  if public.writable_event_id() is null then
+    reset role;
+    raise exception 'authenticated 권한에서 writable_event_id() 가 NULL 입니다 — 임역원 입력이 막힙니다';
+  end if;
+  reset role;
+  raise notice '검증 ⑤: 임역원 권한에서도 쓰기 행사 조회 OK';
+
+  -- ⑥ 백업 적재 경로. load-backup.py 는 replica 모드로 넣고, 백업에는 write_mode 가
+  --    없다(컬럼이 생기기 전에 뜬 스냅샷). 동기화가 안 걸리면 is_active=true 인데
+  --    write_mode='closed' 인 행사가 생기고 — 화면엔 정상인데 **모든 쓰기가 막힌다.**
+  --    실제로 이 상태를 만들어 재현했다. 여기서 매번 확인한다.
+  -- 활성 행사는 하나뿐이라, 복원 상황을 재현하려면 현재 것을 먼저 내려야 한다
+  -- (이 블록은 끝에서 통째로 롤백된다).
+  update events set is_active = false where id = v_id;
+  set local session_replication_role = replica;
+  insert into events (name, starts_on, ends_on, is_active)
+  values ('__검증_백업복원', current_date, current_date, true)
+  returning id into v_restored;
+  if (select write_mode from events where id = v_restored) <> 'live' then
+    reset session_replication_role;
+    raise exception
+      '백업 적재 경로에서 write_mode 가 안 따라왔습니다 — 복원 후 아무것도 못 씁니다 (동기화 트리거가 ALWAYS 인지 확인)';
+  end if;
+  reset session_replication_role;
+  raise notice '검증 ⑥: 백업 적재(replica 모드)에서도 write_mode 동기화 OK';
+
   raise exception '__검증완료_롤백';
 exception when others then
   if sqlerrm = '__검증완료_롤백' then
@@ -248,9 +306,10 @@ begin
   if not exists (
     select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid
      where c.relname = 'events' and t.tgname = 'trg_events_sync_active'
-       and t.tgenabled <> 'D'
+       and t.tgenabled = 'A'
   ) then
-    raise exception 'trg_events_sync_active 가 비활성입니다';
+    raise exception
+      'trg_events_sync_active 가 ENABLE ALWAYS 가 아닙니다 — 백업 복원 시 모든 쓰기가 막힙니다';
   end if;
   if not exists (
     select 1 from pg_trigger t join pg_class c on c.oid = t.tgrelid

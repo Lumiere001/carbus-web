@@ -104,6 +104,14 @@ begin
   ) then
     raise exception 'trg_reg_000_derive 가 ENABLE ALWAYS 가 아닙니다 — 백업 적재가 실패합니다';
   end if;
+
+  -- 같은 함정의 두 번째 사례. 적재 후 is_active=true 인데 write_mode='closed' 면
+  -- 화면은 정상으로 보이는데 **모든 쓰기가 가드에 막힌다.** 값으로 직접 확인한다.
+  select count(*) into v_bad from events where is_active and write_mode <> 'live';
+  if v_bad > 0 then
+    raise exception
+      '활성인데 쓰기 불가 상태인 행사 %건 — 동기화 트리거가 ENABLE ALWAYS 인지 확인하세요', v_bad;
+  end if;
 end $$;
 SQL
 echo "  OK — 차량·신청이 운행편에 정상 연결됨"

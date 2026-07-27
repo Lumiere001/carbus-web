@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runBatch } from "@/lib/batch/engine";
+import { writableEventId } from "@/lib/events/current";
 import type { Passenger, Bus } from "@/lib/batch/types";
 import type { UserRole } from "@/lib/supabase/types";
 
@@ -139,7 +140,11 @@ export async function runBatchAction(
   }
 
   const success = result.errors.length === 0;
+  // Phase 4-3 — 배차 실행 기록도 행사를 명시한다. 이 행이 엉뚱한 행사에 붙으면
+  // "이 행사에서 배차를 언제 돌렸나"가 통째로 틀린다.
+  const ev = await writableEventId(supabase);
   await supabase.from("batch_runs").insert({
+    ...(ev.ok ? { event_id: ev.id } : {}),
     run_by: user.id,
     success,
     total_assigned: result.total_assigned,

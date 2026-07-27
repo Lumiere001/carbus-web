@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { writableEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type TripRow = Database["public"]["Tables"]["event_trips"]["Row"];
@@ -37,8 +38,9 @@ export type TripPatch = {
  * 의존하는데, 한글 라벨에서 안정적인 slug 를 만들 방법이 없고 사용자가 신경 쓸
  * 개념도 아니기 때문이다. `up_3` / `down_2` 처럼 방향+순번으로 짓는다.
  *
- * event_id 는 넘기지 않는다 — 컬럼 DEFAULT 가 active_event_id() 라 활성 행사에 붙고,
- * RESTRICTIVE 정책이 그 값만 허용한다. 즉 다른 행사에 끼워 넣을 수 없다.
+ * event_id 는 **명시한다** (Phase 4-3). 예전엔 컬럼 DEFAULT 에 맡겼는데 4-4 에서
+ * 그 기본값을 지운다. RESTRICTIVE 정책이 여전히 쓰기 가능한 행사만 허용하므로,
+ * 명시해도 다른 행사에 끼워 넣을 수는 없다.
  */
 export async function createTrip(input: NewTripInput): Promise<Result<TripRow>> {
   const supabase = createClient();
@@ -62,9 +64,13 @@ export async function createTrip(input: NewTripInput): Promise<Result<TripRow>> 
     0
   );
 
+  const ev = await writableEventId(supabase);
+  if (!ev.ok) return { ok: false, message: ev.message };
+
   const { data, error } = await supabase
     .from("event_trips")
     .insert({
+      event_id: ev.id,
       key: `${input.direction}_${n}`,
       label,
       direction: input.direction,

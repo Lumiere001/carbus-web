@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { writableEventId } from "@/lib/events/current";
 import type { PaymentStatus } from "@/lib/supabase/types";
 
 type Result = { ok: true } | { ok: false; message: string };
@@ -38,9 +39,12 @@ export async function createRegistration(f: RegFormFields): Promise<Result> {
   const err = validateForm(f);
   if (err) return { ok: false, message: err };
   const supabase = createClient();
+  // Phase 4-3 — 컬럼 기본값에 기대지 않고 명시한다.
+  const ev = await writableEventId(supabase);
+  if (!ev.ok) return ev;
   const { error } = await supabase
     .from("registrations")
-    .insert({ ...f, roles: [] });
+    .insert({ ...f, roles: [], event_id: ev.id });
   if (error) return { ok: false, message: humanize(error.message) };
   return { ok: true };
 }
