@@ -42,7 +42,7 @@ export default async function AdminTripsPage() {
     //  화면은 "무엇이 막히는지 미리 알려주는" 역할만 한다)
     supabase
       .from("registrations")
-      .select("assigned_up_bus_id, assigned_down_bus_id, departure_slot_id")
+      .select("assigned_up_bus_id, assigned_down_bus_id, up_trip_id, down_trip_id")
       .neq("participation_status", "cancelled"),
   ]);
 
@@ -50,28 +50,37 @@ export default async function AdminTripsPage() {
   const buses = (busesRes.data ?? []) as BusRow[];
 
   const loads: Record<number, BusLoad> = {};
-  // 차량에 배정된 사람들이 **신청한 상행 편**의 집합.
+  // 차량에 배정된 사람들이 **신청한 편**의 집합 (방향별).
   // DB 가드가 "바꾼 뒤 신청 편과 어긋나는 인원"을 세므로, 화면도 같은 술어를 쓰려면
   // 단순 인원수가 아니라 이 집합이 필요하다.
+  // 3-C 로 하행도 신청 편을 갖게 됐고 DB 가드(guard_bus_trip_change)도 하행을 검사한다.
+  // 여기서 하행 집합을 안 만들면 화면만 느슨해져, 저장 눌렀을 때 서버가 거절한다.
   const upRequests: Record<number, number[]> = {};
+  const downRequests: Record<number, number[]> = {};
   for (const b of buses) {
     loads[b.id] = { up: 0, down: 0 };
     upRequests[b.id] = [];
+    downRequests[b.id] = [];
   }
-  const seen: Record<number, Set<number>> = {};
+  const seenUp: Record<number, Set<number>> = {};
+  const seenDown: Record<number, Set<number>> = {};
   for (const r of regsRes.data ?? []) {
     const up = r.assigned_up_bus_id;
     if (up != null && loads[up]) {
       loads[up].up += 1;
-      if (r.departure_slot_id != null) {
-        (seen[up] ??= new Set()).add(r.departure_slot_id);
-      }
+      if (r.up_trip_id != null) (seenUp[up] ??= new Set()).add(r.up_trip_id);
     }
-    if (r.assigned_down_bus_id != null && loads[r.assigned_down_bus_id])
-      loads[r.assigned_down_bus_id].down += 1;
+    const down = r.assigned_down_bus_id;
+    if (down != null && loads[down]) {
+      loads[down].down += 1;
+      if (r.down_trip_id != null) (seenDown[down] ??= new Set()).add(r.down_trip_id);
+    }
   }
-  for (const [busId, set] of Object.entries(seen)) {
+  for (const [busId, set] of Object.entries(seenUp)) {
     upRequests[Number(busId)] = [...set];
+  }
+  for (const [busId, set] of Object.entries(seenDown)) {
+    downRequests[Number(busId)] = [...set];
   }
 
   return (
@@ -81,13 +90,19 @@ export default async function AdminTripsPage() {
         <p className="text-sm text-muted-2 mt-1">
           운행편과 차량을 만들고 고칩니다. 차량은 상·하행 편을 각각 갖습니다.
           <br />
-          <strong className="text-warning-700">아직은</strong> 신청 화면이 하행 편을
-          고르게 하지 못합니다 — 하행을 여러 편으로 나눠도 신청자가 편을 선택할 수 없고
-          배차가 섞습니다. 하행은 당분간 한 편으로 두세요.
+          하행도 상행과 똑같이 여러 편으로 나눌 수 있습니다 — 신청 화면에서 학우가
+          상행·하행 편을 각각 고르고, 배차도 편별로 나눠 돌립니다. 이미 배정된 인원이
+          있는 차량은 그 사람들이 신청한 편으로만 옮길 수 있습니다(먼저 재배차).
         </p>
       </header>
 
-      <FleetPanel trips={trips} buses={buses} loads={loads} upRequests={upRequests} />
+      <FleetPanel
+        trips={trips}
+        buses={buses}
+        loads={loads}
+        upRequests={upRequests}
+        downRequests={downRequests}
+      />
     </div>
   );
 }

@@ -134,6 +134,43 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
     });
   });
 
+  it("하행 열이 없는 옛 CSV 의 '왕복' → 하행 편이 채워진다 (편도로 조용히 등록되지 않는다)", () => {
+    // 실제 결함이었다: '참석 유형' 열을 읽고 버려서, 왕복 요금을 낸 학우가
+    // 편도 상행으로 등록되고 귀가 버스에서 빠졌다.
+    const csv = ["이름,학번,참석 유형,상행 출발,비고", "왕복이,26,왕복,tue_am,"].join("\n");
+    const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
+    expect(failures).toHaveLength(0);
+    expect(successes[0]).toMatchObject({ up_trip_id: 1, down_trip_id: 9 });
+  });
+
+  it("하행 열이 없고 하행 편이 여러 개면 실패로 표면화", () => {
+    const twoDown = [
+      ...SLOTS,
+      { id: 10, key: "return_pm", label: "귀가 오후", direction: "down" as const, active: true },
+    ];
+    const csv = ["이름,학번,참석 유형,상행 출발,비고", "왕복이,26,왕복,tue_am,"].join("\n");
+    const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, twoDown);
+    expect(successes).toHaveLength(0);
+    expect(failures[0].reason).toContain("하행 편이 2개");
+  });
+
+  it("하행 열이 없는 '편도'(상행 있음) → 그대로 편도 상행", () => {
+    const csv = ["이름,학번,참석 유형,상행 출발,비고", "편도,26,편도,tue_am,"].join("\n");
+    const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
+    expect(failures).toHaveLength(0);
+    expect(successes[0]).toMatchObject({ up_trip_id: 1, down_trip_id: null });
+  });
+
+  it("참석 유형과 상·하행 입력이 어긋나면 실패 — 조용히 한쪽을 버리지 않는다", () => {
+    const csv = [
+      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
+      "모순,26,왕복,tue_am,X,",
+    ].join("\n");
+    const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
+    expect(successes).toHaveLength(0);
+    expect(failures[0].reason).toContain("참석 유형");
+  });
+
   it("성공·실패 혼재 → 분리", () => {
     const csv = [
       "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",

@@ -73,12 +73,14 @@ const LOADS: Record<number, BusLoad> = {
 
 /** 차량에 배정된 사람들이 신청한 상행 편 — DB 가드와 같은 술어로 잠금을 계산한다. */
 const UP_REQ: Record<number, number[]> = { 1: [1], 2: [1], 3: [] };
+/** 하행도 같다 — 3-C 로 신청이 하행 편을 갖게 되면서 가드가 대칭이 됐다. */
+const DOWN_REQ: Record<number, number[]> = { 1: [90], 2: [90], 3: [] };
 
 beforeEach(cleanup);
 
 describe("FleetPanel", () => {
   it("상·하행 두 방향이 같은 구조로 렌더된다", () => {
-    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} />);
+    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} downRequests={DOWN_REQ} />);
     expect(screen.getByText("상행 (가는 편)")).toBeDefined();
     expect(screen.getByText("하행 (오는 편)")).toBeDefined();
     // 하행이 한 편뿐이어도 상행과 같은 섹션 구조를 갖는다(범용 틀의 핵심).
@@ -89,7 +91,7 @@ describe("FleetPanel", () => {
   });
 
   it("운행편별 차량 대수를 방향에 맞게 센다", () => {
-    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} />);
+    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} downRequests={DOWN_REQ} />);
     // 상행 1편: 1·2호차 = 2대 / 상행 2편: 3호차 = 1대 / 하행: 3대 전부
     expect(screen.getByText("차량 2대")).toBeDefined();
     expect(screen.getByText("차량 1대")).toBeDefined();
@@ -97,13 +99,13 @@ describe("FleetPanel", () => {
   });
 
   it("배차 특례가 배지로 드러난다", () => {
-    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} />);
+    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} downRequests={DOWN_REQ} />);
     expect(screen.getByText("응집 면제")).toBeDefined();
     expect(screen.getByText("후순위")).toBeDefined();
   });
 
   it("배정 인원이 있는 차량은 삭제 버튼이 잠긴다", () => {
-    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} />);
+    render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} downRequests={DOWN_REQ} />);
     const del = screen.getAllByRole("button", { name: "삭제" });
     // 차량 3대 중 1·2호차는 배정 있음 → 비활성, 3호차는 0명 → 활성.
     // (운행편 삭제 버튼도 같은 이름이라 차량 쪽만 세지 않고 잠긴 개수로 본다)
@@ -118,7 +120,7 @@ describe("FleetPanel", () => {
     const { default: userEvent } = await import("@testing-library/user-event");
     // 1호차: 상행 33명 배정, 전원 1편 신청 → 1편은 유지 가능, 2편은 어긋남.
     render(
-      <FleetPanel trips={TRIPS} buses={[BUSES[0]]} loads={{ 1: { up: 33, down: 23 } }} upRequests={{ 1: [1] }} />
+      <FleetPanel trips={TRIPS} buses={[BUSES[0]]} loads={{ 1: { up: 33, down: 23 } }} upRequests={{ 1: [1] }} downRequests={{ 1: [90] }} />
     );
     const edits = screen.getAllByRole("button", { name: "수정" });
     await userEvent.click(edits[edits.length - 1]);
@@ -130,14 +132,41 @@ describe("FleetPanel", () => {
     expect(opt(/화 오전 9시/).disabled).toBe(false);
     // 다른 상행 편(2편)은 어긋나므로 잠긴다.
     expect(opt(/화 오후 7시/).disabled).toBe(true);
-    // 하행은 DB 가드가 검사하지 않으므로 잠그지 않는다(경고만).
+    // 하행도 같은 규칙이다. 지금 편(귀가)은 배정된 전원이 신청한 편이라 열려 있다.
     expect(opt(/귀가/).disabled).toBe(false);
+  });
+
+  it("하행도 상행과 같은 규칙으로 잠긴다 — 3-C 이후 DB 가드가 대칭이다", async () => {
+    // 예전엔 하행 select 에 잠금이 아예 없었다. 그때는 신청에 하행 편이 없어
+    // 어긋날 대상 자체가 없었기 때문인데, 3-C 이후엔 DB 가 막는데 화면만 열려 있어
+    // "고를 수는 있는데 저장하면 거부되는" 상태가 됐다.
+    const twoDown = [
+      ...TRIPS,
+      trip({ id: 91, label: "귀가 오후", direction: "down", display_order: 110 }),
+    ];
+    render(
+      <FleetPanel
+        trips={twoDown}
+        buses={[BUSES[0]]}
+        loads={{ 1: { up: 33, down: 23 } }}
+        upRequests={{ 1: [1] }}
+        downRequests={{ 1: [90] }}
+      />
+    );
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const edits = screen.getAllByRole("button", { name: "수정" });
+    await userEvent.click(edits[edits.length - 1]);
+    const opt = (re: RegExp) =>
+      screen.getAllByRole("option").find((o) => re.test(o.textContent ?? "")) as HTMLOptionElement;
+    // 배정된 23명이 신청한 편(귀가)은 유지 가능, 다른 하행 편은 어긋나므로 잠긴다.
+    expect(opt(/^귀가$/).disabled).toBe(false);
+    expect(opt(/귀가 오후/).disabled).toBe(true);
   });
 
   it("배정이 없으면 상행 편을 자유롭게 고를 수 있다", async () => {
     const { default: userEvent } = await import("@testing-library/user-event");
     render(
-      <FleetPanel trips={TRIPS} buses={[BUSES[2]]} loads={{ 3: { up: 0, down: 0 } }} upRequests={{ 3: [] }} />
+      <FleetPanel trips={TRIPS} buses={[BUSES[2]]} loads={{ 3: { up: 0, down: 0 } }} upRequests={{ 3: [] }} downRequests={{ 3: [] }} />
     );
     const edits = screen.getAllByRole("button", { name: "수정" });
     await userEvent.click(edits[edits.length - 1]);
@@ -150,7 +179,7 @@ describe("FleetPanel", () => {
   it("활성 운행편이 없으면 차량 추가가 잠긴다", () => {
     // 비활성 편에 차량을 붙이면 /admin/buses 에서 그 차량과 승객이 통째로 사라진다.
     const inactive = TRIPS.map((t) => ({ ...t, active: false }));
-    render(<FleetPanel trips={inactive} buses={[]} loads={{}} upRequests={{}} />);
+    render(<FleetPanel trips={inactive} buses={[]} loads={{}} upRequests={{}} downRequests={{}} />);
     const add = screen.getAllByRole("button", { name: "추가" });
     expect((add[add.length - 1] as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/활성 운행편이 없습니다/)).toBeDefined();
@@ -158,7 +187,7 @@ describe("FleetPanel", () => {
 
   it("운행편이 없는 방향도 깨지지 않는다", () => {
     // 새 행사를 빈 상태로 시작하면 실제로 이 상태가 된다.
-    render(<FleetPanel trips={[]} buses={[]} loads={{}} upRequests={{}} />);
+    render(<FleetPanel trips={[]} buses={[]} loads={{}} upRequests={{}} downRequests={{}} />);
     expect(screen.getAllByText("아직 운행편이 없습니다.")).toHaveLength(2);
   });
 
@@ -166,7 +195,7 @@ describe("FleetPanel", () => {
     // up_trip_id / down_trip_id 가 nullable 이 되면서 생긴 상태 —
     // "하행만 운행하는 차량" 같은 편성이 가능해야 범용이다.
     const orphan = [bus({ id: 9, name: "9호차", up_trip_id: null, down_trip_id: null })];
-    render(<FleetPanel trips={TRIPS} buses={orphan} loads={{ 9: { up: 0, down: 0 } }} upRequests={{ 9: [] }} />);
+    render(<FleetPanel trips={TRIPS} buses={orphan} loads={{ 9: { up: 0, down: 0 } }} upRequests={{ 9: [] }} downRequests={{ 9: [] }} />);
     expect(screen.getByText("9호차")).toBeDefined();
     expect(screen.getAllByText("—")).toHaveLength(2); // 상행·하행 둘 다 미지정
   });

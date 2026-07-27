@@ -13,29 +13,32 @@ export const dynamic = "force-dynamic";
  * 배차 실행이 만든 배정 컬럼만의 변경은 제외(노이즈 제거).
  */
 
+/**
+ * 변동으로 셀 필드.
+ *
+ * 3-C 로 참여 필드가 `up_trip_id` / `down_trip_id` 가 됐다. 옛 이름
+ * (`departure_slot_id` / `uses_return_bus`)은 파생 트리거가 계속 채우지만,
+ * 감사 로그에는 **두 시대의 스냅샷이 섞여 있다.** 그래서 논리 필드 하나에
+ * 새 키와 옛 키를 함께 달아두고, 스냅샷에 있는 쪽을 본다.
+ *
+ * 옛 키만 봤을 때의 실제 결함: 하행을 3시 편 → 6시 편으로 바꾸면
+ * `uses_return_bus` 는 true 그대로라 **변동 목록에 통째로 안 나타났다.**
+ */
 const CONTENT_FIELDS = [
-  "name",
-  "student_id",
-  "attendance_type",
-  "departure_slot_id",
-  "uses_return_bus",
-  "payment_status",
-  "roles",
-  "campus_id",
-  "note",
+  { key: "name", label: "이름" },
+  { key: "student_id", label: "학번" },
+  { key: "attendance_type", label: "참석유형" },
+  { key: "up_trip_id", label: "상행 편", legacy: "departure_slot_id" },
+  { key: "down_trip_id", label: "하행 편", legacy: "uses_return_bus" },
+  { key: "payment_status", label: "납부" },
+  { key: "roles", label: "역할" },
+  { key: "campus_id", label: "캠퍼스" },
+  { key: "note", label: "비고" },
 ] as const;
 
-const FIELD_LABEL: Record<string, string> = {
-  name: "이름",
-  student_id: "학번",
-  attendance_type: "참석유형",
-  departure_slot_id: "출발 시간대",
-  uses_return_bus: "하행이용",
-  payment_status: "납부",
-  roles: "역할",
-  campus_id: "캠퍼스",
-  note: "비고",
-};
+const FIELD_LABEL: Record<string, string> = Object.fromEntries(
+  CONTENT_FIELDS.map((f) => [f.key, f.label])
+);
 
 const ROLE_LABEL: Record<string, string> = {
   master: "총단 운영자",
@@ -56,8 +59,14 @@ function contentDiff(before: Json | null, after: Json | null): string[] {
   const a = asObj(after);
   const out: string[] = [];
   for (const f of CONTENT_FIELDS) {
-    if (JSON.stringify(b?.[f] ?? null) !== JSON.stringify(a?.[f] ?? null))
-      out.push(f);
+    // 새 키가 스냅샷에 없으면(3-C 이전 이력) 옛 키로 본다.
+    const pick = (o: Record<string, Json> | null) => {
+      if (!o) return null;
+      const legacy = "legacy" in f ? f.legacy : undefined;
+      if (!(f.key in o) && legacy && legacy in o) return o[legacy] ?? null;
+      return o[f.key] ?? null;
+    };
+    if (JSON.stringify(pick(b)) !== JSON.stringify(pick(a))) out.push(f.key);
   }
   return out;
 }
@@ -150,8 +159,8 @@ export default async function AdminChangesPage() {
   const regMap = new Map<
     string,
     {
-      departure_slot_id: number | null;
-      uses_return_bus: boolean;
+      up_trip_id: number | null;
+      down_trip_id: number | null;
       assigned_up_bus_id: number | null;
       assigned_down_bus_id: number | null;
     }
@@ -160,14 +169,14 @@ export default async function AdminChangesPage() {
     const { data: regs } = await supabase
       .from("registrations")
       .select(
-        "id, departure_slot_id, uses_return_bus, assigned_up_bus_id, assigned_down_bus_id"
+        "id, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id"
       )
       .in("id", liveIds);
     for (const r of regs ?? []) regMap.set(r.id, r);
   }
 
   const [busRes, campusRes] = await Promise.all([
-    supabase.from("buses").select("id, name, up_trip_id"),
+    supabase.from("buses").select("id, name, up_trip_id, down_trip_id"),
     supabase.from("campuses").select("id, name"),
   ]);
   const busMap = new Map((busRes.data ?? []).map((b) => [b.id, b]));
@@ -196,25 +205,26 @@ export default async function AdminChangesPage() {
     let down = "—";
     let rebatch = false;
     if (e.kind !== "제외" && cur) {
-      if (cur.departure_slot_id != null) {
-        if (cur.assigned_up_bus_id == null) {
-          up = "미배정";
+      // 상·하행 같은 판정 — "그 방향을 신청했는데 미배정이거나, 배정된 차의 편이
+      // 신청한 편과 다르면" 재배차 대상이다. 하행은 3-C 전까지 편이 없어
+      // 불일치 검사를 못 했는데, 그 코드가 그대로 남아 하행만 빠져 있었다.
+      const check = (
+        tripId: number | null,
+        busId: number | null,
+        busTrip: (b: { up_trip_id: number | null; down_trip_id: number | null }) => number | null
+      ): string => {
+        if (tripId == null) return "—";
+        if (busId == null) {
           rebatch = true;
-        } else {
-          const b = busMap.get(cur.assigned_up_bus_id);
-          const match = b?.up_trip_id === cur.departure_slot_id;
-          up = (b?.name ?? `${cur.assigned_up_bus_id}호차`) + (match ? "" : " ⚠슬롯불일치");
-          if (!match) rebatch = true;
+          return "미배정";
         }
-      }
-      if (cur.uses_return_bus === true) {
-        if (cur.assigned_down_bus_id == null) {
-          down = "미배정";
-          rebatch = true;
-        } else {
-          down = busMap.get(cur.assigned_down_bus_id)?.name ?? `${cur.assigned_down_bus_id}호차`;
-        }
-      }
+        const b = busMap.get(busId);
+        const match = b != null && busTrip(b) === tripId;
+        if (!match) rebatch = true;
+        return (b?.name ?? `${busId}호차`) + (match ? "" : " ⚠편 불일치");
+      };
+      up = check(cur.up_trip_id, cur.assigned_up_bus_id, (b) => b.up_trip_id);
+      down = check(cur.down_trip_id, cur.assigned_down_bus_id, (b) => b.down_trip_id);
     }
     return {
       ...e,
@@ -265,7 +275,7 @@ export default async function AdminChangesPage() {
             <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning flex items-start gap-2">
               <TriangleAlert size={16} className="mt-0.5 shrink-0" />
               <span>
-                마감 후 변동으로 <b>{rebatchCount}명</b>이 미배정이거나 요일이 맞지 않습니다.
+                마감 후 변동으로 <b>{rebatchCount}명</b>이 미배정이거나 신청한 편과 배정된 차의 편이 다릅니다.
                 배차 화면에서 다시 실행하면 정리됩니다.
               </span>
             </div>

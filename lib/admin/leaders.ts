@@ -116,36 +116,55 @@ function humanize(msg: string): string {
 }
 
 /**
- * 상행 호차는 신청자의 출발 슬롯과 일치해야 함 (하행은 슬롯 무관 → 통과).
- * 드롭다운 필터 우회·API 직접 호출 대비 서버측 방어 (setAssignment 와 동일 정책).
+ * 리더로 지정하려는 호차가 그 사람이 **그 방향으로 신청한 편**과 같아야 한다.
+ * 드롭다운 필터 우회·API 직접 호출 대비 서버측 방어
+ * (setAssignment 의 validateAssign 과 동일 정책 — 상·하행 대칭).
+ *
+ * ⚠️ 3-C 이전에는 `mode !== "up"` 이면 즉시 통과시켰다. 그때는 신청에
+ * "하행 편"이라는 개념이 없어(불린 하나) 어긋날 대상이 없었기 때문이다.
+ * 지금은 하행도 편을 신청하므로, 통과시키면 3시 차 순장으로 지정된 사람이
+ * 6시 차 승객이어도 아무 데서도 안 막히고 배차에서 조용히 탈락한다.
  */
-async function assertUpSlotMatch(
+async function assertTripMatch(
   supabase: SupabaseClient,
   personId: string,
   busId: number,
   mode: Mode
 ): Promise<Result> {
-  if (mode !== "up") return { ok: true };
   const [{ data: reg }, { data: bus }] = await Promise.all([
-    supabase.from("registrations").select("departure_slot_id").eq("id", personId).single(),
-    supabase.from("buses").select("name, up_trip_id").eq("id", busId).single(),
+    supabase
+      .from("registrations")
+      .select("up_trip_id, down_trip_id")
+      .eq("id", personId)
+      .single(),
+    supabase.from("buses").select("name, up_trip_id, down_trip_id").eq("id", busId).single(),
   ]);
   if (!reg || !bus) return { ok: true }; // 못 찾으면 후속 쿼리에서 처리
-  if (reg.departure_slot_id == null)
-    return { ok: false, message: "상행 대상이 아닙니다 (하행 편도 신청자)" };
-  // up_trip_id 가 nullable 이 되면서 "상행을 운행하지 않는 차량"이 표현 가능해졌다.
-  if (bus.up_trip_id == null)
-    return { ok: false, message: `${bus.name}는 상행을 운행하지 않습니다` };
-  if (reg.departure_slot_id !== bus.up_trip_id) {
-    const upTripId = bus.up_trip_id;
-    const { data: slots } = await supabase
-      .from("event_trips")
-      .select("id, label")
-      .in("id", [reg.departure_slot_id, upTripId]);
-    const lbl = (sid: number) => slots?.find((s) => s.id === sid)?.label ?? `slot ${sid}`;
+
+  const regTrip = mode === "up" ? reg.up_trip_id : reg.down_trip_id;
+  const busTrip = mode === "up" ? bus.up_trip_id : bus.down_trip_id;
+  const dir = mode === "up" ? "상행" : "하행";
+
+  if (regTrip == null)
     return {
       ok: false,
-      message: `출발 시간대가 다릅니다 (신청 ${lbl(reg.departure_slot_id)} ≠ ${bus.name} ${lbl(upTripId)})`,
+      message:
+        mode === "up"
+          ? "상행 대상이 아닙니다 (하행 편도 신청자)"
+          : "하행 대상이 아닙니다 (하행 미이용 신청자)",
+    };
+  // trip_id 가 nullable 이라 "그 방향을 운행하지 않는 차량"이 표현 가능하다.
+  if (busTrip == null)
+    return { ok: false, message: `${bus.name}는 ${dir}을 운행하지 않습니다` };
+  if (regTrip !== busTrip) {
+    const { data: trips } = await supabase
+      .from("event_trips")
+      .select("id, label")
+      .in("id", [regTrip, busTrip]);
+    const lbl = (tid: number) => trips?.find((t) => t.id === tid)?.label ?? `편 ${tid}`;
+    return {
+      ok: false,
+      message: `${mode === "up" ? "출발" : "귀가"} 시간대가 다릅니다 (신청 ${lbl(regTrip)} ≠ ${bus.name} ${lbl(busTrip)})`,
     };
   }
   return { ok: true };
@@ -158,9 +177,9 @@ export async function assignDriverBus(
   mode: Mode
 ): Promise<Result> {
   const supabase = createClient();
-  // 가드: 상행 슬롯 일치 + 대상 호차에 이미 다른 차량순장이 있으면 차단(무경고 덮어쓰기 방지).
+  // 가드: 편 일치(상·하행) + 대상 호차에 이미 다른 차량순장이 있으면 차단(무경고 덮어쓰기 방지).
   if (busId != null) {
-    const slotG = await assertUpSlotMatch(supabase, personId, busId, mode);
+    const slotG = await assertTripMatch(supabase, personId, busId, mode);
     if (!slotG.ok) return slotG;
     const { data: bus } = await supabase
       .from("buses")
@@ -213,9 +232,9 @@ export async function assignFixedBus(
 ): Promise<Result> {
   const supabase = createClient();
 
-  // 가드: 상행 호차는 신청자 출발 슬롯과 일치해야 함 (드롭다운 우회 방어).
+  // 가드: 호차의 편이 신청한 편과 같아야 함 — 상·하행 모두 (드롭다운 우회 방어).
   if (busId != null) {
-    const slotG = await assertUpSlotMatch(supabase, personId, busId, mode);
+    const slotG = await assertTripMatch(supabase, personId, busId, mode);
     if (!slotG.ok) return slotG;
   }
 

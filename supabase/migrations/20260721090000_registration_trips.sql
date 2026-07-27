@@ -94,22 +94,28 @@ begin
     new.up_trip_id := new.departure_slot_id;
 
     if new.uses_return_bus then
-      -- 구버전은 "탄다"만 말할 수 있다. 어느 편인지는 우리가 정해야 한다.
-      -- 활성 하행 편이 하나뿐이면 그것으로, 여러 개면 고를 수 없으므로 거부한다
-      -- (조용히 아무 편이나 꽂으면 사람이 모르는 사이에 엉뚱한 시각에 배차된다).
-      select count(*), min(id) into v_ndown, v_down
-        from event_trips
-       where event_id = new.event_id and direction = 'down' and active;
+      -- 구버전은 "탄다"만 말할 수 있다. **어느 편인지는 말하지 못한다.**
+      -- 그러니 이미 정해져 있는 편이 있으면 그게 답이다 — 건드리지 않는다.
+      -- (이 보존이 없으면 구버전 앱이 납부 상태 하나만 바꿔도 6시 편 신청자가
+      --  3시 편으로 갈아끼워지거나, 하행이 2편 이상일 때 저장이 통째로 막혔다.)
+      if new.down_trip_id is null then
+        -- 처음 정하는 경우에만 우리가 고른다. 활성 하행 편이 하나뿐이면 그것으로,
+        -- 여러 개면 고를 수 없으므로 거부한다 (조용히 아무 편이나 꽂으면 사람이
+        -- 모르는 사이에 엉뚱한 시각에 배차된다).
+        select count(*), min(id) into v_ndown, v_down
+          from event_trips
+         where event_id = new.event_id and direction = 'down' and active;
 
-      if v_ndown = 0 then
-        raise exception '이 행사에 하행 운행편이 없습니다. 편성에서 먼저 만들어 주세요.'
-          using errcode = 'check_violation';
-      elsif v_ndown > 1 then
-        raise exception
-          '하행 편이 %개라 "탑승 여부"만으로는 정할 수 없습니다. 어느 편인지 지정해 주세요.',
-          v_ndown using errcode = 'check_violation';
+        if v_ndown = 0 then
+          raise exception '이 행사에 하행 운행편이 없습니다. 편성에서 먼저 만들어 주세요.'
+            using errcode = 'check_violation';
+        elsif v_ndown > 1 then
+          raise exception
+            '하행 편이 %개라 "탑승 여부"만으로는 정할 수 없습니다. 어느 편인지 지정해 주세요.',
+            v_ndown using errcode = 'check_violation';
+        end if;
+        new.down_trip_id := v_down;
       end if;
-      new.down_trip_id := v_down;
     else
       new.down_trip_id := null;
     end if;
@@ -262,10 +268,11 @@ alter table public.registrations enable always trigger trg_reg_000_derive;
 -- ── 6. 자체검증 — 실제로 넣어보고 롤백 ──────────────────────
 do $$
 declare
-  v_slot smallint;
-  v_down smallint;
-  v_id   uuid;
-  v_row  record;
+  v_slot  smallint;
+  v_down  smallint;
+  v_down2 smallint;
+  v_id    uuid;
+  v_row   record;
 begin
   select id into v_slot from event_trips
    where event_id = active_event_id() and direction = 'up' and active order by display_order limit 1;
@@ -304,6 +311,29 @@ begin
     raise exception '파생이 수동 값에 밀렸습니다 (type=%)', v_row.attendance_type;
   end if;
   raise notice '검증 ③: 손으로 넣은 참여형태를 파생이 덮어씀 OK';
+
+  -- ④ 하행이 2편일 때, 구버전 경로가 이미 정해진 하행 편을 건드리지 않는다.
+  --    예전 코드는 여기서 (a) 편을 갈아끼우거나 (b) "정할 수 없다"며 저장을 통째로
+  --    막았다. 구버전 앱은 "탄다"만 말할 수 있을 뿐 편을 바꾸라고 한 적이 없다.
+  insert into event_trips (key, label, display_order, active, event_id, direction)
+  values ('__verify_down2', '__검증_하행2편', 900, true, active_event_id(), 'down')
+  returning id into v_down2;
+
+  insert into registrations (campus_id, student_id, name, up_trip_id, down_trip_id)
+  values ((select id from campuses limit 1), '00', '__검증_하행보존', null, v_down2)
+  returning id into v_id;
+
+  -- 구버전 앱이 상행만 지정 (옛 컬럼 경로). uses_return_bus 는 true 그대로다.
+  update registrations set departure_slot_id = v_slot where id = v_id;
+  select * into v_row from registrations where id = v_id;
+  if v_row.down_trip_id is distinct from v_down2 then
+    raise exception '구버전 경로가 하행 편을 바꿔치웠습니다 (기대 % → 실제 %)',
+      v_down2, v_row.down_trip_id;
+  end if;
+  if v_row.up_trip_id is distinct from v_slot then
+    raise exception '구버전 경로가 상행 편을 못 채웠습니다 (up=%)', v_row.up_trip_id;
+  end if;
+  raise notice '검증 ④: 하행 2편에서 구버전 경로가 기존 하행 편 보존 OK';
 
   raise exception '__검증완료_롤백';
 exception when others then

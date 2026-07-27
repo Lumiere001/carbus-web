@@ -4,7 +4,12 @@ import {
   fieldErrors,
   type RegistrationInput,
 } from "@/lib/validators/registration";
-import { ATTENDANCE_FROM_KO, BOOL_FROM_KO } from "@/lib/labels";
+import {
+  ATTENDANCE_FROM_KO,
+  ATTENDANCE_LABELS,
+  BOOL_FROM_KO,
+  deriveAttendance,
+} from "@/lib/labels";
 import type { EventTrip } from "@/lib/supabase/types";
 
 /**
@@ -112,15 +117,61 @@ export function parseRegistrationsCsv(
       mapped.attendance_type =
         ATTENDANCE_FROM_KO[mapped.attendance_type] ?? mapped.attendance_type;
     }
+    const hasDownColumn = "down_trip_id" in mapped;
     mapped.up_trip_id =
       "up_trip_id" in mapped
         ? tripIdFromInput((mapped.up_trip_id as string) ?? "", "up")
         : null;
-    mapped.down_trip_id =
-      "down_trip_id" in mapped
-        ? tripIdFromInput((mapped.down_trip_id as string) ?? "", "down")
-        : null;
+    mapped.down_trip_id = hasDownColumn
+      ? tripIdFromInput((mapped.down_trip_id as string) ?? "", "down")
+      : null;
     if (mapped.note === "") mapped.note = null;
+
+    // ── '참석 유형' 열 처리 ────────────────────────────────
+    // attendance_type 은 3-C 에서 파생값이 됐다(DB 트리거가 두 편에서 계산).
+    // 그런데 임역원 템플릿에는 이 열이 그대로 있고, 예전엔 읽어서 **조용히 버렸다.**
+    // 그 결과 하행 열이 없는 옛 CSV 의 "왕복" 이 편도 상행으로 등록됐다 —
+    // 학우는 왕복 요금을 냈는데 귀가 버스에서 빠진다.
+    // 그래서 지금은 ① 하행 열이 없을 때 참석 유형으로 하행을 정하고,
+    // ② 정할 수 없거나 두 편과 어긋나면 **실패로 표면화**한다.
+    const declared = mapped.attendance_type;
+    const up = mapped.up_trip_id;
+    const down = mapped.down_trip_id;
+    let attendanceError: string | null = null;
+
+    if (typeof declared === "string" && declared !== "" && !(declared in ATTENDANCE_LABELS)) {
+      attendanceError = `참석 유형: '${declared}' 을 알 수 없습니다 (왕복 / 편도 / 버스 미이용)`;
+    } else if (
+      typeof declared === "string" &&
+      declared !== "" &&
+      up !== undefined &&
+      down !== undefined
+    ) {
+      const wantsDown = declared === "roundtrip" || (declared === "oneway" && up === null);
+      if (!hasDownColumn && wantsDown) {
+        // 하행 열이 아예 없는 옛 포맷. "탄다"까지는 알지만 어느 편인지는 모른다.
+        const active = dirTrips("down").filter((t) => t.active);
+        if (active.length === 1) mapped.down_trip_id = active[0].id;
+        else
+          attendanceError =
+            active.length === 0
+              ? "참석 유형: 하행 운행편이 없습니다 (편성에서 먼저 만들어 주세요)"
+              : `참석 유형: 하행 편이 ${active.length}개라 "왕복/편도"만으로는 정할 수 없습니다 — '하행 출발' 열에 편을 적어주세요`;
+      }
+      if (!attendanceError) {
+        const derived = deriveAttendance(
+          mapped.up_trip_id as number | null,
+          mapped.down_trip_id as number | null
+        );
+        if (derived !== declared)
+          attendanceError = `참석 유형: '${ATTENDANCE_LABELS[declared as keyof typeof ATTENDANCE_LABELS]}' 인데 상·하행 입력은 '${ATTENDANCE_LABELS[derived]}' 입니다 — 한쪽을 고쳐주세요`;
+      }
+    }
+
+    if (attendanceError) {
+      failures.push({ row: idx + 2, reason: attendanceError, raw: rawRow });
+      return;
+    }
 
     const candidate = { ...mapped, campus_id: campusId, roles: [] };
     const result = RegistrationSchema.safeParse(candidate);

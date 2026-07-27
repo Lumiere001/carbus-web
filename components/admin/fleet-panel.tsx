@@ -28,6 +28,8 @@ type Props = {
   loads: Record<number, BusLoad>;
   /** 차량 id → 그 차에 배정된 사람들이 **신청한 상행 편** id 목록 (중복 제거). */
   upRequests: Record<number, number[]>;
+  /** 하행도 같다. 3-C 로 신청이 하행 편을 갖게 되면서 DB 가드가 대칭이 됐다. */
+  downRequests: Record<number, number[]>;
 };
 
 const DIRECTION_LABEL: Record<TripDirection, string> = {
@@ -35,7 +37,13 @@ const DIRECTION_LABEL: Record<TripDirection, string> = {
   down: "하행 (오는 편)",
 };
 
-export function FleetPanel({ trips, buses, loads, upRequests }: Props) {
+export function FleetPanel({
+  trips,
+  buses,
+  loads,
+  upRequests,
+  downRequests,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(
@@ -97,6 +105,7 @@ export function FleetPanel({ trips, buses, loads, upRequests }: Props) {
         trips={trips}
         loads={loads}
         upRequests={upRequests}
+        downRequests={downRequests}
         pending={pending}
         tripLabel={tripLabel}
         onCreate={(input) => run(() => createBus(input))}
@@ -294,6 +303,7 @@ function BusSection({
   trips,
   loads,
   upRequests,
+  downRequests,
   pending,
   tripLabel,
   onCreate,
@@ -304,6 +314,7 @@ function BusSection({
   trips: TripRow[];
   loads: Record<number, BusLoad>;
   upRequests: Record<number, number[]>;
+  downRequests: Record<number, number[]>;
   pending: boolean;
   tripLabel: (id: number | null) => string;
   onCreate: (input: Parameters<typeof createBus>[0]) => void;
@@ -344,6 +355,7 @@ function BusSection({
             bus={b}
             load={loads[b.id] ?? { up: 0, down: 0 }}
             upRequested={upRequests[b.id] ?? []}
+            downRequested={downRequests[b.id] ?? []}
             upTrips={upTrips}
             downTrips={downTrips}
             pending={pending}
@@ -394,6 +406,7 @@ function BusRowItem({
   bus,
   load,
   upRequested,
+  downRequested,
   upTrips,
   downTrips,
   pending,
@@ -405,6 +418,8 @@ function BusRowItem({
   load: BusLoad;
   /** 이 차에 배정된 사람들이 신청한 상행 편 id 들. */
   upRequested: number[];
+  /** 하행도 같다. */
+  downRequested: number[];
   upTrips: TripRow[];
   downTrips: TripRow[];
   pending: boolean;
@@ -429,12 +444,21 @@ function BusRowItem({
   //   "바꾼 뒤 신청 편과 어긋나는 배정이 생기는가"
   // 배정된 사람들이 신청한 편이 {X} 하나뿐이면 X 로만 옮길 수 있고,
   // 아무도 안 탔으면 전부 열려 있다. (여러 편이 섞여 있으면 이미 어긋난 상태 → 전부 잠금)
-  const lockedUpTrips =
-    load.up === 0
+  const lockedOf = (
+    occupied: number,
+    requested: number[],
+    trips: TripRow[]
+  ): number[] =>
+    occupied === 0
       ? []
-      : upTrips
+      : trips
           .map((t) => t.id)
-          .filter((id) => !(upRequested.length === 1 && upRequested[0] === id));
+          .filter((id) => !(requested.length === 1 && requested[0] === id));
+
+  const lockedUpTrips = lockedOf(load.up, upRequested, upTrips);
+  // 하행도 3-C 이후 같은 규칙이다. 잠그지 않으면 화면에서는 고를 수 있는데
+  // 저장 때 DB 가드가 거절해 "왜 안 되지"가 된다.
+  const lockedDownTrips = lockedOf(load.down, downRequested, downTrips);
 
   if (!editing) {
     return (
@@ -497,11 +521,9 @@ function BusRowItem({
           화면이 더 엄격하면 "고칠 방법이 화면에 없는" 막다른 길이 되고,
           더 느슨하면 저장 눌렀을 때 서버가 거부해 "왜 안 되지"가 된다.
 
-          상행: 가드가 "바꾼 뒤 신청 편과 어긋나는 인원"을 센다 → 그 편을 신청한 사람만
-                그 편으로 옮길 수 있다. 그래서 선택지별로 판정한다.
-          하행: 가드가 검사하지 않는다 — registrations 에 "신청한 하행 편"이 없어
-                어긋날 대상 자체가 없다. 그러니 잠그지 않고 경고만 한다.
-                (3-C 에서 down_trip_id 가 생기면 상행과 같은 규칙이 된다)
+          가드는 방향마다 "바꾼 뒤 신청 편과 어긋나는 인원"을 센다 → 그 편을 신청한
+          사람만 그 편으로 옮길 수 있다. 그래서 선택지별로 판정한다.
+          3-C 로 하행도 신청 편을 갖게 되면서 두 방향이 같은 규칙이 됐다.
         */}
         <TripSelect
           value={draft.upTripId}
@@ -513,6 +535,8 @@ function BusRowItem({
         <TripSelect
           value={draft.downTripId}
           trips={downTrips}
+          lockedValues={lockedDownTrips}
+          lockedHint="이 편으로 옮기면 신청 편과 어긋납니다 — 먼저 재배차하세요"
           onChange={(v) => setDraft({ ...draft, downTripId: v })}
         />
       </div>
@@ -520,6 +544,12 @@ function BusRowItem({
       {load.down > 0 && draft.downTripId !== String(bus.down_trip_id ?? "") && (
         <p className="text-xs text-warning-700">
           하행 {load.down}명이 이 차에 배정돼 있습니다. 편을 바꾸면 배차를 다시 돌려야
+          자리가 맞습니다.
+        </p>
+      )}
+      {load.up > 0 && draft.upTripId !== String(bus.up_trip_id ?? "") && (
+        <p className="text-xs text-warning-700">
+          상행 {load.up}명이 이 차에 배정돼 있습니다. 편을 바꾸면 배차를 다시 돌려야
           자리가 맞습니다.
         </p>
       )}
