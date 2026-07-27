@@ -259,19 +259,7 @@ begin
   end if;
   raise notice '검증 ④: is_active ↔ write_mode 양방향 동기화 OK';
 
-  -- ⑤ 임역원(authenticated) 권한으로도 값이 나오는가.
-  --    앱의 모든 INSERT 가 이 함수로 event_id 를 구한다(Phase 4-3). 여기서 NULL 이
-  --    나오면 **임역원의 명단 입력이 통째로 막힌다** — 화면에는 "행사가 없습니다"만
-  --    뜨고 원인은 안 보인다. SECURITY DEFINER 라 events 읽기 정책과 무관해야 한다.
-  set local role authenticated;
-  if public.writable_event_id() is null then
-    reset role;
-    raise exception 'authenticated 권한에서 writable_event_id() 가 NULL 입니다 — 임역원 입력이 막힙니다';
-  end if;
-  reset role;
-  raise notice '검증 ⑤: 임역원 권한에서도 쓰기 행사 조회 OK';
-
-  -- ⑥ 백업 적재 경로. load-backup.py 는 replica 모드로 넣고, 백업에는 write_mode 가
+  -- ⑤ 백업 적재 경로. load-backup.py 는 replica 모드로 넣고, 백업에는 write_mode 가
   --    없다(컬럼이 생기기 전에 뜬 스냅샷). 동기화가 안 걸리면 is_active=true 인데
   --    write_mode='closed' 인 행사가 생기고 — 화면엔 정상인데 **모든 쓰기가 막힌다.**
   --    실제로 이 상태를 만들어 재현했다. 여기서 매번 확인한다.
@@ -288,7 +276,7 @@ begin
       '백업 적재 경로에서 write_mode 가 안 따라왔습니다 — 복원 후 아무것도 못 씁니다 (동기화 트리거가 ALWAYS 인지 확인)';
   end if;
   reset session_replication_role;
-  raise notice '검증 ⑥: 백업 적재(replica 모드)에서도 write_mode 동기화 OK';
+  raise notice '검증 ⑤: 백업 적재(replica 모드)에서도 write_mode 동기화 OK';
 
   raise exception '__검증완료_롤백';
 exception when others then
@@ -297,6 +285,28 @@ exception when others then
   else
     raise;
   end if;
+end $$;
+
+-- ⑥ 임역원(authenticated) 권한으로도 쓰기 행사가 조회되는가.
+--    앱의 모든 INSERT 가 이 함수로 event_id 를 구한다(Phase 4-3). 여기서 NULL 이면
+--    **임역원의 명단 입력이 통째로 막힌다** — 화면엔 "행사가 없습니다"만 뜨고 원인은 안 보인다.
+--
+-- ⚠️ 별도 블록인 이유: `set local role` 을 쓴 뒤 `reset role` 이 **환경에 따라 원래
+--    권한으로 안 돌아온다.** 로컬(superuser)에서는 통과했는데 운영에서
+--    "permission denied for table events" 로 실패했다. 역할 이름을 저장했다가
+--    명시적으로 되돌리고, 다른 검사와 섞이지 않게 블록을 나눈다.
+do $$
+declare
+  v_prev text := current_user;
+  v_ok   boolean;
+begin
+  execute 'set local role authenticated';
+  v_ok := public.writable_event_id() is not null;
+  execute format('set local role %I', v_prev);
+  if not v_ok then
+    raise exception 'authenticated 권한에서 writable_event_id() 가 NULL 입니다 — 임역원 입력이 막힙니다';
+  end if;
+  raise notice '검증 ⑥: 임역원 권한에서도 쓰기 행사 조회 OK';
 end $$;
 
 -- ⚠️ 앞으로 쓰는 모든 마이그레이션 끝에 붙일 것 (§8-G).
