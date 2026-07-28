@@ -350,7 +350,7 @@ export function PaymentsPanel({
       {isMaster && (
         <Card
           title="면제자 명단"
-          subtitle={`전체 ${waived.length}명 — 차량비 합계에서 제외됨`}
+          subtitle={`전체 ${waived.length}명 — 차량비 합계에서 제외됨 (버스를 아예 안 타는 분 포함)`}
         >
           {waived.length === 0 ? (
             <p className="px-5 py-6 text-sm text-muted-2">

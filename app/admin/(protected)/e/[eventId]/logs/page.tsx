@@ -194,6 +194,14 @@ export default async function AdminLogsPage({
               placeholder="이름·학번 검색"
               className="w-52 pl-8 pr-3 py-1.5 text-sm border border-border-2 rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-200"
             />
+            {/* Enter 로도 되지만, 버튼이 없으면 "검색이 안 된다"고 느낀다.
+                실제로 점검에서 그렇게 보고됐다. */}
+            <button
+              type="submit"
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-2 hover:text-foreground"
+            >
+              검색
+            </button>
           </form>
 
           <div className="flex gap-1.5">

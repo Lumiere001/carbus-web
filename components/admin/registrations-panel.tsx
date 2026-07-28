@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, useTransition } from "react";
+import { Fragment, useDeferredValue, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, X, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -257,7 +257,12 @@ export function RegistrationsPanel({
       : null;
 
   // 검색 중이면 캠퍼스 탭 무시하고 이름·학번으로 전체에서 찾음.
-  const q = query.trim().toLowerCase();
+  //
+  // ⚠️ **입력값과 거르는 값을 떼어놓는다.** 600행이 렌더된 상태에서 글자를 칠 때마다
+  // 표 전체를 다시 거르면, 그 계산이 키 입력을 막아 **글자가 씹힌다**(점검에서 5번 중
+  // 3번). `useDeferredValue` 는 입력은 즉시 반영하고 무거운 필터링만 뒤로 미룬다.
+  const deferredQuery = useDeferredValue(query);
+  const q = deferredQuery.trim().toLowerCase();
   const searching = q.length > 0;
   const base = searching
     ? rows.filter(

@@ -247,8 +247,14 @@ export default async function AdminDashboardPage() {
               </span>
             </div>
             <div className="flex items-center justify-between">
+              {/* 이 숫자는 **차량비를 내야 할 사람 중** 면제된 인원이다.
+                  버스를 아예 안 타는 사람(차량비 0원)은 애초에 이 계산에 없어서
+                  정산 화면의 "면제자 명단"(전원)보다 적다. 같은 낱말로 다른 숫자가
+                  보이던 것을 라벨로 갈라 둔다. */}
               <Badge variant="mute">면제 {waivedCount}명</Badge>
-              <span className="text-sm tabular-nums text-muted-2">제외</span>
+              <span className="text-sm tabular-nums text-muted-2">
+                차량비 대상 중 · 제외
+              </span>
             </div>
             <div className="pt-3 mt-1 border-t border-border flex items-center justify-between">
               <span className="text-sm font-medium text-foreground">

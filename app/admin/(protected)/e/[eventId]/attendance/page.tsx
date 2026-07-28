@@ -130,7 +130,9 @@ export default async function AdminAttendancePage() {
   const returnTarget = regs.filter((r) => r.assigned_down_bus_id != null).length;
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    // 다른 관리자 화면과 같은 폭을 쓴다. 여기만 672px 로 묶여 있어서 넓은 화면에서도
+    // 호차 바로가기 칩이 6개까지만 보이고 나머지는 가로 스크롤해야 했다.
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-foreground">출석 현황</h2>
         <p className="text-sm text-muted mt-0.5">
