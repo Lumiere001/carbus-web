@@ -36,6 +36,38 @@ export const TRANSPORT_SHORT: Record<TransportMode, string> = {
   other: "기타",
 };
 
+// ── 방향 문구 (한 곳에서만 만든다) ──────────────────────────────
+//
+// "갈 때 / 올 때" 는 사람마다 기준이 달라서 헷갈린다 — 집에서 가는 건지, 행사장에서
+// 오는 건지. 그래서 **어디서 어디로 가는지**로 적는다. 수송 요청은 §23-A 에서 이미
+// 그렇게 바꿨는데 이동수단만 "갈 때 (상행)" 으로 남아 문구가 따로 놀았다.
+//
+// 도착지는 **지명이 아니라 "수련회장"** 이다. 행사 설정의 목적지(예: 평창)를 쓰면
+// 픽업 장소도 지명이라 "평창역 → 평창" 처럼 읽혀 오히려 헷갈린다.
+
+export type LegDirection = "up" | "down";
+
+/** 이동수단 — 사람은 자기 지구에서 출발한다. */
+export const DIRECTION_LABELS: Record<LegDirection, string> = {
+  up: "지구 → 수련회장",
+  down: "수련회장 → 지구",
+};
+
+/** 수송 요청 — 따로 데리러 가는 장소가 출발지다. */
+export const PICKUP_DIRECTION_LABELS: Record<LegDirection, string> = {
+  up: "픽업 장소 → 수련회장",
+  down: "수련회장 → 픽업 장소",
+};
+
+/**
+ * 배지·표 한 칸처럼 **자리가 없을 때만** 쓰는 짧은 형태.
+ * 긴 문구를 title 로 함께 달아 준다 — 짧은 쪽만 남으면 다시 헷갈린다.
+ */
+export const DIRECTION_SHORT: Record<LegDirection, string> = {
+  up: "가는 편",
+  down: "오는 편",
+};
+
 export type BadgeTone = "mute" | "primary" | "warning" | "success" | "danger";
 
 /**
@@ -83,5 +115,7 @@ export function transportSummaryText(
   };
   const u = one(up);
   const d = one(down);
-  return u === d ? u : `갈 때 ${u} · 올 때 ${d}`;
+  return u === d
+    ? u
+    : `${DIRECTION_SHORT.up} ${u} · ${DIRECTION_SHORT.down} ${d}`;
 }

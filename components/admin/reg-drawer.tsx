@@ -9,6 +9,10 @@ import { updateRegField } from "@/lib/admin/registrations";
 import { setTransportLeg } from "@/lib/admin/transport";
 import { addPickup, deletePickup, setAttendRange } from "@/lib/admin/pickup";
 import { TransportPicker, type LegValue } from "@/components/admin/transport-picker";
+import {
+  DIRECTION_LABELS,
+  PICKUP_DIRECTION_LABELS,
+} from "@/lib/transport/labels";
 import type { AdminRegRow, CampusInfo } from "@/components/admin/registrations-panel";
 import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
 
@@ -147,7 +151,7 @@ export function RegDrawer({
       tripId != null
     ) {
       const ok = window.confirm(
-        `${dir === "up" ? "갈 때" : "올 때"} 타지구 차량이 확정으로 저장됩니다.\n\n` +
+        `${DIRECTION_LABELS[dir]} — 타지구 차량이 확정으로 저장됩니다.\n\n` +
           `해당 방향의 운행편과 배정 호차가 비워져 좌석이 반납됩니다.\n` +
           `되돌리려면 편을 다시 지정하고 배차를 다시 실행해야 합니다.\n\n진행할까요?`
       );
@@ -161,7 +165,7 @@ export function RegDrawer({
         status: next.status,
       });
       if (!res.ok) return setState({ kind: "err", text: res.message });
-      const label = dir === "up" ? "갈 때 이동수단" : "올 때 이동수단";
+      const label = `${DIRECTION_LABELS[dir]} 이동수단`;
       setState({ kind: "saved", field: label });
       onSaved(label);
     });
@@ -210,17 +214,10 @@ export function RegDrawer({
     "w-full text-sm border border-border-2 rounded-md px-2.5 py-1.5 bg-surface disabled:opacity-60";
   const labelCls = "text-xs text-muted space-y-1 block";
 
-  /**
-   * 수송 요청의 방향은 **어디서 어디로 가는지**로 적는다.
-   *
-   * "갈 때 / 올 때" 는 사람마다 기준이 달라서 헷갈린다 — 집에서 가는 건지, 행사장에서
-   * 오는 건지. 픽업은 "누구를 어디서 태워 어디로 데려가는가" 이므로 그대로 쓴다.
-   *
-   * 도착지는 **지명이 아니라 "수련회장"** 이다. 행사 설정의 목적지(예: 평창)를 쓰면
-   * 픽업 장소도 지명이라 "평창역 → 평창" 처럼 읽혀 오히려 헷갈린다.
-   */
-  const pickupDirLabel = (dir: "up" | "down") =>
-    dir === "up" ? "픽업 장소 → 수련회장" : "수련회장 → 픽업 장소";
+  // 방향 문구는 `lib/transport/labels` 한 곳에서 만든다 — 수송 요청과 이동수단이
+  // 따로 놀면(한쪽은 "픽업 장소 → 수련회장", 한쪽은 "갈 때 (상행)") 같은 화면에서
+  // 두 기준을 동시에 읽어야 한다.
+  const pickupDirLabel = (dir: "up" | "down") => PICKUP_DIRECTION_LABELS[dir];
 
   const paidWarning =
     row.payment_status === "paid" ? (
@@ -406,14 +403,14 @@ export function RegDrawer({
             비고에 적으면 “타지구”가 <b>소속</b>인지 <b>얻어 타는 차</b>인지 구분되지 않습니다.
           </p>
           <TransportPicker
-            label="갈 때 (상행)"
+            label={DIRECTION_LABELS.up}
             value={upDraft}
             units={units}
             disabled={busy}
             onChange={(v) => changeLeg("up", v)}
           />
           <TransportPicker
-            label="올 때 (하행)"
+            label={DIRECTION_LABELS.down}
             value={downDraft}
             units={units}
             disabled={busy}

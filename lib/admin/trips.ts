@@ -312,9 +312,11 @@ async function attachBusesTo(
 
   let reused = 0;
   for (const bus of plan.reuse) {
+    // 계산된 키(`{[col]: tripId}`)로 쓰지 않는다 — 그러면 타입이 인덱스 시그니처로
+    // 넓어져 `tsc` 가 컬럼 이름 오타를 못 잡는다(§4-9 와 같은 종류의 눈감김).
     const { error } = await supabase
       .from("buses")
-      .update({ [col]: tripId })
+      .update(direction === "up" ? { up_trip_id: tripId } : { down_trip_id: tripId })
       .eq("id", bus.id);
     if (error)
       return {
@@ -378,10 +380,9 @@ async function detachBusFrom(
   direction: TripDirection
 ): Promise<Result<undefined>> {
   const supabase = createClient();
-  const col = direction === "up" ? "up_trip_id" : "down_trip_id";
   const { error } = await supabase
     .from("buses")
-    .update({ [col]: null })
+    .update(direction === "up" ? { up_trip_id: null } : { down_trip_id: null })
     .eq("id", busId);
   if (error) return { ok: false, message: humanize(error.message) };
   return { ok: true, value: undefined };

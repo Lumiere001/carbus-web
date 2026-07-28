@@ -7,7 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TriangleAlert, Check } from "lucide-react";
 import { confirmLegs } from "@/lib/admin/transport";
-import { TRANSPORT_LABELS, type TransportMode, type TransportStatus } from "@/lib/transport/labels";
+import {
+  DIRECTION_LABELS,
+  TRANSPORT_LABELS,
+  type TransportMode,
+  type TransportStatus,
+} from "@/lib/transport/labels";
 
 export type LegRow = {
   id: number;
@@ -25,7 +30,8 @@ export type LegRow = {
   heldBusLabel: string | null;
 };
 
-const DIR_LABEL: Record<"up" | "down", string> = { up: "갈 때", down: "올 때" };
+// 방향 문구는 `lib/transport/labels` 한 곳에서 만든다 (§26-C).
+const DIR_LABEL = DIRECTION_LABELS;
 
 /**
  * 외부수단 확정 관리 (§11-C 의 E).

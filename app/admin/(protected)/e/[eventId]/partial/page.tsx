@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { attendanceSummary } from "@/lib/labels";
 import {
+  DIRECTION_LABELS,
+  DIRECTION_SHORT,
   transportBadge,
   type TransportMode,
   type TransportStatus,
@@ -251,17 +253,21 @@ export default async function AdminPartialPage({
                       {upB || downB ? (
                         <span className="inline-flex flex-wrap gap-1">
                           {upB && (
-                            <Badge variant={upB.tone} dot={false} title={`갈 때 — ${upB.title}`}>
-                              갈 {upB.text}
+                            <Badge
+                              variant={upB.tone}
+                              dot={false}
+                              title={`${DIRECTION_LABELS.up} — ${upB.title}`}
+                            >
+                              {DIRECTION_SHORT.up.slice(0, 1)} {upB.text}
                             </Badge>
                           )}
                           {downB && (
                             <Badge
                               variant={downB.tone}
                               dot={false}
-                              title={`올 때 — ${downB.title}`}
+                              title={`${DIRECTION_LABELS.down} — ${downB.title}`}
                             >
-                              올 {downB.text}
+                              {DIRECTION_SHORT.down.slice(0, 1)} {downB.text}
                             </Badge>
                           )}
                         </span>

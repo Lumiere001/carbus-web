@@ -57,10 +57,10 @@ describe("transportSummaryText", () => {
     expect(transportSummaryText({ mode: "ktx" }, { mode: "ktx" })).toBe("KTX·고속버스");
   });
 
-  it("다르면 둘 다 말한다 — '갈 때는 KTX, 올 때는 우리 버스'가 실제로 있다", () => {
+  it("다르면 둘 다 말한다 — '가는 편은 KTX, 오는 편은 우리 버스'가 실제로 있다", () => {
     expect(
       transportSummaryText({ mode: "ktx" }, { mode: "our_bus" })
-    ).toBe("갈 때 KTX·고속버스 · 올 때 우리 버스");
+    ).toBe("가는 편 KTX·고속버스 · 오는 편 우리 버스");
   });
 
   it("값이 없으면 우리 버스로 읽는다 (행을 안 만드는 게 기본값이라서)", () => {

@@ -190,17 +190,17 @@ describe("RegDrawer — 이동수단 다단계 입력", () => {
   it("타지구를 고르면 지구 선택 칸이 나타난다", async () => {
     renderDrawer();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("갈 때 (상행) 이동수단"), {
+      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
         target: { value: "other_district" },
       });
     });
-    expect(screen.getByLabelText("갈 때 (상행) 지구")).toBeTruthy();
+    expect(screen.getByLabelText("지구 → 수련회장 타지구 이름")).toBeTruthy();
   });
 
   it("지구를 고르기 전에는 저장하지 않는다 (거부당하면 칸이 안 열린다)", async () => {
     renderDrawer();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("갈 때 (상행) 이동수단"), {
+      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
         target: { value: "other_district" },
       });
     });
@@ -210,12 +210,12 @@ describe("RegDrawer — 이동수단 다단계 입력", () => {
   it("지구까지 고르면 그때 저장한다", async () => {
     renderDrawer();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("갈 때 (상행) 이동수단"), {
+      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
         target: { value: "other_district" },
       });
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("갈 때 (상행) 지구"), {
+      fireEvent.change(screen.getByLabelText("지구 → 수련회장 타지구 이름"), {
         target: { value: "unit-1" },
       });
     });
@@ -234,7 +234,7 @@ describe("RegDrawer — 이동수단 다단계 입력", () => {
     renderDrawer();
     expect(screen.queryByText("확정 대기")).toBeNull();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("갈 때 (상행) 이동수단"), {
+      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
         target: { value: "other_district" },
       });
     });
@@ -244,7 +244,7 @@ describe("RegDrawer — 이동수단 다단계 입력", () => {
   it("KTX 처럼 지구가 필요 없는 수단은 고르는 즉시 저장한다", async () => {
     renderDrawer();
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("올 때 (하행) 이동수단"), {
+      fireEvent.change(screen.getByLabelText("수련회장 → 지구 이동수단"), {
         target: { value: "ktx" },
       });
     });

@@ -2,6 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import {
+  DIRECTION_LABELS,
+  DIRECTION_SHORT,
   TRANSPORT_LABELS,
   TRANSPORT_MODES,
   transportBadge,
@@ -85,7 +87,9 @@ export function TransportPicker({
                 onChange({ ...value, viaUnitId: e.target.value || null })
               }
               className={sel}
-              aria-label={`${label} 지구`}
+              // 라벨이 "지구 → 수련회장" 이라 그냥 `${label} 지구` 로 두면
+              // "지구 → 수련회장 지구" 가 되어 무엇을 고르는 칸인지 안 읽힌다.
+              aria-label={`${label} 타지구 이름`}
             >
               <option value="">지구 선택…</option>
               {units.map((u) => (
@@ -136,18 +140,31 @@ export function TransportBadges({
   up: { mode: TransportMode | null; status: TransportStatus | null; via: string | null };
   down: { mode: TransportMode | null; status: TransportStatus | null; via: string | null };
 }) {
-  const items = [
-    { dir: "갈 때", b: transportBadge(up.mode, up.status, up.via) },
-    { dir: "올 때", b: transportBadge(down.mode, down.status, down.via) },
-  ].filter((x) => x.b !== null);
+  // 배지는 한 칸에 들어가야 해서 짧은 형태를 쓰되, **긴 문구를 title 로 함께 단다.**
+  // 짧은 쪽만 남으면 "가는 편" 이 어디서 어디로인지 다시 헷갈린다.
+  const items = (["up", "down"] as const)
+    .map((dir) => ({
+      dir,
+      b: transportBadge(
+        dir === "up" ? up.mode : down.mode,
+        dir === "up" ? up.status : down.status,
+        dir === "up" ? up.via : down.via
+      ),
+    }))
+    .filter((x) => x.b !== null);
 
   if (items.length === 0) return null;
 
   return (
     <span className="inline-flex flex-wrap gap-1">
       {items.map(({ dir, b }) => (
-        <Badge key={dir} variant={b!.tone} dot={false} title={`${dir} — ${b!.title}`}>
-          {items.length > 1 ? `${dir.slice(0, 1)} ` : ""}
+        <Badge
+          key={dir}
+          variant={b!.tone}
+          dot={false}
+          title={`${DIRECTION_LABELS[dir]} — ${b!.title}`}
+        >
+          {items.length > 1 ? `${DIRECTION_SHORT[dir].slice(0, 1)} ` : ""}
           {b!.text}
         </Badge>
       ))}
