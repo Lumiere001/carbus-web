@@ -86,6 +86,27 @@ export function RegForm({
     };
     if (!fields.name || !fields.student_id || !fields.campus_id)
       return setErr("이름·학번·캠퍼스는 필수입니다");
+
+    // 타지구 확정으로 저장하면 DB 트리거가 그 방향의 편·배정 호차를 비운다.
+    // 저장 버튼 하나로 좌석이 사라지므로 여기서 한 번 묻는다 — 되돌리려면 재배차해야 한다.
+    const releasing = ([
+      ["갈 때", upLeg, upTripId],
+      ["올 때", downLeg, downTripId],
+    ] as const)
+      .filter(
+        ([, leg, tripId]) =>
+          leg.mode === "other_district" && leg.status === "confirmed" && tripId != null
+      )
+      .map(([dir]) => dir);
+    if (releasing.length > 0) {
+      const ok = window.confirm(
+        `${releasing.join("·")} 타지구 차량이 확정으로 저장됩니다.\n\n` +
+          `해당 방향의 운행편과 배정 호차가 비워져 좌석이 반납됩니다.\n` +
+          `되돌리려면 편을 다시 지정하고 배차를 다시 실행해야 합니다.\n\n진행할까요?`
+      );
+      if (!ok) return;
+    }
+
     start(async () => {
       const res =
         mode === "new"

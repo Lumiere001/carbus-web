@@ -91,6 +91,7 @@ export default async function AdminEventLayout({
               )}
               <a href={href("/leaders")} className={navLink}>리더</a>
               <a href={href("/partial")} className={navLink}>부분참</a>
+              <a href={href("/transport")} className={navLink}>이동수단</a>
               <a href={href("/payments")} className={navLink}>정산</a>
               {isMaster && (
                 <>

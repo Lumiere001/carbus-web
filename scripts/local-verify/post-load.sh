@@ -78,6 +78,9 @@ begin
     execute format('alter table public.%I enable always trigger trg_%s_event_writable', t, t);
   end loop;
   alter table public.transport_legs enable always trigger trg_transport_legs_scope;
+  -- 좌석 자동 반납. 이게 꺼진 채 적재되면 "타지구 확정인데 좌석을 잡고 있는" 행이
+  -- 조용히 남는다 — 화면은 정상으로 보이고 버스만 빈자리를 태우고 간다.
+  alter table public.transport_legs enable always trigger trg_transport_legs_zz_release;
 end $$;
 SQL
 echo "  OK — 파생·가드 트리거 ENABLE ALWAYS"
@@ -150,6 +153,15 @@ begin
         and tg.tgenabled = 'A');
   if v_bad > 0 then
     raise exception '행사 쓰기 가드가 ENABLE ALWAYS 가 아닌 테이블 %개', v_bad;
+  end if;
+
+  -- 좌석 자동 반납 트리거. 꺼져 있으면 "타지구 확정인데 좌석을 잡고 있는" 행이
+  -- 조용히 생기고, 화면상으로는 아무 이상이 없다.
+  if not exists (
+    select 1 from pg_trigger tg join pg_class c on c.oid = tg.tgrelid
+     where c.relname = 'transport_legs'
+       and tg.tgname = 'trg_transport_legs_zz_release' and tg.tgenabled = 'A') then
+    raise exception '좌석 자동 반납 트리거가 ENABLE ALWAYS 가 아닙니다';
   end if;
 end $$;
 SQL
