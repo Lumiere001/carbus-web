@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
-import { createBus } from "@/lib/admin/buses";
+import { createBus, deleteBus } from "@/lib/admin/buses";
 
 export type TripRow = Database["public"]["Tables"]["event_trips"]["Row"];
 type TripUpdate = Database["public"]["Tables"]["event_trips"]["Update"];
@@ -166,28 +166,91 @@ export async function createTripWithBuses(
   if (!created.ok) return created;
   if (busCount <= 0) return created;
 
-  const supabase = createClient();
-  const { data: existing } = await supabase.from("buses").select("name");
-  // "3호차" → 3. 규칙에 안 맞는 이름은 번호 계산에서 빠진다.
-  const maxNo = (existing ?? []).reduce((m, b) => {
-    const n = Number(/^(\d+)호차$/.exec(b.name ?? "")?.[1] ?? 0);
-    return Number.isFinite(n) ? Math.max(m, n) : m;
-  }, 0);
+  const added = await addBusesTo(created.value.id, input.direction, busCount);
+  if (!added.ok)
+    return { ok: false, message: `운행편은 만들었지만 ${added.message}` };
+  return created;
+}
 
-  const tripId = created.value.id;
-  for (let i = 1; i <= busCount; i += 1) {
-    const res = await createBus({
-      name: `${maxNo + i}호차`,
-      ...(input.direction === "up" ? { upTripId: tripId } : { downTripId: tripId }),
-    });
+/**
+ * 이미 있는 운행편의 **차량 대수를 맞춘다.**
+ *
+ * 편성을 짜다 보면 "이 편은 9대로" 처럼 대수를 다시 잡는 일이 잦은데, 지금까지는
+ * 아래 차량 섹션에서 한 대씩 추가하거나 지워야 했다.
+ *
+ * ⚠️ **줄일 때는 배정 인원이 없는 차부터** 지운다. 사람이 탄 차를 지우면 그 사람들의
+ * 배정이 통째로 사라지므로, DB 가드가 막는다 — 그 경우 몇 대까지 줄었는지 알려주고
+ * 멈춘다(일부만 지워진 채 조용히 끝나면 화면과 실제가 어긋난다).
+ */
+export async function setTripBusCount(
+  tripId: number,
+  direction: TripDirection,
+  target: number
+): Promise<Result<{ created: number; deleted: number }>> {
+  if (target < 0 || target > 30)
+    return { ok: false, message: "차량 대수는 0~30 사이로 정해 주세요." };
+
+  const supabase = createClient();
+  const col = direction === "up" ? "up_trip_id" : "down_trip_id";
+  const { data: mine, error } = await supabase
+    .from("buses")
+    .select("id, name")
+    .eq(col, tripId)
+    .order("display_order")
+    .order("id");
+  if (error) return { ok: false, message: error.message };
+
+  const current = mine ?? [];
+  if (target === current.length) return { ok: true, value: { created: 0, deleted: 0 } };
+
+  if (target > current.length) {
+    const created = await addBusesTo(tripId, direction, target - current.length);
+    return created.ok
+      ? { ok: true, value: { created: target - current.length, deleted: 0 } }
+      : created;
+  }
+
+  // 줄이기 — 뒤에 붙은 차부터 뗀다(대개 나중에 늘린 차가 비어 있다).
+  let deleted = 0;
+  for (const bus of [...current].reverse()) {
+    if (current.length - deleted <= target) break;
+    const res = await deleteBus(bus.id);
     if (!res.ok) {
       return {
         ok: false,
         message:
-          `운행편은 만들었지만 차량 추가에서 멈췄습니다 (${i - 1}대까지 생성). ` +
-          res.message,
+          `${bus.name} 은(는) 지울 수 없습니다 — ${res.message} ` +
+          `(${deleted}대까지 줄였습니다. 먼저 배차를 다시 돌려 이 차를 비우세요.)`,
       };
     }
+    deleted += 1;
   }
-  return created;
+  return { ok: true, value: { created: 0, deleted } };
+}
+
+/** 새 차량 n대를 그 편에 붙인다. 이름은 기존 `N호차` 다음 번호부터. */
+async function addBusesTo(
+  tripId: number,
+  direction: TripDirection,
+  n: number
+): Promise<Result<undefined>> {
+  const supabase = createClient();
+  const { data: existing } = await supabase.from("buses").select("name");
+  const maxNo = (existing ?? []).reduce((m, b) => {
+    const num = Number(/^(\d+)호차$/.exec(b.name ?? "")?.[1] ?? 0);
+    return Number.isFinite(num) ? Math.max(m, num) : m;
+  }, 0);
+
+  for (let i = 1; i <= n; i += 1) {
+    const res = await createBus({
+      name: `${maxNo + i}호차`,
+      ...(direction === "up" ? { upTripId: tripId } : { downTripId: tripId }),
+    });
+    if (!res.ok)
+      return {
+        ok: false,
+        message: `차량 추가에서 멈췄습니다 (${i - 1}대까지 생성). ${res.message}`,
+      };
+  }
+  return { ok: true, value: undefined };
 }

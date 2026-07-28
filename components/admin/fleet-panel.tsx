@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   createTripWithBuses,
+  setTripBusCount,
   updateTrip,
   deleteTrip,
   type TripRow,
@@ -98,6 +99,7 @@ export function FleetPanel({
             )
           }
           onPatch={(id, patch) => run(() => updateTrip(id, patch))}
+          onBusCount={(id, target) => run(() => setTripBusCount(id, dir, target))}
           onDelete={(id) => run(() => deleteTrip(id))}
         />
       ))}
@@ -127,6 +129,7 @@ function TripSection({
   pending,
   onCreate,
   onPatch,
+  onBusCount,
   onDelete,
 }: {
   direction: TripDirection;
@@ -134,6 +137,7 @@ function TripSection({
   buses: BusRow[];
   pending: boolean;
   onCreate: (label: string, departsAt: string | null, busCount: number) => void;
+  onBusCount: (id: number, target: number) => void;
   onPatch: (id: number, patch: Parameters<typeof updateTrip>[1]) => void;
   onDelete: (id: number) => void;
 }) {
@@ -169,6 +173,7 @@ function TripSection({
             busCount={busCount(t.id)}
             pending={pending}
             onPatch={onPatch}
+            onBusCount={onBusCount}
             onDelete={onDelete}
           />
         ))}
@@ -239,12 +244,14 @@ function TripRowItem({
   busCount,
   pending,
   onPatch,
+  onBusCount,
   onDelete,
 }: {
   trip: TripRow;
   busCount: number;
   pending: boolean;
   onPatch: (id: number, patch: Parameters<typeof updateTrip>[1]) => void;
+  onBusCount: (id: number, target: number) => void;
   onDelete: (id: number) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -252,6 +259,7 @@ function TripRowItem({
   const [departsAt, setDepartsAt] = useState(
     trip.departs_at ? toLocalInput(trip.departs_at) : ""
   );
+  const [busDraft, setBusDraft] = useState(String(busCount));
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2">
@@ -268,6 +276,20 @@ function TripRowItem({
             onChange={(e) => setDepartsAt(e.target.value)}
             className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-fg"
           />
+          {/* 이미 있는 편도 대수를 다시 잡을 수 있어야 한다. 편성을 짜다 보면
+              "이 편은 9대로" 처럼 바꾸는 일이 잦다. */}
+          <label className="flex items-center gap-1 text-xs text-muted-2">
+            차량
+            <input
+              type="number"
+              min={0}
+              max={30}
+              value={busDraft}
+              onChange={(e) => setBusDraft(e.target.value)}
+              className="w-16 rounded-md border border-border bg-surface px-2 py-1 text-sm text-fg text-right tabular-nums"
+            />
+            대
+          </label>
           <Button
             size="sm"
             disabled={pending}
@@ -276,6 +298,8 @@ function TripRowItem({
                 label,
                 departsAt: departsAt ? new Date(departsAt).toISOString() : null,
               });
+              const next = Math.max(0, Math.min(30, Number(busDraft) || 0));
+              if (next !== busCount) onBusCount(trip.id, next);
               setEditing(false);
             }}
           >
@@ -288,9 +312,12 @@ function TripRowItem({
       ) : (
         <>
           <span className="font-medium text-sm">{trip.label}</span>
-          <span className="text-xs text-muted-2">
-            {trip.departs_at ? formatKst(trip.departs_at) : "출발 시각 미정"}
-          </span>
+          {/* 시각을 안 넣어도 운영에 지장이 없다 — 편 이름이 시각을 담고 있고,
+              배차·수송 보드는 이 값을 읽지 않는다. 그래서 비어 있을 때 "미정" 이라고
+              결함처럼 적지 않는다(있으면 보여주고, 없으면 조용히 넘어간다). */}
+          {trip.departs_at && (
+            <span className="text-xs text-muted-2">{formatKst(trip.departs_at)}</span>
+          )}
           {!trip.active && <Badge variant="mute">비활성</Badge>}
           <Badge variant={busCount === 0 ? "mute" : "primary"}>
             차량 {busCount}대
