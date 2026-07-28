@@ -24,7 +24,7 @@ export default async function CampusPaymentsPage() {
   if (!campusId) redirect("/pending");
 
   // RLS 가 campus_admin 을 본인 캠퍼스로 스코프 → 원본 테이블 직접 조회 (집계 뷰 우회).
-  const [regRes, campusRes, remitRes] = await Promise.all([
+  const [regRes, campusRes, remitRes, settleRes] = await Promise.all([
     supabase
       .from("registrations")
       .select("id, name, student_id, attendance_type, fee, payment_status")
@@ -40,6 +40,13 @@ export default async function CampusPaymentsPage() {
       .select("id, amount, note, created_at")
       .eq("campus_id", campusId)
       .order("created_at", { ascending: false }),
+    // 총단이 "이 캠퍼스한테서 얼마 받았다"고 적어둔 값. 임역원은 이걸 **확인만** 하면
+    // 되도록 하려고 읽는다 — 금액을 스스로 계산해 넣게 하는 게 등록이 안 되던 이유였다.
+    supabase
+      .from("campus_payment_settlements")
+      .select("master_received_total, master_received_at")
+      .eq("campus_id", campusId)
+      .maybeSingle(),
   ]);
 
   return (
@@ -47,6 +54,8 @@ export default async function CampusPaymentsPage() {
       campusName={campusRes.data?.name ?? "내"}
       rows={(regRes.data ?? []) as PayRow[]}
       remittances={(remitRes.data ?? []) as RemittanceRow[]}
+      masterReceived={settleRes.data?.master_received_total ?? 0}
+      masterReceivedAt={settleRes.data?.master_received_at ?? null}
     />
   );
 }
