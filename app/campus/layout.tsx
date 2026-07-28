@@ -70,6 +70,12 @@ export default async function CampusLayout({
                 부분 참석
               </a>
               <a
+                href="/campus/pickup"
+                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
+              >
+                수송 요청
+              </a>
+              <a
                 href="/campus/payments"
                 className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
               >

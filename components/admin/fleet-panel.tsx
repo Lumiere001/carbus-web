@@ -441,8 +441,8 @@ function BusSection({
 
   return (
     <Card
-      title="차량"
-      subtitle="대수·정원·운행편·배차 특례를 정합니다. 배정된 인원이 있는 차량은 지울 수 없습니다."
+      title="차량 · 간사 차량"
+      subtitle="대수·정원·운행편·배차 특례를 정합니다. 맨 아래에서 버스와 간사 차량을 추가할 수 있습니다. 배정된 탑승자가 있는 차량만 지울 수 없습니다."
     >
       <div className="px-5 py-4 flex flex-col gap-2">
         <div className="hidden md:grid grid-cols-[1fr_5rem_5rem_1fr_1fr_auto] gap-2 text-xs text-muted-2 px-3">
@@ -634,7 +634,23 @@ function BusRowItem({
                 : undefined
             }
             onClick={() => {
-              if (confirm(`"${bus.name}" 차량을 지웁니다.`)) onDelete(bus.id);
+              // 무엇이 함께 사라지는지 적는다. 차량순장·고정 탑승자 지정은 이제
+              // 삭제를 **막지 않으므로**(탑승자만 막는다), 사라진다는 사실을
+              // 여기서 말하지 않으면 아무 데서도 안 나온다.
+              const gone: string[] = [];
+              if (bus.driver_registration_id) gone.push("상행 차량순장");
+              if (bus.down_driver_registration_id) gone.push("하행 차량순장");
+              if ((bus.fixed_passenger_ids ?? []).length)
+                gone.push(`상행 고정 탑승자 ${bus.fixed_passenger_ids.length}명`);
+              if ((bus.down_fixed_passenger_ids ?? []).length)
+                gone.push(`하행 고정 탑승자 ${bus.down_fixed_passenger_ids.length}명`);
+              const msg =
+                `"${bus.name}" 차량을 지웁니다.` +
+                (gone.length
+                  ? `\n\n이 지정도 함께 사라집니다 — ${gone.join(" · ")}.\n` +
+                    `(다시 만들면 리더 화면에서 새로 지정하면 됩니다)`
+                  : "");
+              if (confirm(msg)) onDelete(bus.id);
             }}
           >
             삭제

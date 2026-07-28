@@ -47,15 +47,19 @@ const DIR_LABEL = DIRECTION_LABELS;
 export function TransportPanel({
   pending,
   confirmedHolding,
-  otherModes,
+  otherRows,
   canConfirm,
 }: {
   /** 확정 대기 중인 타지구 이용 */
   pending: LegRow[];
   /** 확정인데 아직 좌석을 잡고 있는 모순 상태 */
   confirmedHolding: LegRow[];
-  /** KTX·자차 등 — 대기 개념이 없어 집계만 */
-  otherModes: { mode: TransportMode; count: number; holding: number }[];
+  /**
+   * 우리 버스가 아닌 나머지(KTX·고속버스 · 자차·가족차 · 기타).
+   * 확정을 기다리는 개념은 없지만 **누가 그렇게 오는지**는 알아야 한다 —
+   * 출발 인원에서 빠지고, 도착 시각을 따로 물어야 하는 사람들이다.
+   */
+  otherRows: LegRow[];
   canConfirm: boolean;
 }) {
   const router = useRouter();
@@ -183,25 +187,39 @@ export function TransportPanel({
         );
       })}
 
-      {otherModes.length > 0 && (
+      {/* 우리 버스가 아닌 나머지 — 수단별로 묶어 **명단까지** 보여준다.
+          숫자만 있으면 "그래서 누구?" 에서 막힌다. */}
+      {otherRows.length > 0 && (
         <Card
-          title="그 밖의 이동수단"
-          subtitle="KTX·자차 등은 확정을 기다리는 개념이 없어 집계만 합니다"
+          title="우리 버스를 안 타는 사람들"
+          subtitle="KTX·고속버스 · 자차·가족차 · 기타 — 확정을 기다리는 개념은 없지만 누가 그렇게 오는지는 알아야 합니다"
         >
-          <div className="px-5 py-3 flex flex-wrap gap-4 text-sm">
-            {otherModes.map((m) => (
-              <span key={m.mode} className="text-muted">
-                {TRANSPORT_LABELS[m.mode]}{" "}
-                <b className="text-foreground tabular-nums">{m.count}</b>건
-                {m.holding > 0 && (
-                  <span className="text-warning">
-                    {" "}
-                    (좌석 {m.holding}석 점유)
-                  </span>
-                )}
-              </span>
-            ))}
+          <div className="px-5 py-3 flex flex-wrap gap-x-5 gap-y-1 text-sm border-b border-border">
+            {[...new Set(otherRows.map((r) => r.mode))].map((mode) => {
+              const rows = otherRows.filter((r) => r.mode === mode);
+              const holding = heldSeats(rows);
+              return (
+                <span key={mode} className="text-muted">
+                  {TRANSPORT_LABELS[mode]}{" "}
+                  <b className="text-foreground tabular-nums">{rows.length}</b>건
+                  {holding > 0 && (
+                    <span className="text-warning"> (좌석 {holding}석 점유)</span>
+                  )}
+                </span>
+              );
+            })}
           </div>
+          {[...new Set(otherRows.map((r) => r.mode))].map((mode) => (
+            <div key={mode}>
+              <p className="px-5 pt-3 pb-1 text-xs text-muted-2">
+                {TRANSPORT_LABELS[mode]}
+              </p>
+              <LegTable
+                rows={otherRows.filter((r) => r.mode === mode)}
+                showWait={false}
+              />
+            </div>
+          ))}
         </Card>
       )}
     </div>

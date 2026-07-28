@@ -41,9 +41,11 @@ describe("transportBadge", () => {
     expect(b.text).toBe("지구 미지정");
   });
 
-  it("KTX·자차는 짧은 배지로", () => {
-    expect(transportBadge("ktx", "confirmed", null)!.text).toBe("KTX");
-    expect(transportBadge("own_car", "confirmed", null)!.text).toBe("자차");
+  it("KTX·자차 배지는 줄이지 않는다 — 고속버스·가족차가 사라지면 안 된다", () => {
+    // `KTX` 로 줄였더니 고속버스로 오는 사람이 화면에서 사라졌다. 현장에서는
+    // 전혀 다른 교통편인데 배지만 보면 전원이 KTX 로 읽힌다.
+    expect(transportBadge("ktx", "confirmed", null)!.text).toBe("KTX·고속버스");
+    expect(transportBadge("own_car", "confirmed", null)!.text).toBe("자차·가족차");
   });
 
   it("모든 수단에 라벨이 있다 — 하나라도 비면 화면에 빈칸이 뜬다", () => {

@@ -288,7 +288,7 @@ export default async function AdminPartialPage({
         </div>
       </Card>
 
-      <PickupBoard rows={(boardRes.data ?? []) as BoardRow[]} />
+      <PickupBoard rows={(boardRes.data ?? []) as BoardRow[]} audience="admin" />
     </div>
   );
 }

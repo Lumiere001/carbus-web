@@ -82,14 +82,14 @@ export default async function AdminTransportPage() {
     )
     .map(toRow);
 
-  const otherAgg = new Map<TransportMode, { count: number; holding: number }>();
-  for (const l of legs) {
-    if (l.mode == null || l.mode === "other_district" || l.mode === "our_bus") continue;
-    const cur = otherAgg.get(l.mode) ?? { count: 0, holding: 0 };
-    cur.count += 1;
-    if (l.held_trip_id != null || l.held_bus_id != null) cur.holding += 1;
-    otherAgg.set(l.mode, cur);
-  }
+  // 우리 버스가 아닌 나머지(KTX·고속버스 · 자차·가족차 · 기타) — **명단까지** 넘긴다.
+  //
+  // 예전엔 "KTX·고속버스 3건" 처럼 숫자만 보여줬다. 그런데 운영에서 필요한 건
+  // **누가** 자차로 오는지다 — 그 사람은 우리가 안 태우니 출발 인원에서 빠지고,
+  // 도착 시각도 따로 물어야 한다. 숫자만 보면 그다음에 할 수 있는 게 없다.
+  const otherRows = legs
+    .filter((l) => l.mode != null && l.mode !== "other_district" && l.mode !== "our_bus")
+    .map(toRow);
 
   return (
     <div className="space-y-6">
@@ -104,7 +104,7 @@ export default async function AdminTransportPage() {
       <TransportPanel
         pending={pending}
         confirmedHolding={confirmedHolding}
-        otherModes={[...otherAgg.entries()].map(([mode, v]) => ({ mode, ...v }))}
+        otherRows={otherRows}
         canConfirm={role === "master"}
       />
     </div>

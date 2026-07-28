@@ -189,6 +189,7 @@ export async function deleteBus(busId: number): Promise<CrudResult> {
 function humanize(msg: string): string {
   // DB 트리거가 이미 사람이 읽을 문장으로 던진다 — 그대로 보여준다.
   if (msg.includes("배정된 인원이 있습니다")) return msg;
+  if (msg.includes("배정된 인원이 있어")) return msg;
   if (msg.includes("운행편을 지정할 수 없습니다")) return msg;
   if (msg.includes("buses_name_key")) return "같은 이름의 호차가 이미 있습니다.";
   if (msg.includes("row-level security") || msg.includes("policy")) {

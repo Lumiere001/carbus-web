@@ -27,12 +27,19 @@ export const TRANSPORT_MODES: TransportMode[] = [
   "other",
 ];
 
-/** 짧은 배지 문구. 명단 표에서 한 칸에 들어가야 한다. */
+/**
+ * 배지 문구.
+ *
+ * ⚠️ **줄이지 않는다.** `KTX·고속버스` 를 `KTX` 로 줄였더니 고속버스로 오는 사람이
+ * 배지에서 사라졌다 — 현장에서는 둘이 전혀 다른 교통편인데 화면만 보면 전원이
+ * KTX 로 읽힌다. `자차·가족차` 도 같다(본인 차와 가족이 태워다 주는 건 다르다).
+ * 한 칸에 안 들어가는 것보다 잘못 읽히는 게 훨씬 비싸다.
+ */
 export const TRANSPORT_SHORT: Record<TransportMode, string> = {
   our_bus: "버스",
   other_district: "타지구",
-  ktx: "KTX",
-  own_car: "자차",
+  ktx: "KTX·고속버스",
+  own_car: "자차·가족차",
   other: "기타",
 };
 
