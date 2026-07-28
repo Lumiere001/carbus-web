@@ -98,10 +98,18 @@ describe("FleetPanel", () => {
     expect(screen.getByText("차량 3대")).toBeDefined();
   });
 
-  it("배차 특례가 배지로 드러난다", () => {
+  it("배차 특례가 배지로 드러나고, 눌러서 바로 고칠 수 있다", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
     render(<FleetPanel trips={TRIPS} buses={BUSES} loads={LOADS} upRequests={UP_REQ} downRequests={DOWN_REQ} />);
-    expect(screen.getByText("응집 면제")).toBeDefined();
-    expect(screen.getByText("후순위")).toBeDefined();
+    // 배지 문구는 "무엇을 하는지"를 그대로 적는다 — "응집 면제"·"후순위" 만으로는
+    // 이 차가 왜 다른지, 어디서 끄는지 알 수 없었다.
+    const exempt = screen.getByText("캠퍼스 섞임 허용");
+    expect(exempt).toBeDefined();
+    expect(screen.getByText("마지막에 채움")).toBeDefined();
+
+    // 배지를 누르면 그 차의 수정 폼이 열린다 (끄는 자리가 그 안에 있다).
+    await userEvent.click(exempt);
+    expect(screen.getByText("배차 특례")).toBeDefined();
   });
 
   it("배정 인원이 있는 차량은 삭제 버튼이 잠긴다", () => {

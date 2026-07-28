@@ -525,8 +525,19 @@ function BusRowItem({
       <div className="grid md:grid-cols-[1fr_5rem_5rem_1fr_1fr_auto] gap-2 items-center rounded-lg border border-border px-3 py-2 text-sm">
         <span className="font-medium flex items-center gap-1.5">
           {bus.name}
-          {bus.is_cohesion_exempt && <Badge variant="warning">응집 면제</Badge>}
-          {bus.fill_priority > 0 && <Badge variant="mute">후순위</Badge>}
+          {/* 배지만으로는 "이 차가 왜 다른지" 를 알 수 없었다. 무슨 뜻인지 붙이고,
+              눌러서 바로 고칠 수 있게 한다 — 끄는 자리가 수정 폼 안에 있다는 걸
+              모르면 영영 못 찾는다. */}
+          {bus.is_cohesion_exempt && (
+            <button type="button" onClick={() => setEditing(true)} title="이 차는 캠퍼스를 한 차에 모으는 규칙에서 빠집니다. 눌러서 끄기">
+              <Badge variant="warning">캠퍼스 섞임 허용</Badge>
+            </button>
+          )}
+          {bus.fill_priority > 0 && (
+            <button type="button" onClick={() => setEditing(true)} title={`다른 차를 다 채운 뒤 마지막에 채웁니다 (후순위 ${bus.fill_priority}). 눌러서 끄기`}>
+              <Badge variant="mute">마지막에 채움</Badge>
+            </button>
+          )}
         </span>
         <span className="text-muted-2">{bus.capacity}석</span>
         <span className="text-muted-2">{bus.hard_cap}석</span>
@@ -614,28 +625,50 @@ function BusRowItem({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-4 text-xs">
-        <label className="flex items-center gap-1.5">
+      <div className="rounded-md border border-border bg-surface px-3 py-2.5 flex flex-col gap-2 text-xs">
+        <p className="text-muted-2 leading-snug">
+          <b className="text-foreground">배차 특례</b> — 이 차만 다르게 채우고 싶을 때만
+          켜세요. 둘 다 꺼두면 다른 차들과 똑같이 배차됩니다.
+        </p>
+        <label className="flex items-start gap-2">
           <input
             type="checkbox"
+            className="mt-0.5"
             checked={draft.isCohesionExempt}
             onChange={(e) =>
               setDraft({ ...draft, isCohesionExempt: e.target.checked })
             }
           />
-          응집 면제 (여러 캠퍼스가 섞이는 차)
+          <span>
+            <b className="text-foreground">캠퍼스 섞임 허용</b>
+            <span className="block text-muted-2 leading-snug">
+              배차는 같은 캠퍼스를 한 차에 모읍니다. 이걸 켜면 그 규칙에서 빠져
+              여러 캠퍼스가 섞입니다.
+            </span>
+          </span>
         </label>
-        <label className="flex items-center gap-1.5">
-          채움 후순위
+        <label className="flex items-start gap-2">
           <input
-            type="number"
-            min={0}
-            value={draft.fillPriority}
-            onChange={(e) => setDraft({ ...draft, fillPriority: e.target.value })}
-            className="w-14 rounded-md border border-border bg-surface px-2 py-1 text-fg"
+            type="checkbox"
+            className="mt-0.5"
+            checked={Number(draft.fillPriority) > 0}
+            onChange={(e) =>
+              setDraft({ ...draft, fillPriority: e.target.checked ? "1" : "0" })
+            }
           />
-          <span className="text-muted-2">클수록 나중에 채웁니다 (짐차는 1)</span>
+          <span>
+            <b className="text-foreground">마지막에 채움</b>
+            <span className="block text-muted-2 leading-snug">
+              다른 차를 다 채운 뒤에 이 차를 씁니다. 짐이나 여유 좌석용 차에 켭니다.
+            </span>
+          </span>
         </label>
+        {Number(draft.fillPriority) > 1 && (
+          <p className="text-muted-2">
+            지금 후순위 값이 <b>{draft.fillPriority}</b> 입니다 — 여러 단계로 나눠 둔
+            설정이라 체크를 풀면 0 이 됩니다.
+          </p>
+        )}
       </div>
 
       <div className="flex gap-1">
