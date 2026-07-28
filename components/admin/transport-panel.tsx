@@ -209,17 +209,30 @@ export function TransportPanel({
               );
             })}
           </div>
-          {[...new Set(otherRows.map((r) => r.mode))].map((mode) => (
-            <div key={mode}>
-              <p className="px-5 pt-3 pb-1 text-xs text-muted-2">
-                {TRANSPORT_LABELS[mode]}
-              </p>
-              <LegTable
-                rows={otherRows.filter((r) => r.mode === mode)}
-                showWait={false}
-              />
-            </div>
-          ))}
+          {/* 수단마다 **띠로 확실히 가른다.**
+              예전엔 작은 회색 글씨 한 줄이 앞 묶음의 마지막 사람 바로 밑에 붙어서,
+              `KTX·고속버스` 가 그 위 사람(자차로 오는 사람)의 정보처럼 읽혔다.
+              굵은 구분선 + 배경 띠 + 건수로, 여기서부터 다른 수단이라는 게 보이게 한다. */}
+          {[...new Set(otherRows.map((r) => r.mode))].map((mode) => {
+            const rows = otherRows.filter((r) => r.mode === mode);
+            return (
+              <section
+                key={mode}
+                className="border-t-4 border-border first:border-t-0"
+                aria-label={`${TRANSPORT_LABELS[mode]} 이용자`}
+              >
+                <div className="px-5 py-2.5 bg-surface-2 flex flex-wrap items-center gap-2">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {TRANSPORT_LABELS[mode]}
+                  </h4>
+                  <Badge variant="mute" dot={false}>
+                    {rows.length}명
+                  </Badge>
+                </div>
+                <LegTable rows={rows} showWait={false} />
+              </section>
+            );
+          })}
         </Card>
       )}
     </div>
