@@ -25,15 +25,7 @@ export type BoardRow = {
  * 명단이다. 시각을 필수로 받았다면 아무 값이나 찍혀서 이 명단이 아예 존재하지
  * 않았을 것이다.
  */
-export function PickupBoard({
-  rows,
-  venueName,
-}: {
-  rows: BoardRow[];
-  /** 행사 목적지 이름. 방향을 "어디서 어디로" 로 적기 위해. */
-  venueName?: string | null;
-}) {
-  const venue = venueName?.trim() || "행사장";
+export function PickupBoard({ rows }: { rows: BoardRow[] }) {
   const groups = new Map<string, { date: string | null; time: string | null; place: string | null; members: BoardRow[] }>();
   for (const r of rows) {
     // 장소도 미정일 수 있다. 시각·장소가 둘 다 없으면 한 묶음으로 모인다.
@@ -113,9 +105,9 @@ export function PickupBoard({
                         {m.person_name}
                         <span className="text-muted-2 text-xs ml-1">
                           {m.campus_name}
-                          {m.direction === "down"
-                            ? ` · ${venue} →`
-                            : ` · → ${venue}`}
+                          {/* 지명이 아니라 역할 이름으로 — 픽업 장소도 지명이라
+                              "평창역 → 평창" 처럼 읽히면 오히려 헷갈린다. */}
+                          {m.direction === "down" ? " · 수련회장 출발" : " · 수련회장 도착"}
                         </span>
                         {m.note && (
                           <span className="text-muted-2 text-xs ml-1">({m.note})</span>

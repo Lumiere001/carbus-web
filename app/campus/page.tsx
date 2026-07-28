@@ -19,7 +19,7 @@ export default async function CampusPage() {
   const campusId = profile?.campus_id;
   if (!campusId) redirect("/pending");
 
-  const [regRes, campusRes, busRes, slotRes, legRes, unitRes, pickupRes, placeRes, eventRes] =
+  const [regRes, campusRes, busRes, slotRes, legRes, unitRes, pickupRes, placeRes] =
     await Promise.all([
     supabase
       .from("registrations")
@@ -51,7 +51,6 @@ export default async function CampusPage() {
       .eq("active", true)
       .order("display_order")
       .order("name"),
-    supabase.from("events").select("destination").eq("is_active", true).maybeSingle(),
   ]);
 
   const allUnits = unitRes.data ?? [];
@@ -86,7 +85,6 @@ export default async function CampusPage() {
       units={allUnits.filter((u) => u.retired_at === null).map((u) => ({ id: u.id, name: u.name }))}
       pickups={pickups}
       places={placeRes.data ?? []}
-      venueName={eventRes.data?.destination}
     />
   );
 }
