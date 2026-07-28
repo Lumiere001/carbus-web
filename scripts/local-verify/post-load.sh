@@ -52,10 +52,45 @@ run_sql_file() {
 echo "── post-load.sql (컬럼 backfill)"
 run_sql_file "$REPO_ROOT/scripts/local-verify/post-load.sql"
 
+# ── 재실행이 **없던 데이터를 만들어내는** 경우를 막는다 ──────────────
+# 20260721070000 에는 "차량은 전부 그 행사의 하행 편을 운행한다" 는 일회성 backfill 이
+# 있다. 2026-07-21 당시엔 11대 전부 양방향이라 옳았지만, 지금은 **한 방향만 뛰는 차가
+# 정상**이다(리더십 캠프의 4~6호차는 하행 전용). 그대로 재실행하면 상행만 뛰던 차에
+# 하행 편이 붙어 **로컬이 운영보다 "더 멀쩡해진다"** — 그 상태로 §26-A 를 검증하면
+# 결함이 저절로 사라진 것처럼 보인다(실제로 그렇게 보였다).
+# → 재실행 직전의 연결을 적어 뒀다가, 재실행이 만들어낸 차이만 되돌린다.
+#   `local_verify` 스키마를 쓰는 이유: public 에 두면 load-backup.py 의 백업 커버리지
+#   검사가 "백업 대상에 빠진 테이블" 로 잡아 다음 적재를 통째로 막는다.
+docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q <<'SQL'
+create schema if not exists local_verify;
+drop table if exists local_verify.bus_trips_before_replay;
+create table local_verify.bus_trips_before_replay as
+  select id, up_trip_id, down_trip_id from public.buses;
+SQL
+
 for m in "${MIGRATIONS[@]}"; do
   echo "── $m"
   run_sql_file "$REPO_ROOT/$m"
 done
+
+docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q <<'SQL'
+do $$
+declare v_n int;
+begin
+  with restored as (
+    update public.buses b
+       set up_trip_id = s.up_trip_id, down_trip_id = s.down_trip_id
+      from local_verify.bus_trips_before_replay s
+     where s.id = b.id
+       and (b.up_trip_id   is distinct from s.up_trip_id
+         or b.down_trip_id is distinct from s.down_trip_id)
+    returning 1)
+  select count(*) into v_n from restored;
+  if v_n > 0 then
+    raise notice '재실행이 만들어낸 차량↔편 연결 %대를 백업 상태로 되돌림', v_n;
+  end if;
+end $$;
+SQL
 
 echo "── ENABLE ALWAYS 복구"
 # ⚠️ 위 마이그레이션들의 backfill 이 `alter table … enable trigger user` 를 쓴다.
@@ -96,14 +131,24 @@ docker exec -i "$CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q <
 do $$
 declare v_bad int;
 begin
-  select count(*) into v_bad from buses where up_trip_id is null;
+  -- ⚠️ "모든 차량은 상행 편도 하행 편도 있어야 한다" 였던 검사를 고쳤다.
+  --    한 방향만 뛰는 차는 **정상**이다 — 작년 여름수련회도 상행 11대 / 하행 10대로
+  --    대수가 달랐다. 그걸 오류로 보면 정상 데이터를 적재조차 할 수 없다.
+  --    진짜 이상은 두 가지고, 둘 다 그대로 잡는다.
+  --      ① 한 대가 어느 편에도 안 붙어 있다 → 그 차는 화면 어디에도 안 나온다
+  --      ② 차는 있는데 그 방향 편이 **전부** 비었다 → 로더가 컬럼을 통째로 흘린 것
+  select count(*) into v_bad from buses where up_trip_id is null and down_trip_id is null;
   if v_bad > 0 then
-    raise exception '상행 편 미연결 차량 %대 — 백업 적재가 컬럼을 흘렸습니다 (load-backup.py RENAMED_COLUMNS 확인)', v_bad;
+    raise exception '어느 편에도 안 붙은 차량 %대 — 그 차는 화면에 나오지 않습니다', v_bad;
   end if;
 
-  select count(*) into v_bad from buses where down_trip_id is null;
-  if v_bad > 0 then
-    raise exception '하행 편 미연결 차량 %대', v_bad;
+  if exists (select 1 from buses) then
+    if not exists (select 1 from buses where up_trip_id is not null) then
+      raise exception '상행 편이 붙은 차량이 0대 — 백업 적재가 컬럼을 흘렸습니다 (load-backup.py RENAMED_COLUMNS 확인)';
+    end if;
+    if not exists (select 1 from buses where down_trip_id is not null) then
+      raise exception '하행 편이 붙은 차량이 0대 — 백업 적재가 컬럼을 흘렸습니다';
+    end if;
   end if;
 
   -- 신청의 상행 편이 실제 운행편을 가리키는가
@@ -182,7 +227,12 @@ union all select '배차 하행', count(*)::text from registrations where assign
 
 cat <<'EOF'
 
-기대값 (2026-07-21 기준):
-  신청 599 · 감사로그 18967 · 소속 65 · 장부 1081 · 차액 46
-  배차 상행 454 / 하행 459
+기대값 (2026-07-28 §26 착수 기준 — 백업 2026-07-28_1900-pre-sec26):
+  신청 601 · 감사로그 18999 · 소속 65 · 장부 1081 · 차액 0
+  배차 상행 454 / 하행 458
+
+  ⚠️ "차액"만 **활성 행사 기준**이다(v_payment_balance 가 그렇게 정의돼 있다).
+     지금은 리더십 캠프가 활성이라 0 이 정상이다. 여름수련회가 활성이던
+     2026-07-21 에는 46 이었다 — 두 숫자는 같은 것을 세지 않는다.
+     나머지(신청·감사·장부·배차)는 행사 구분 없는 전체 합계다.
 EOF

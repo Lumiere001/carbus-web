@@ -80,10 +80,14 @@ AFTER_TABLE_SQL = {
 }
 
 
-def psql(sql: str, tuples_only=True) -> str:
+def psql(sql: str, tuples_only=True, quiet=False) -> str:
     cmd = ["docker", "exec", "-i", CONTAINER, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"]
     if tuples_only:
         cmd += ["-tA"]
+    # -q 는 "CREATE TABLE" 같은 명령 태그를 지운다. DDL 과 SELECT 를 한 세션에서
+    # 같이 돌릴 때(임시 테이블) 태그가 결과 행에 섞여 들어오는 걸 막는다.
+    if quiet:
+        cmd += ["-q"]
     r = subprocess.run(cmd, input=sql, capture_output=True, text=True)
     if r.returncode != 0:
         print(f"SQL 실패:\n{r.stderr[:3000]}", file=sys.stderr)
@@ -92,14 +96,39 @@ def psql(sql: str, tuples_only=True) -> str:
 
 
 def insertable_columns(table: str) -> list[str]:
-    """GENERATED ALWAYS 컬럼을 제외한 실제 삽입 가능 컬럼."""
+    """실제 삽입 가능 컬럼.
+
+    제외하는 것은 **생성 컬럼(`GENERATED ALWAYS AS (식) STORED`)뿐**이다.
+    identity 컬럼(`GENERATED ALWAYS AS IDENTITY`)은 **반드시 넣는다** —
+    `OVERRIDING SYSTEM VALUE` 로 운영의 id 를 그대로 보존한다.
+
+    ⚠️ 예전엔 identity 도 빼고 있었다. 그러면 id 가 로컬에서 1부터 새로 매겨지는데,
+    `event_trips` 의 운영 id 가 우연히 1~4 라 오래 들키지 않았다. 캠프 행사의 편이
+    7·8 로 생기면서 드러났다 — 로컬에선 5·6 으로 앉고, `buses.up_trip_id=7` 이
+    허공을 가리키고, `trg_reg_event_scope`(ENABLE ALWAYS 라 replica 모드에서도
+    발화)가 "다른 행사의 운행편" 이라며 신청 적재를 통째로 중단시켰다.
+    id 를 보존하지 않으면 **로컬은 운영의 재현이 아니다.**
+    """
     out = psql(f"""
         select column_name from information_schema.columns
         where table_schema='public' and table_name='{table}'
-          and is_generated='NEVER' and identity_generation is null
+          and is_generated='NEVER'
         order by ordinal_position
     """)
     return [c for c in out.splitlines() if c]
+
+
+def has_always_identity(table: str) -> bool:
+    """`GENERATED ALWAYS AS IDENTITY` 컬럼이 있는가.
+
+    있으면 INSERT 에 `OVERRIDING SYSTEM VALUE` 가 필요하다. 없는 테이블에 그 구문을
+    붙이면 Postgres 가 거부하므로 테이블마다 따로 판단한다.
+    """
+    return psql(f"""
+        select count(*) from information_schema.columns
+        where table_schema='public' and table_name='{table}'
+          and identity_generation = 'ALWAYS'
+    """) not in ("", "0")
 
 
 def check_coverage() -> None:
@@ -175,6 +204,59 @@ def backup_file(table: str) -> pathlib.Path | None:
     return None
 
 
+def check_foreign_keys() -> list[str]:
+    """적재가 끝난 뒤 **끊긴 참조**를 전수로 센다.
+
+    왜 행 수 대조만으로는 부족한가: 적재는 `session_replication_role = replica` 로
+    FK 를 끄고 돈다(순환 FK 때문에 필요하다). 그래서 가리키는 곳이 없는 값이 들어가도
+    행 수는 맞고 "PASS" 가 찍힌다. 실제로 `buses.up_trip_id` 가 사라진 편을 가리킨 채
+    통과했고, 그 로컬로 한 검증은 전부 무의미했다.
+
+    대상은 **public → public** FK 만이다. `profiles.id → auth.users.id` 처럼 로컬에
+    원본이 없는 것은 정상이므로 뺀다.
+    복합 FK 는 행 비교(`(a,b) = (c,d)`)로 본다. 행 전체가 NULL 이 아닌 경우만 세는데,
+    이는 Postgres 의 MATCH SIMPLE 기본 동작과 같다.
+    """
+    out = psql("""
+      drop table if exists _fk_bad;
+      create temp table _fk_bad (msg text);
+      do $$
+      declare r record; n bigint;
+      begin
+        for r in
+          select con.conname,
+                 src.relname as src_table, tgt.relname as tgt_table,
+                 (select string_agg('s.'||quote_ident(a.attname), ', ' order by k.ord)
+                    from unnest(con.conkey) with ordinality k(attnum, ord)
+                    join pg_attribute a
+                      on a.attrelid = con.conrelid and a.attnum = k.attnum) as src_cols,
+                 (select string_agg('t.'||quote_ident(a.attname), ', ' order by k.ord)
+                    from unnest(con.confkey) with ordinality k(attnum, ord)
+                    join pg_attribute a
+                      on a.attrelid = con.confrelid and a.attnum = k.attnum) as tgt_cols
+            from pg_constraint con
+            join pg_class src on src.oid = con.conrelid
+            join pg_class tgt on tgt.oid = con.confrelid
+            join pg_namespace ns on ns.oid = src.relnamespace
+            join pg_namespace nt on nt.oid = tgt.relnamespace
+           where con.contype = 'f'
+             and ns.nspname = 'public' and nt.nspname = 'public'
+        loop
+          execute format(
+            'select count(*) from public.%I s where (%s) is not null'
+            ' and not exists (select 1 from public.%I t where (%s) = (%s))',
+            r.src_table, r.src_cols, r.tgt_table, r.tgt_cols, r.src_cols
+          ) into n;
+          if n > 0 then
+            insert into _fk_bad values (format('%s: %s행 (%s)', r.conname, n, r.src_table));
+          end if;
+        end loop;
+      end $$;
+      select msg from _fk_bad order by msg;
+    """, quiet=True)
+    return [line for line in out.splitlines() if line.strip()]
+
+
 def main():
     check_coverage()
     # 마이그레이션이 마스터데이터(campuses·slots·role_labels·system_config)를 시드하므로
@@ -209,8 +291,9 @@ def main():
         cols = [c for c in insertable_columns(t) if c in present]
         collist = ", ".join(f'"{c}"' for c in cols)
         payload = json.dumps(rows, ensure_ascii=False).replace("'", "''")
+        override = " OVERRIDING SYSTEM VALUE" if has_always_identity(t) else ""
         stmts.append(
-            f"INSERT INTO public.{t} ({collist}) "
+            f"INSERT INTO public.{t} ({collist}){override} "
             f"SELECT {collist} FROM jsonb_populate_recordset(null::public.{t}, '{payload}'::jsonb);"
         )
         summary.append((t, len(rows)))
@@ -251,6 +334,17 @@ def main():
         ok &= match
         extra = f" (+{actual - n} 생성)" if t in AFTER_TABLE_SQL and actual > n else ""
         print(f"  {'OK ' if match else 'MISMATCH'} {t:28} 백업 {n:6} / DB {actual:6}{extra}")
+
+    dangling = check_foreign_keys()
+    print()
+    if dangling:
+        print("❌ 가리키는 곳이 없는 참조:")
+        for line in dangling:
+            print(f"   {line}")
+        ok = False
+    else:
+        print("참조 무결성: 끊긴 참조 없음")
+
     print()
     print("적재 무결성:", "PASS ✅" if ok else "FAIL ❌")
     return 0 if ok else 1
