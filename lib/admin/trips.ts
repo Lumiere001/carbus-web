@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
+import { createBus } from "@/lib/admin/buses";
 
 export type TripRow = Database["public"]["Tables"]["event_trips"]["Row"];
 type TripUpdate = Database["public"]["Tables"]["event_trips"]["Update"];
@@ -145,4 +146,48 @@ function humanize(msg: string): string {
   if (msg.includes("violates foreign key"))
     return "이 운행편을 쓰는 차량이나 신청이 남아 있습니다.";
   return msg;
+}
+
+/**
+ * 운행편을 만들면서 **그 편을 뛸 차량까지 한 번에** 만든다.
+ *
+ * 편만 만들어 두면 차가 0대라 아무도 못 탄다. 그런데 지금까지는 편을 만든 뒤
+ * 아래 차량 섹션으로 내려가 한 대씩 따로 추가해야 했다 — 편성을 처음 짤 때
+ * 반드시 이어서 하는 일인데 화면이 갈라져 있었다.
+ *
+ * 차량 이름은 기존 `N호차` 중 가장 큰 번호 다음부터 잇는다. 번호가 겹치면
+ * 현장에서 "몇 호차 타세요"가 통하지 않는다.
+ */
+export async function createTripWithBuses(
+  input: NewTripInput,
+  busCount: number
+): Promise<Result<TripRow>> {
+  const created = await createTrip(input);
+  if (!created.ok) return created;
+  if (busCount <= 0) return created;
+
+  const supabase = createClient();
+  const { data: existing } = await supabase.from("buses").select("name");
+  // "3호차" → 3. 규칙에 안 맞는 이름은 번호 계산에서 빠진다.
+  const maxNo = (existing ?? []).reduce((m, b) => {
+    const n = Number(/^(\d+)호차$/.exec(b.name ?? "")?.[1] ?? 0);
+    return Number.isFinite(n) ? Math.max(m, n) : m;
+  }, 0);
+
+  const tripId = created.value.id;
+  for (let i = 1; i <= busCount; i += 1) {
+    const res = await createBus({
+      name: `${maxNo + i}호차`,
+      ...(input.direction === "up" ? { upTripId: tripId } : { downTripId: tripId }),
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        message:
+          `운행편은 만들었지만 차량 추가에서 멈췄습니다 (${i - 1}대까지 생성). ` +
+          res.message,
+      };
+    }
+  }
+  return created;
 }

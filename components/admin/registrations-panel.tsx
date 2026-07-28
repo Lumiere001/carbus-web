@@ -133,6 +133,7 @@ export function RegistrationsPanel({
   legs,
   pickups,
   places,
+  venueName,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -153,6 +154,8 @@ export function RegistrationsPanel({
   pickups: Record<string, PickupRow[]>;
   /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다. */
   places: { id: number; name: string }[];
+  /** 행사 목적지 이름 — 수송 요청 방향을 "어디서 어디로" 로 적는 데 쓴다. */
+  venueName?: string | null;
 }) {
   const panelRouter = useRouter();
   const [tab, setTab] = useState<string>(ALL);
@@ -431,6 +434,7 @@ export function RegistrationsPanel({
             downLeg={legOf(editRow.id, "down")}
             pickups={pickups[editRow.id] ?? []}
             places={places}
+            venueName={venueName}
             // 서랍이 리마운트돼도 새로고침이 살아 있게 부모가 받는다.
             onSaved={() => panelRouter.refresh()}
             onClose={() => setForm(null)}

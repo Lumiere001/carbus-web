@@ -52,15 +52,18 @@ const FILTERS: { key: Filter; label: string; hint: string }[] = [
 ];
 
 export default async function AdminPartialPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ eventId: string }>;
   searchParams: Promise<{ f?: string }>;
 }) {
+  const { eventId } = await params;
   const { f } = await searchParams;
   const filter: Filter = FILTERS.some((x) => x.key === f) ? (f as Filter) : "all";
 
   const supabase = await createClient();
-  const [regRes, campusRes, tripRes, legRes, unitRes, boardRes] = await Promise.all([
+  const [regRes, campusRes, tripRes, legRes, unitRes, eventRes, boardRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
@@ -81,6 +84,8 @@ export default async function AdminPartialPage({
       .from("transport_legs")
       .select("registration_id, direction, mode, status, via_unit_id"),
     supabase.from("org_units").select("id, name"),
+    // 방향 라벨에 쓸 행사 목적지 — 코드에 지명을 박지 않는다.
+    supabase.from("events").select("destination").eq("id", eventId).maybeSingle(),
     // 수송 요청 보드. 시각 미정(NULL)이 먼저 오게 읽는다 — 그게 곧 할 일이다.
     supabase
       .from("v_pickup_board")
@@ -282,7 +287,10 @@ export default async function AdminPartialPage({
         </div>
       </Card>
 
-      <PickupBoard rows={(boardRes.data ?? []) as BoardRow[]} />
+      <PickupBoard
+        rows={(boardRes.data ?? []) as BoardRow[]}
+        venueName={eventRes.data?.destination}
+      />
     </div>
   );
 }

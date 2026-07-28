@@ -61,8 +61,43 @@ describe("BusAttendance 호차 바로가기", () => {
     expect(screen.getByRole("button", { name: /전체/ })).toBeDefined();
     // 칩은 호차 이름 + 진행률을 함께 보여준다 — 어느 호차가 안 끝났는지가 목적이다.
     const chips = screen.getAllByRole("button").map((b) => b.textContent ?? "");
-    expect(chips.some((t) => /1호차\s*2\/3/.test(t))).toBe(true); // 상행1 + 하행1 체크
+    // 진행률은 **지금 보는 방향만** 센다. 기본은 상행이므로 1호차는 2명 중 1명.
+    // (예전에는 상행 1 + 하행 1 을 더해 "2/3" 으로 보여줬는데, 같은 호차라도
+    //  상·하행 멤버가 달라서 그 숫자가 무엇을 뜻하는지 알 수 없었다)
+    expect(chips.some((t) => /1호차\s*1\/2/.test(t))).toBe(true);
     expect(chips.some((t) => /2호차\s*0\/1/.test(t))).toBe(true);
+  });
+
+  it("방향을 바꾸면 그 방향의 호차·진행률만 보여준다", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    // 하행은 배차가 독립이라 **같은 호차라도 멤버가 다르다.** 여기서는 1·2호차만
+    // 하행을 뛰고, 1호차 하행 멤버는 상행과 아예 다른 사람이다.
+    const DOWN2: [number, ReturnType<typeof member>[]][] = [
+      [1, [member("d", "라마", true), member("e", "마바")]],
+      [2, [member("c", "다라", true)]],
+    ];
+    render(
+      <BusAttendance upGroups={UP} downGroups={DOWN2} buses={BUSES} slots={SLOTS} />
+    );
+    // 상행에는 1·2·3호차가 있다
+    expect(
+      screen.getAllByRole("button").some((b) => /^2호차/.test(b.textContent ?? ""))
+    ).toBe(true);
+
+    // 상행 3호차가 있는지 먼저 확인
+    expect(
+      screen.getAllByRole("button").some((b) => /^3호차/.test(b.textContent ?? ""))
+    ).toBe(true);
+
+    await userEvent.click(screen.getByRole("button", { name: /하행/ }));
+
+    const chips = screen.getAllByRole("button").map((b) => b.textContent ?? "");
+    // 하행을 안 뛰는 3호차는 칩에서 사라진다
+    expect(chips.some((t) => /^3호차/.test(t))).toBe(false);
+    // 하행 1호차 진행률은 **하행 멤버 기준** 2명 중 1명 — 상행(1/2)과 값이 겹치지
+    // 않도록 데이터를 잡았다. 예전처럼 두 방향을 더하면 이 숫자가 안 나온다.
+    expect(chips.some((t) => /1호차\s*1\/2/.test(t))).toBe(true);
+    expect(chips.some((t) => /2호차\s*1\/1/.test(t))).toBe(true);
   });
 
   it("호차를 고르면 그 호차 명단만 남는다", async () => {
@@ -78,8 +113,9 @@ describe("BusAttendance 호차 바로가기", () => {
       .find((b) => /^1호차/.test(b.textContent ?? ""))!;
     await userEvent.click(chip);
 
-    // "가나"는 1호차 상행·하행 양쪽에 있으므로 2개 — 같은 호차의 두 섹션이 맞다.
-    expect(screen.getAllByText("가나")).toHaveLength(2);
+    // 방향을 하나만 보므로 "가나"도 한 번만 나온다. 예전에는 상·하행 섹션이 함께
+    // 그려져 같은 사람이 두 번 보였다.
+    expect(screen.getAllByText("가나")).toHaveLength(1);
     expect(screen.queryByText("다라")).toBeNull(); // 2호차 인원은 사라진다
     expect(screen.queryByText("라마")).toBeNull(); // 3호차도
   });

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  createTrip,
+  createTripWithBuses,
   updateTrip,
   deleteTrip,
   type TripRow,
@@ -92,8 +92,10 @@ export function FleetPanel({
           trips={tripsOf(dir)}
           buses={buses}
           pending={pending}
-          onCreate={(label, departsAt) =>
-            run(() => createTrip({ direction: dir, label, departsAt }))
+          onCreate={(label, departsAt, busCount) =>
+            run(() =>
+              createTripWithBuses({ direction: dir, label, departsAt }, busCount)
+            )
           }
           onPatch={(id, patch) => run(() => updateTrip(id, patch))}
           onDelete={(id) => run(() => deleteTrip(id))}
@@ -131,12 +133,19 @@ function TripSection({
   trips: TripRow[];
   buses: BusRow[];
   pending: boolean;
-  onCreate: (label: string, departsAt: string | null) => void;
+  onCreate: (label: string, departsAt: string | null, busCount: number) => void;
   onPatch: (id: number, patch: Parameters<typeof updateTrip>[1]) => void;
   onDelete: (id: number) => void;
 }) {
   const [label, setLabel] = useState("");
   const [departsAt, setDepartsAt] = useState("");
+  const [busCountDraft, setBusCountDraft] = useState("0");
+
+  /** 지금까지 쓰인 가장 큰 호차 번호. 새 차량은 그 다음부터 이어 붙는다. */
+  const lastBusNo = buses.reduce((m, b) => {
+    const n = Number(/^(\d+)호차$/.exec(b.name ?? "")?.[1] ?? 0);
+    return Number.isFinite(n) ? Math.max(m, n) : m;
+  }, 0);
 
   const busCount = (tripId: number) =>
     buses.filter((b) =>
@@ -174,6 +183,20 @@ function TripSection({
               className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg w-48"
             />
           </label>
+          {/* 차량 대수를 여기서 같이 받는다. 편만 만들면 차가 0대라 아무도 못 타는데,
+              지금까지는 아래 차량 섹션으로 내려가 한 대씩 따로 추가해야 했다 —
+              편성을 처음 짤 때 반드시 이어서 하는 일이다. */}
+          <label className="flex flex-col gap-1 text-xs text-muted-2">
+            차량 대수
+            <input
+              type="number"
+              min={0}
+              max={30}
+              value={busCountDraft}
+              onChange={(e) => setBusCountDraft(e.target.value)}
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg w-24 text-right tabular-nums"
+            />
+          </label>
           <label className="flex flex-col gap-1 text-xs text-muted-2">
             출발 일시 (선택)
             <input
@@ -188,13 +211,23 @@ function TripSection({
             size="sm"
             disabled={pending || !label.trim()}
             onClick={() => {
-              onCreate(label, departsAt ? new Date(departsAt).toISOString() : null);
+              onCreate(
+                label,
+                departsAt ? new Date(departsAt).toISOString() : null,
+                Math.max(0, Math.min(30, Number(busCountDraft) || 0))
+              );
               setLabel("");
               setDepartsAt("");
+              setBusCountDraft("0");
             }}
           >
             추가
           </Button>
+          <p className="w-full text-[11px] text-muted-2 leading-snug">
+            차량은 <b>{lastBusNo + 1}호차</b>부터 이어서 만들어집니다. 이름이 겹치면
+            현장에서 “몇 호차 타세요”가 통하지 않습니다.
+            {" "}출발 일시는 비워도 됩니다 — 지금은 편 이름의 시각으로 운영합니다.
+          </p>
         </div>
       </div>
     </Card>

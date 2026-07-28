@@ -67,6 +67,8 @@ export function BusAttendance({
   const [err, setErr] = useState<string | null>(null);
   /** 선택한 호차. null = 전체 (지금까지의 동작). */
   const [selBus, setSelBus] = useState<number | null>(null);
+  /** 지금 보는 방향. 현장에서는 한 번에 한 방향만 체크한다. */
+  const [dir, setDir] = useState<"up" | "down">("up");
 
   // Realtime: 같은 캠퍼스 다른 기기의 체크를 자동 반영 (본인 echo 도 idempotent).
   useEffect(() => {
@@ -242,31 +244,45 @@ export function BusAttendance({
    * 칩에 진행률을 같이 띄운다 — 현장에서 필요한 건 "어느 호차가 아직 안 끝났나"이고,
    * 그건 목록을 다 내려봐야만 알 수 있었다.
    */
+  /**
+   * ⚠️ **호차 칩은 방향별로 따로 세어야 한다.**
+   *
+   * 예전에는 상행·하행 호차를 합집합으로 묶고 진행률도 두 방향을 **더했다.**
+   * 같은 5호차라도 상행 멤버와 하행 멤버가 다른데(배차가 독립이다), 화면에는
+   * "5호차 56/56" 하나로 보여서 그게 갈 때인지 올 때인지 알 수가 없었다.
+   * 현장에서는 한 번에 한 방향만 체크하므로 방향을 먼저 고르게 한다.
+   */
+  const groupsOf = (d: "up" | "down") => (d === "up" ? upGroups : downGroups);
+
   const busIds = useMemo(() => {
     const ids = new Set<number>();
-    for (const [id] of upGroups) ids.add(id);
-    for (const [id] of downGroups) ids.add(id);
+    for (const [id] of groupsOf(dir)) ids.add(id);
     return [...ids].sort((a, b) => a - b);
-  }, [upGroups, downGroups]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upGroups, downGroups, dir]);
 
   const progressOf = (busId: number) => {
     let done = 0;
     let total = 0;
-    for (const [id, members] of upGroups)
+    const field = dir === "up" ? "checked_in" : "checked_out";
+    for (const [id, members] of groupsOf(dir))
       if (id === busId) {
         total += members.length;
-        done += members.filter((m) => state[m.id]?.checked_in).length;
-      }
-    for (const [id, members] of downGroups)
-      if (id === busId) {
-        total += members.length;
-        done += members.filter((m) => state[m.id]?.checked_out).length;
+        done += members.filter((m) => state[m.id]?.[field]).length;
       }
     return { done, total };
   };
 
   const onlySelected = (groups: Group[]) =>
     selBus == null ? groups : groups.filter(([id]) => id === selBus);
+
+  const dirTab = (active: boolean) =>
+    cn(
+      "px-3 py-1.5 rounded-lg text-sm border transition whitespace-nowrap",
+      active
+        ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+        : "border-border text-muted hover:bg-surface-2"
+    );
 
   // 요약 카드용 라이브 집계 (state 기반 → 토글/Realtime 즉시 반영)
   const slotArrived = new Map<number, number>();
@@ -314,8 +330,33 @@ export function BusAttendance({
           {err}
         </div>
       )}
+      <div className="sticky top-0 z-20 -mx-1 px-1 py-2 bg-surface/95 backdrop-blur border-b border-border space-y-2">
+        {/* 방향 먼저 — 상·하행은 배차가 독립이라 같은 호차라도 멤버가 다르다. */}
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setDir("up");
+              setSelBus(null);
+            }}
+            className={dirTab(dir === "up")}
+          >
+            <ArrowUp size={13} className="inline mr-1" />
+            상행 (올라갈 때)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDir("down");
+              setSelBus(null);
+            }}
+            className={dirTab(dir === "down")}
+          >
+            <ArrowDown size={13} className="inline mr-1" />
+            하행 (내려올 때)
+          </button>
+        </div>
       {busIds.length > 1 && (
-        <div className="sticky top-0 z-20 -mx-1 px-1 py-2 bg-surface/95 backdrop-blur border-b border-border">
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             <button
               type="button"
@@ -354,11 +395,11 @@ export function BusAttendance({
               );
             })}
           </div>
-        </div>
       )}
+      </div>
 
-      {renderSection(onlySelected(upGroups), "checked_in", "up")}
-      {renderSection(onlySelected(downGroups), "checked_out", "down")}
+      {dir === "up" && renderSection(onlySelected(upGroups), "checked_in", "up")}
+      {dir === "down" && renderSection(onlySelected(downGroups), "checked_out", "down")}
 
       {selBus != null &&
         onlySelected(upGroups).length === 0 &&

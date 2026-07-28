@@ -5,6 +5,8 @@ import {
   type ProfileRow,
   assignCampusAdmin,
   revokeToGuest,
+  revokeAccess,
+  restoreAccess,
   changeCampus,
   assignDriverBus,
   clearDriverBus,
@@ -42,14 +44,49 @@ export function UsersPanel({
 
   // 시스템 계정(운영자 viewer/master)은 권한 관리 대상에서 제외.
   // 미배정(게스트·차량 둘 다 없음) → 위로 정렬해 승인 대기 노출.
+  // 내린 계정은 목록에서 갈라 낸다 — 기수가 바뀔 때마다 쌓여서, 다음 임역원을
+  // 찾는 데 방해가 된다. 기록은 그대로 남는다(§21 참고).
+  const revoked = profiles
+    .filter((p) => p.revoked_at != null)
+    .sort((a, b) => (b.revoked_at ?? "").localeCompare(a.revoked_at ?? ""));
+
   const managed = profiles
-    .filter((p) => p.role === "guest" || p.role === "campus_admin")
+    .filter(
+      (p) => p.revoked_at == null && (p.role === "guest" || p.role === "campus_admin")
+    )
     .sort((a, b) => {
       const an = a.role === "guest" && a.driver_bus_id == null ? 0 : 1;
       const bn = b.role === "guest" && b.driver_bus_id == null ? 0 : 1;
       if (an !== bn) return an - bn;
       return (a.created_at ?? "").localeCompare(b.created_at ?? "");
     });
+
+  /** 접근 내리기 — 임역원 기간이 끝난 사람. 지우는 게 아니라 못 들어오게 한다. */
+  async function onRevoke(p: ProfileRow) {
+    if (
+      !confirm(
+        `${nameOf(p)} 의 접근을 내릴까요?\n\n` +
+          `· 로그인해도 아무 화면에 못 들어갑니다 (권한·배정이 모두 해제됩니다)\n` +
+          `· 이 사람이 남긴 기록(감사 로그·배차·장부)은 그대로 남습니다\n` +
+          `· 필요하면 아래 "내린 계정" 에서 되돌릴 수 있습니다`
+      )
+    )
+      return;
+    const res = await revokeAccess(p.id);
+    if (!res.ok) return setMsg({ type: "err", text: res.message });
+    replace(res.row);
+    setMsg({ type: "ok", text: `${nameOf(p)} 접근 내림` });
+  }
+
+  async function onRestore(p: ProfileRow) {
+    const res = await restoreAccess(p.id);
+    if (!res.ok) return setMsg({ type: "err", text: res.message });
+    replace(res.row);
+    setMsg({
+      type: "ok",
+      text: `${nameOf(p)} 되돌림 — 캠퍼스·호차는 다시 지정해 주세요`,
+    });
+  }
 
   // 캠퍼스(임역원) 지정·변경·해제 — 차량 배정과 독립.
   async function onCampusChange(p: ProfileRow, value: string) {
@@ -132,6 +169,7 @@ export function UsersPanel({
               <th className="px-3 py-2">상태</th>
               <th className="px-3 py-2">캠퍼스 (임역원)</th>
               <th className="px-3 py-2">차량 (호차)</th>
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -196,12 +234,55 @@ export function UsersPanel({
                       ))}
                     </select>
                   </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => onRevoke(p)}
+                      className="text-xs text-muted-2 hover:text-danger"
+                    >
+                      접근 내리기
+                    </button>
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {/* 내린 계정 — 지운 게 아니라 못 들어오게 한 사람들. 기록은 남아 있다. */}
+      {revoked.length > 0 && (
+        <div className="rounded-xl border border-border bg-surface-2/40">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground">
+              내린 계정 {revoked.length}명
+            </h3>
+            <p className="text-xs text-muted-2 mt-0.5">
+              로그인해도 아무 화면에 못 들어갑니다. 이들이 남긴 기록은 그대로 남아
+              있어서 <b>지우지 않고 내려 둡니다</b> — 지우면 “누가 바꿨는지”가 사라집니다.
+            </p>
+          </div>
+          <ul className="divide-y divide-border">
+            {revoked.map((p) => (
+              <li key={p.id} className="flex items-center justify-between px-4 py-2">
+                <span className="text-sm text-muted">
+                  {nameOf(p)}
+                  <span className="text-xs text-muted-2 ml-2">
+                    {p.revoked_at?.slice(0, 10)} 내림
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRestore(p)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  되돌리기
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

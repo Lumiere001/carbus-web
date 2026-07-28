@@ -11,7 +11,12 @@ import type { PickupRow } from "@/components/admin/reg-drawer";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminRegistrationsPage() {
+export default async function AdminRegistrationsPage({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -24,7 +29,7 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes, placeRes] =
+  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes, placeRes, eventRes] =
     await Promise.all([
     supabase
       .from("registrations")
@@ -65,6 +70,7 @@ export default async function AdminRegistrationsPage() {
       .eq("active", true)
       .order("display_order")
       .order("name"),
+    supabase.from("events").select("destination").eq("id", eventId).maybeSingle(),
   ]);
   const trips = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
@@ -146,6 +152,7 @@ export default async function AdminRegistrationsPage() {
         legs={Object.fromEntries(legs)}
         pickups={pickups}
         places={places}
+        venueName={eventRes.data?.destination}
       />
     </div>
   );

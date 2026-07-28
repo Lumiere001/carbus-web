@@ -758,6 +758,7 @@ export type Database = {
           driver_bus_id: number | null
           id: string
           provider_id: string | null
+          revoked_at: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -768,6 +769,7 @@ export type Database = {
           driver_bus_id?: number | null
           id: string
           provider_id?: string | null
+          revoked_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -778,6 +780,7 @@ export type Database = {
           driver_bus_id?: number | null
           id?: string
           provider_id?: string | null
+          revoked_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }

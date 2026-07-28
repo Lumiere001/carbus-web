@@ -40,6 +40,7 @@ export function RegDrawer({
   downLeg,
   pickups,
   places,
+  venueName,
   onSaved,
   variant = "master",
   onClose,
@@ -54,6 +55,8 @@ export function RegDrawer({
   pickups: PickupRow[];
   /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다 — 자유 입력이 아니다. */
   places: { id: number; name: string }[];
+  /** 행사 목적지 이름(예: 수련회장). 방향 라벨에 쓴다 — 코드에 지명을 박지 않는다. */
+  venueName?: string | null;
   /**
    * 저장이 끝났을 때. **새로고침은 부모가 한다** — 사람을 바꾸면 이 서랍이
    * 통째로 다시 마운트되는데, 그 순간 진행 중이던 저장의 뒷정리가 같이 사라져
@@ -209,6 +212,17 @@ export function RegDrawer({
   const inputCls =
     "w-full text-sm border border-border-2 rounded-md px-2.5 py-1.5 bg-surface disabled:opacity-60";
   const labelCls = "text-xs text-muted space-y-1 block";
+
+  /**
+   * 수송 요청의 방향은 **어디서 어디로 가는지**로 적는다.
+   *
+   * "갈 때 / 올 때" 는 사람마다 기준이 달라서 헷갈린다 — 집에서 가는 건지, 행사장에서
+   * 오는 건지. 픽업은 "누구를 어디서 태워 어디로 데려가는가" 이므로 그대로 쓴다.
+   * 행사장 이름은 행사 설정에서 가져온다(코드에 지명을 박지 않는다).
+   */
+  const venue = venueName?.trim() || "행사장";
+  const pickupDirLabel = (dir: "up" | "down") =>
+    dir === "up" ? `픽업 장소 → ${venue}` : `${venue} → 픽업 장소`;
 
   const paidWarning =
     row.payment_status === "paid" ? (
@@ -453,9 +467,7 @@ export function RegDrawer({
                   className="flex items-start justify-between gap-2 text-xs bg-surface rounded-md border border-border px-2 py-1.5"
                 >
                   <span className="min-w-0">
-                    <b className="text-foreground">
-                      {p.direction === "up" ? "갈 때" : "올 때"}
-                    </b>{" "}
+                    <b className="text-foreground">{pickupDirLabel(p.direction)}</b>{" "}
                     <span className={p.pickupAt ? "text-muted" : "text-danger"}>
                       {p.pickupAt
                         ? new Date(p.pickupAt).toLocaleString("ko-KR", {
@@ -497,8 +509,8 @@ export function RegDrawer({
               }
               aria-label="수송 방향"
             >
-              <option value="up">갈 때</option>
-              <option value="down">올 때</option>
+              <option value="up">{pickupDirLabel("up")}</option>
+              <option value="down">{pickupDirLabel("down")}</option>
             </select>
           {/* 날짜+시각이 한 칸에 들어가는 입력이라 좁으면 시각이 잘린다.
               전화로 도착 시각을 받아 적는 칸이라 잘리면 확인이 안 된다. */}

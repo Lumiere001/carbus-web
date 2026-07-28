@@ -65,6 +65,7 @@ export function RegistrationGrid({
   units,
   pickups,
   places,
+  venueName,
 }: {
   campusId: string;
   campusName: string;
@@ -79,6 +80,8 @@ export function RegistrationGrid({
   pickups: Record<string, PickupRow[]>;
   /** 총단이 등록해 둔 픽업 장소. 고르기만 한다. */
   places: { id: number; name: string }[];
+  /** 행사 목적지 이름 — 수송 요청 방향 표기에 쓴다. */
+  venueName?: string | null;
 }) {
   const emptyDraft: Draft = {
     name: "",
@@ -718,6 +721,7 @@ export function RegistrationGrid({
             downLeg={legOf(drawerRow.id, "down")}
             pickups={pickups[drawerRow.id] ?? []}
             places={places}
+            venueName={venueName}
             variant="campus"
             onSaved={() => router.refresh()}
             onClose={() => setDrawerId(null)}
