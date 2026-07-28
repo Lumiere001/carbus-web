@@ -2,6 +2,11 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { currentEventId } from "@/lib/events/current";
+import {
+  updateCells,
+  type RegistrationRow,
+  type RegistrationInsert,
+} from "@/lib/registrations/mutations";
 import type { PaymentStatus } from "@/lib/supabase/types";
 
 type Result = { ok: true } | { ok: false; message: string };
@@ -49,18 +54,34 @@ export async function createRegistration(f: RegFormFields): Promise<Result> {
   return { ok: true };
 }
 
-/** 이름·학번·참석일정·납부·캠퍼스 수정 (master 전용). 배정 컬럼은 건드리지 않음. */
-export async function updateRegistrationFields(
+/**
+ * 편집 서랍의 **필드 하나**를 저장한다 (저장 버튼 없는 즉시 저장).
+ *
+ * 통째 저장(옛 `updateRegistrationFields`, 서랍 도입과 함께 제거)과 나누는 이유:
+ * 서랍은 한 번에 한 칸씩 고치는 화면이라, 통째로 보내면 **내가 안 건드린 칸까지
+ * 내가 열었을 때의 값으로 되돌린다.** 그 사이 다른 사람이 고쳤어도 조용히 덮인다.
+ *
+ * 그래서 임역원 그리드가 쓰던 `updateCells` 를 그대로 재사용한다 — 값 기반 충돌
+ * 감지(내가 보던 값이 아직 그대로일 때만 쓴다)가 이미 들어 있다. 새로 만들지 않는다.
+ */
+export async function updateRegField(
   id: string,
-  f: RegFormFields
-): Promise<Result> {
-  const err = validateForm(f);
-  if (err) return { ok: false, message: err };
-  const supabase = createClient();
-  const { error } = await supabase.from("registrations").update(f).eq("id", id);
-  if (error) return { ok: false, message: humanize(error.message) };
-  return { ok: true };
+  expected: Partial<RegistrationRow>,
+  patch: Partial<RegistrationInsert>
+): Promise<Result & { conflict?: boolean }> {
+  // 필드별 저장이라 폼 전체 검증은 못 쓴다. 온 칸만 검사한다.
+  if (patch.name !== undefined && !String(patch.name).trim())
+    return { ok: false, message: "이름은 필수입니다" };
+  if (patch.student_id !== undefined && !validStudentId(String(patch.student_id).trim()))
+    return { ok: false, message: "학번은 두 자리 숫자 또는 외국인/타지구만 가능합니다" };
+  if (patch.campus_id !== undefined && !patch.campus_id)
+    return { ok: false, message: "캠퍼스를 선택하세요" };
+
+  const res = await updateCells(id, expected, patch);
+  if (res.ok) return { ok: true };
+  return { ok: false, conflict: res.conflict, message: humanize(res.message) };
 }
+
 type Client = ReturnType<typeof createClient>;
 
 /**
