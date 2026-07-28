@@ -59,6 +59,29 @@ export async function setTransportLeg(
   return { ok: true };
 }
 
+/**
+ * 확정 대기 중인 타지구 이용을 확정으로 바꾼다 (여러 건 한 번에).
+ *
+ * ⚠️ 이 호출은 **좌석을 반납한다.** DB 트리거(`release_seat_on_transport_confirm`)가
+ * 그 방향의 운행편과 배정 호차를 함께 비운다. 되돌리려면 편을 다시 지정하고
+ * 재배차해야 한다 — 부르는 쪽에서 반드시 확인을 받고 부를 것.
+ *
+ * 한 번에 보내지만 트리거는 행마다 돈다. 중간에 실패하면 그 문장 전체가 롤백되므로
+ * "일부만 확정된" 상태는 생기지 않는다.
+ */
+export async function confirmLegs(ids: number[]): Promise<Result> {
+  if (ids.length === 0) return { ok: true };
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("transport_legs")
+    .update({ status: "confirmed" })
+    .in("id", ids)
+    // 이미 확정된 건 건드리지 않는다 — 괜한 감사 로그를 남기지 않기 위해.
+    .eq("status", "pending");
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true };
+}
+
 function humanize(msg: string): string {
   if (msg.includes("chk_via_unit_only_other_district"))
     return "타지구 차량은 어느 지구인지 골라야 합니다.";

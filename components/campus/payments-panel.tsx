@@ -49,15 +49,22 @@ export function CampusPaymentsPanel({
   campusName,
   rows: initial,
   remittances,
+  masterReceived,
+  masterReceivedAt,
 }: {
   campusName: string;
   rows: PayRow[];
   remittances: RemittanceRow[];
+  /** 총단이 이 캠퍼스한테서 받았다고 기록한 누계. 0 이면 아직 기록 전. */
+  masterReceived: number;
+  masterReceivedAt: string | null;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initial);
   const [pending, startTransition] = useTransition();
   const [draft, setDraft] = useState({ amount: "", note: "" });
+  /** "금액이 달라요" 를 누르면 승인 카드를 접고 직접 입력으로 넘긴다. */
+  const [dismissConfirm, setDismissConfirm] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
     null
   );
@@ -99,6 +106,9 @@ export function CampusPaymentsPanel({
     [remittances]
   ); // 총단 송금 누계
   const balance = collected - remittedSum; // 캠퍼스 보유 잔액
+  // 총단은 받았다고 적었는데 캠퍼스 쪽 송금 내역에는 아직 안 올라온 몫.
+  // 이게 곧 "확인만 하면 되는 금액"이다.
+  const unconfirmedByMaster = masterReceived - remittedSum;
 
   function handleStatus(r: PayRow, status: PaymentStatus) {
     const prev = r.payment_status;
@@ -127,6 +137,22 @@ export function CampusPaymentsPanel({
       if (!res.ok) return setMsg({ type: "err", text: res.message });
       setMsg(null);
       setDraft({ amount: "", note: "" });
+      router.refresh();
+    });
+  }
+
+  /**
+   * "맞아요" — 총단 기록과 내 등록의 차이만큼 송금 기록을 만든다.
+   *
+   * 총단 기록 전체가 아니라 **차이**를 넣는 이유: 이미 등록한 몫까지 다시 넣으면
+   * 이중으로 계상된다. RPC 는 기존 `campus_remit_add` 를 그대로 쓰고 메모만 남긴다 —
+   * 누가 어떻게 등록했는지가 나중에 돈 흐름을 따라갈 때 근거가 된다.
+   */
+  function handleConfirmMaster(amount: number) {
+    startTransition(async () => {
+      const res = await addRemittance(amount, "총단 기록 확인");
+      if (!res.ok) return setMsg({ type: "err", text: res.message });
+      setMsg({ type: "ok", text: `${won(amount)}원을 송금 내역에 등록했습니다` });
       router.refresh();
     });
   }
@@ -313,7 +339,68 @@ export function CampusPaymentsPanel({
         원인은 "내 일이 끝난 뒤 추가로 하는 일"이라 미뤄지는 것이라, 걷은 돈이 손에
         남아 있는 동안 계속 눈에 띄게 하고, **한 번 눌러 전액 등록**할 수 있게 한다.
       */}
-      {balance > 0 && (
+      {/*
+        총단이 먼저 기록해 둔 경우 — 임역원은 **확인만** 한다.
+        금액을 스스로 계산해 넣게 하는 것이 등록이 안 되던 이유였다(운영
+        `campus_remittances` 실측 0행). 총단 장부에 이미 숫자가 있으면 그걸 그대로
+        보여주고 "맞나요?" 만 물으면 손이 훨씬 덜 간다.
+        총단이 아직 안 적었으면 이 카드는 안 뜨고 아래 배너가 그대로 나온다 —
+        승인식은 총단이 먼저 기록해야만 성립하므로 두 경로를 다 남긴다.
+      */}
+      {!dismissConfirm && unconfirmedByMaster > 0 && (
+        <Card
+          title="총단 기록을 확인해 주세요"
+          subtitle={
+            masterReceivedAt
+              ? `총단 기록 시각 ${new Date(masterReceivedAt).toLocaleString("ko-KR")}`
+              : undefined
+          }
+        >
+          <div className="p-5 space-y-3">
+            <p className="text-sm text-foreground">
+              총단은 {campusName}에서 <b className="tabular-nums">{won(masterReceived)}원</b>을
+              받았다고 기록했어요.{" "}
+              {remittedSum > 0 && (
+                <>
+                  이 중 <span className="tabular-nums">{won(remittedSum)}원</span>은 이미
+                  등록돼 있어서,{" "}
+                </>
+              )}
+              <b className="tabular-nums">{won(unconfirmedByMaster)}원</b>이 아직 등록되지
+              않았습니다. 맞나요?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={pending}
+                onClick={() => handleConfirmMaster(unconfirmedByMaster)}
+              >
+                맞아요 — {won(unconfirmedByMaster)}원 등록
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={pending}
+                onClick={() => {
+                  setDismissConfirm(true);
+                  setDraft({ amount: "", note: "" });
+                  document
+                    .getElementById("remit-amount")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+              >
+                금액이 달라요
+              </Button>
+            </div>
+            <p className="text-xs text-muted-2">
+              여기서 등록해도 <b>총단 장부는 바뀌지 않습니다</b> — 캠퍼스 쪽 기록만
+              총단 기록과 맞춥니다. 금액이 다르면 총단에 먼저 알려 주세요.
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {/* 총단 기록이 없거나 이미 맞춰졌을 때만 기존 유도 배너. 둘이 같이 뜨면
+          "얼마를 등록하라는 건지" 가 두 가지가 돼 오히려 손이 멈춘다. */}
+      {(dismissConfirm || unconfirmedByMaster <= 0) && balance > 0 && (
         <div className="rounded-lg border border-warning-border bg-warning-bg px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-warning">

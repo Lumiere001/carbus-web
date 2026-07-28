@@ -21,6 +21,7 @@ import {
 } from "@/lib/admin/registrations";
 import { busSelectOptions } from "@/lib/admin/bus-options";
 import { RegForm } from "@/components/admin/reg-form";
+import { RegDrawer } from "@/components/admin/reg-drawer";
 import { TransportBadges } from "@/components/admin/transport-picker";
 import type { LegValue } from "@/components/admin/transport-picker";
 import type { TransportMode, TransportStatus } from "@/lib/transport/labels";
@@ -146,8 +147,10 @@ export function RegistrationsPanel({
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
+  // 편집 대상은 **id 로만** 들고 있는다. 행 스냅샷을 들고 있으면 저장 후
+  // 새로고침된 값이 서랍에 안 비쳐서, 방금 고친 칸이 옛 값으로 보인다.
   const [form, setForm] = useState<
-    { mode: "new" } | { mode: "edit"; row: AdminRegRow } | null
+    { mode: "new" } | { mode: "edit"; id: string } | null
   >(null);
 
   const busName = useMemo(
@@ -177,11 +180,6 @@ export function RegistrationsPanel({
 
   const colCount = isMaster ? 8 : 7;
 
-  /**
-   * 한 사람의 행. 수정 중이면 **바로 아래에** 폼을 펼친다.
-   * 표가 자체 스크롤 영역(max-h) 안에 있어서, 폼을 화면 맨 위에 띄우면
-   * 명단이 길수록 되돌아가는 거리가 길어졌다.
-   */
   /** legs 맵에서 한 방향 값을 꺼낸다. 없으면 우리 버스(기본값). */
   const legOf = (regId: string, dir: "up" | "down"): LegValue => {
     const raw = legs[`${regId}:${dir}`];
@@ -203,10 +201,10 @@ export function RegistrationsPanel({
   };
 
   const renderRow = (r: AdminRegRow) => {
-    const editing = isMaster && form?.mode === "edit" && form.row.id === r.id;
+    const editing = isMaster && form?.mode === "edit" && form.id === r.id;
     return (
-      <Fragment key={r.id}>
         <Row
+          key={r.id}
           r={r}
           busName={busName}
           buses={buses}
@@ -218,9 +216,9 @@ export function RegistrationsPanel({
           onEdit={(row) =>
             // 같은 사람의 "수정"을 다시 누르면 접는다 (토글).
             setForm((cur) =>
-              cur?.mode === "edit" && cur.row.id === row.id
+              cur?.mode === "edit" && cur.id === row.id
                 ? null
-                : { mode: "edit", row }
+                : { mode: "edit", id: row.id }
             )
           }
           editing={!!editing}
@@ -230,27 +228,15 @@ export function RegistrationsPanel({
           upLeg={badgeOf(r.id, "up")}
           downLeg={badgeOf(r.id, "down")}
         />
-        {editing && (
-          <tr className="bg-primary-50/40">
-            <td colSpan={colCount} className="p-3">
-              <RegForm
-                mode="edit"
-                initial={{
-                  ...r,
-                  up_leg: legOf(r.id, "up"),
-                  down_leg: legOf(r.id, "down"),
-                }}
-                campuses={campuses}
-                trips={trips}
-                units={units}
-                onClose={() => setForm(null)}
-              />
-            </td>
-          </tr>
-        )}
-      </Fragment>
     );
   };
+
+  // 서랍이 보고 있는 사람. rows 에서 매번 다시 찾으므로 저장 후 새로고침된 값이
+  // 그대로 서랍에 반영된다.
+  const editRow =
+    isMaster && form?.mode === "edit"
+      ? rows.find((r) => r.id === form.id) ?? null
+      : null;
 
   // 검색 중이면 캠퍼스 탭 무시하고 이름·학번으로 전체에서 찾음.
   const q = query.trim().toLowerCase();
@@ -328,10 +314,8 @@ export function RegistrationsPanel({
           곧 명단 길이였다. */}
       {isMaster && form?.mode === "new" && (
         <RegForm
-          mode="new"
           campuses={campuses}
           trips={trips}
-          units={units}
           onClose={() => setForm(null)}
         />
       )}
@@ -362,7 +346,10 @@ export function RegistrationsPanel({
       )}
 
       <Card>
-        <div className="max-h-[560px] overflow-auto rounded-xl">
+        {/* 표 + 서랍. 서랍이 열려도 표는 제자리에 있고 스크롤도 움직이지 않는다 —
+            행 아래에 폼을 펼치던 예전 방식은 열 때마다 아래 행들이 통째로 밀렸다. */}
+        <div className="flex flex-col lg:flex-row">
+        <div className="max-h-[560px] overflow-auto rounded-xl flex-1 min-w-0">
           <table className="w-full min-w-[760px] text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
@@ -405,6 +392,20 @@ export function RegistrationsPanel({
               )}
             </tbody>
           </table>
+        </div>
+        {editRow && (
+          <RegDrawer
+            // 다른 사람으로 갈아타면 서랍을 새로 마운트해 입력 상태를 비운다.
+            key={editRow.id}
+            row={editRow}
+            campuses={campuses}
+            trips={trips}
+            units={units}
+            upLeg={legOf(editRow.id, "up")}
+            downLeg={legOf(editRow.id, "down")}
+            onClose={() => setForm(null)}
+          />
+        )}
         </div>
       </Card>
       {isMaster && (

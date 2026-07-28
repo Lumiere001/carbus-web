@@ -1534,6 +1534,32 @@ export type Database = {
           },
         ]
       }
+      v_transport_legs_detail: {
+        Row: {
+          campus_id: string | null
+          campus_name: string | null
+          created_at: string | null
+          days_waiting: number | null
+          direction: string | null
+          event_id: string | null
+          held_bus_id: number | null
+          held_trip_id: number | null
+          id: number | null
+          mode: Database["public"]["Enums"]["transport_mode"] | null
+          note: string | null
+          participation_status:
+            | Database["public"]["Enums"]["participation_status"]
+            | null
+          person_name: string | null
+          registration_id: string | null
+          status: Database["public"]["Enums"]["transport_status"] | null
+          student_id: string | null
+          updated_at: string | null
+          via_unit_id: string | null
+          via_unit_name: string | null
+        }
+        Relationships: []
+      }
       v_transport_summary: {
         Row: {
           down_mode: Database["public"]["Enums"]["transport_mode"] | null

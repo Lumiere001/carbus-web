@@ -109,8 +109,14 @@ export function TransportPicker({
       </div>
       {isOther && value.status === "pending" && (
         <p className="text-xs text-warning-700">
-          확정될 때까지 우리 버스 좌석을 잡아둡니다. 타지구가 확정되면 이 방향의
-          운행편을 비워 주세요 — 그래야 자리가 반납됩니다.
+          확정될 때까지 우리 버스 좌석을 잡아둡니다. 확정으로 바꾸면 이 방향의
+          운행편과 배정 호차가 <b>자동으로 비워집니다</b>.
+        </p>
+      )}
+      {isOther && value.status === "confirmed" && (
+        <p className="text-xs text-muted-2">
+          확정 — 저장하면 이 방향의 우리 버스 자리를 놓습니다. 되돌리려면 편을 다시
+          지정하고 배차를 다시 실행해야 합니다.
         </p>
       )}
     </div>
