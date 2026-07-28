@@ -47,7 +47,7 @@ export async function runBatchAction(
 
   const startedAt = Date.now();
 
-  const [regRes, busRes] = await Promise.all([
+  const [regRes, busRes, tripRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
@@ -62,6 +62,9 @@ export async function runBatchAction(
         // 엔진의 assertBusFlags 가 한 번 더 막지만, 원인은 여기서 안 가져오는 것이다.
         "id, name, capacity, hard_cap, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids, is_cohesion_exempt, fill_priority, kind"
       ),
+    // 오류 문구에 편 **이름**을 넣기 위해서다. 예전엔 `미배정: slot 7 29명` 이라
+    // 나와서, 그걸 본 운영자가 7 이 어느 편인지 알 수 없었다.
+    supabase.from("event_trips").select("id, label"),
   ]);
   if (regRes.error) return { ok: false, message: regRes.error.message };
   if (busRes.error) return { ok: false, message: busRes.error.message };
@@ -91,13 +94,23 @@ export async function runBatchAction(
 
   // 상·하행 모두 전체 재배차: 기존 배정(assigned_*)을 초기화하고 새로 계산한다.
   // (차량순장/고정탑승 바인딩만 엔진이 앵커로 존중하고, 그 외 인원은 재배치.)
-  const result = runBatch(passengers, buses, mode);
+  const tripLabels = Object.fromEntries(
+    (tripRes.data ?? []).map((t) => [t.id, t.label])
+  );
+  const result = runBatch(passengers, buses, mode, tripLabels);
 
   // 해당 방향 컬럼만 그룹 업데이트 (배정 호차별 1회. 미배정은 null 그룹).
   const assignMap = mode === "up" ? result.up_assignments : result.down_assignments;
-  // 그 방향 참여자만 대상 (상행=요일 있음 / 하행=uses_return_bus)
-  const participants = passengers.filter((p) =>
-    mode === "up" ? p.up_trip_id !== null : p.down_trip_id !== null
+  // 그 방향 참여자 = 그 방향 편을 신청한 사람.
+  //
+  // ⚠️ **엔진이 배정한 사람은 편이 없어도 저장해야 한다** (§26-E). 간사 차를 타는
+  //    크루·미디어는 우리 버스 편을 신청하지 않는데, 참여자만 저장하면 엔진이
+  //    간사 차에 앉혀 놓은 결과가 DB 에 한 번도 안 써진다 — 화면에서는 지정했는데
+  //    호차 명단에는 영영 안 나타난다(리허설에서 실제로 그랬다).
+  const participants = passengers.filter(
+    (p) =>
+      (mode === "up" ? p.up_trip_id !== null : p.down_trip_id !== null) ||
+      assignMap[p.id] != null
   );
   const groups = new Map<number | null, string[]>();
   for (const p of participants) {
@@ -123,14 +136,19 @@ export async function runBatchAction(
   // 이 방향에서 빠진 사람(비참여자)인데 옛 배정이 남아 있으면 정리 — 유령 탑승자 방지.
   // (예: 왕복→상행편도로 바뀌어 하행 안 타는데 assigned_down_bus_id 잔존)
   const participantIds = new Set(participants.map((p) => p.id));
+  // ⚠️ 간사 차량 배정은 여기서 지우면 안 된다 (§26-E).
+  //    간사 차를 타는 사람(크루·미디어)은 우리 버스 편을 신청하지 않아 "비참여자" 로
+  //    잡힌다. 그대로 지우면 **배차를 돌릴 때마다 간사 차 명단이 사라진다.**
+  const staffCarIds = new Set(
+    (busRes.data ?? []).filter((b) => b.kind === "staff_car").map((b) => b.id)
+  );
   const staleIds = (regRes.data ?? [])
-    .filter(
-      (r) =>
-        !participantIds.has(r.id) &&
-        (mode === "up"
-          ? r.assigned_up_bus_id !== null
-          : r.assigned_down_bus_id !== null)
-    )
+    .filter((r) => {
+      if (participantIds.has(r.id)) return false;
+      const busId = mode === "up" ? r.assigned_up_bus_id : r.assigned_down_bus_id;
+      if (busId === null) return false;
+      return !staffCarIds.has(busId);
+    })
     .map((r) => r.id);
   const clearPatch =
     mode === "up" ? { assigned_up_bus_id: null } : { assigned_down_bus_id: null };

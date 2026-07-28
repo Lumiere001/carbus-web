@@ -89,13 +89,30 @@ export function LeadersPanel({
   }
 
   const busCell = (row: LeaderRow, mode: "up" | "down") => {
-    if (row.primaryKind == null) return <span className="text-muted-2">—</span>;
     const rides = mode === "up" ? row.ridesUp : row.ridesDown;
     const cur = mode === "up" ? row.upBusId : row.downBusId;
     const need = mode === "up" ? row.needUp : row.needDown;
     // 이 방향의 결박 종류 (없으면 기본 종류로 새로 결박)
-    const cellKind = (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind;
-    if (!rides) return <span className="text-muted-2">해당 없음</span>;
+    const cellKind =
+      (mode === "up" ? row.upKind : row.downKind) ?? row.primaryKind ?? "fixed";
+
+    // 이 방향에 간사 차량이 있는가 (§26-E).
+    //
+    // 간사 차를 타는 사람은 **우리 버스 편을 신청하지 않은 경우가 대부분**이다 —
+    // 크루·미디어는 간사님 차로 이동한다. 그래서 `rides`(그 편 신청 여부)로
+    // 잘라 버리면 이 화면에서 간사 차 탑승자를 지정할 방법이 아예 없어진다.
+    // 실제로 리허설에서 그 막다른 길이 나왔다.
+    const staffCars = buses.filter(
+      (b) => b.kind === "staff_car" && (mode === "up" ? b.up_trip_id : b.down_trip_id) != null
+    );
+    // 우리 버스도 안 타고 이 방향에 간사 차도 없으면 지정할 대상이 없다.
+    // (예전엔 "차량순장·고정탑승이 아니면 무조건 —" 이었는데, 그러면 크루·미디어를
+    //  간사 차에 태울 방법이 아예 없다. 역할을 주려면 배정이 있어야 하고, 배정을
+    //  하려면 역할이 있어야 하는 순환이었다.)
+    if (!rides && staffCars.length === 0)
+      return <span className="text-muted-2">해당 없음</span>;
+    if (row.primaryKind == null && !rides && cur == null && staffCars.length === 0)
+      return <span className="text-muted-2">—</span>;
     // 서버(leaders.ts assertTripMatch)가 허용하는 집합과 **정확히 같아야** 한다.
     // 예전엔 하행이 전 호차였다 — 그때는 서버도 하행을 안 봤지만, 3-C 이후엔
     // 서버가 편을 검사하므로 목록에는 뜨는데 저장은 거부되는 상태가 된다.
@@ -104,7 +121,13 @@ export function LeadersPanel({
     const opts = buses.filter((b) => {
       if (b.id === cur) return true;
       const busTrip = mode === "up" ? b.up_trip_id : b.down_trip_id;
-      return regTrip != null && busTrip != null && busTrip === regTrip;
+      if (busTrip == null) return false;
+      // 간사 차량은 **우리 버스 편과 짝을 맞추지 않는다.** 우리 버스를 안 타는
+      // 사람이 타는 차라 편을 신청하지 않았을 수 있다. 서버도 같은 규칙이다
+      // (leaders.ts assertTripMatch) — 여기가 더 엄격하면 지정할 길이 없어지고,
+      // 더 느슨하면 저장이 거부된다.
+      if (b.kind === "staff_car") return true;
+      return regTrip != null && busTrip === regTrip;
     });
     if (!isMaster) {
       const b = buses.find((x) => x.id === cur);

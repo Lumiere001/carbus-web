@@ -229,13 +229,20 @@ function fillBuses(
 /**
  * 배차 실행.
  * @param mode "up" 상행만 / "down" 하행만 / "both" 둘 다 (기본).
+ * @param tripLabels 운행편 id → 사람이 읽는 이름. 오류 문구에만 쓴다.
+ *   없으면 id 를 그대로 쓴다 — 순수 함수라 라벨을 스스로 조회하지 않는다.
+ *
+ *   왜 필요한가: 예전 오류는 `미배정: slot 7 29명` 이었다. 화면에서 그걸 본 운영자는
+ *   **7 이 어느 편인지 알 수 없다.** 리허설에서 실제로 그 문구가 나왔다.
  */
 export function runBatch(
   passengers: Passenger[],
   buses: Bus[],
-  mode: BatchMode = "both"
+  mode: BatchMode = "both",
+  tripLabels: Record<number, string> = {}
 ): BatchResult {
   assertBusFlags(buses);
+  const tripName = (id: number) => tripLabels[id] ?? `편 ${id}`;
 
   const assignments = new Map<string, Assignment>();
   for (const p of passengers) {
@@ -276,16 +283,22 @@ export function runBatch(
           continue;
         }
         const reg = byId.get(rid);
-        if (!reg || reg.up_trip_id === null) continue;
+        if (!reg) continue;
         if (bus.up_trip_id === null) {
           errors.push(`${bus.name}는 상행을 운행하지 않는데 고정 배정됨: ${reg.name}`);
           continue;
         }
-        if (reg.up_trip_id !== bus.up_trip_id) {
-          errors.push(
-            `고정 배정 편 불일치: ${reg.name} (편 ${reg.up_trip_id} → ${bus.name})`
-          );
-          continue;
+        // 간사 차량은 **우리 버스 편과 짝을 맞추지 않는다** (§26-E).
+        // 크루·미디어는 우리 버스를 안 타서 편을 신청하지 않은 경우가 대부분이다.
+        // 여기서 편을 요구하면 그 사람들이 매번 "편 불일치" 오류로 떨어진다.
+        if (bus.kind !== "staff_car") {
+          if (reg.up_trip_id === null) continue;
+          if (reg.up_trip_id !== bus.up_trip_id) {
+            errors.push(
+              `고정 배정 편 불일치: ${reg.name} (${tripName(reg.up_trip_id)} → ${bus.name})`
+            );
+            continue;
+          }
         }
         if (bus.count >= bus.hard_cap) {
           errors.push(`${bus.name} 정원 초과로 고정 배정 실패: ${reg.name}`);
@@ -328,7 +341,14 @@ export function runBatch(
     for (const slotId of slots) {
       const slotBuses = upFillBuses.filter((b) => b.up_trip_id === slotId);
       const grp = upParticipants.filter((p) => p.up_trip_id === slotId);
-      fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors, upDriverCampus);
+      fillBuses(
+        `상행 ${tripName(slotId)}`,
+        grp,
+        slotBuses,
+        assignUp,
+        errors,
+        upDriverCampus
+      );
     }
 
     // 운행 호차가 없는 슬롯의 신청자는 배정 불가 — 조용히 누락하지 않고 표면화.
@@ -373,18 +393,22 @@ export function runBatch(
           continue;
         }
         const reg = byId.get(rid);
-        if (!reg || reg.down_trip_id === null) continue; // 하행 미이용자는 고정 불가
+        if (!reg) continue;
         // 상행과 대칭: 신청한 편과 다른 편을 운행하는 차량에는 고정할 수 없다.
         // 예전엔 "하행은 전 호차 운행"이라 이 검사가 아예 없었다.
         if (bus.down_trip_id === null) {
           errors.push(`${bus.name}는 하행을 운행하지 않는데 고정 배정됨: ${reg.name}`);
           continue;
         }
-        if (reg.down_trip_id !== bus.down_trip_id) {
-          errors.push(
-            `하행 고정 배정 편 불일치: ${reg.name} (편 ${reg.down_trip_id} → ${bus.name})`
-          );
-          continue;
+        // 간사 차량은 편을 맞추지 않는다 (§26-E — 상행과 같은 이유).
+        if (bus.kind !== "staff_car") {
+          if (reg.down_trip_id === null) continue; // 하행 미이용자는 고정 불가
+          if (reg.down_trip_id !== bus.down_trip_id) {
+            errors.push(
+              `하행 고정 배정 편 불일치: ${reg.name} (${tripName(reg.down_trip_id)} → ${bus.name})`
+            );
+            continue;
+          }
         }
         if (bus.count >= bus.hard_cap) {
           errors.push(`${bus.name} 정원 초과로 하행 고정 배정 실패: ${reg.name}`);
@@ -423,7 +447,14 @@ export function runBatch(
     for (const tripId of downTrips) {
       const tripBuses = downFillBuses.filter((b) => b.down_trip_id === tripId);
       const grp = downParticipants.filter((p) => p.down_trip_id === tripId);
-      fillBuses(`하행 편 ${tripId}`, grp, tripBuses, assignDown, errors, downDriverCampus);
+      fillBuses(
+        `하행 ${tripName(tripId)}`,
+        grp,
+        tripBuses,
+        assignDown,
+        errors,
+        downDriverCampus
+      );
     }
 
     // 운행 차량이 없는 하행 편의 신청자 — 조용히 누락하지 않고 표면화(상행과 대칭).

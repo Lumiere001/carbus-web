@@ -137,13 +137,31 @@ async function assertTripMatch(
       .select("up_trip_id, down_trip_id")
       .eq("id", personId)
       .single(),
-    supabase.from("buses").select("name, up_trip_id, down_trip_id").eq("id", busId).single(),
+    supabase
+      .from("buses")
+      .select("name, kind, up_trip_id, down_trip_id")
+      .eq("id", busId)
+      .single(),
   ]);
   if (!reg || !bus) return { ok: true }; // 못 찾으면 후속 쿼리에서 처리
 
   const regTrip = mode === "up" ? reg.up_trip_id : reg.down_trip_id;
   const busTrip = mode === "up" ? bus.up_trip_id : bus.down_trip_id;
   const dir = mode === "up" ? "상행" : "하행";
+
+  // 간사 차량은 **우리 버스 편과 짝을 맞추지 않는다** (§26-E).
+  //
+  // 이 검사가 있는 이유는 "9시 편 신청자가 7시 편 버스에 타 있는" 상태를 막기
+  // 위해서다. 그런데 간사 차를 타는 사람(크루·미디어)은 애초에 우리 버스를 안 타서
+  // **편을 신청하지 않은 경우가 대부분**이다. 여기서 편을 요구하면 간사 차 탑승자를
+  // 지정할 방법이 아예 없어진다 — 리허설에서 실제로 그 막다른 길에 부딪혔다.
+  //
+  // 그 차가 그 방향을 뛰는지는 그대로 검사한다.
+  if (bus.kind === "staff_car") {
+    if (busTrip == null)
+      return { ok: false, message: `${bus.name}는 ${dir}을 운행하지 않습니다` };
+    return { ok: true };
+  }
 
   if (regTrip == null)
     return {

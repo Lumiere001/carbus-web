@@ -14,6 +14,8 @@ function bus(o: Partial<BusOption> & { id: number }): BusOption {
     up_trip_id: AM,
     down_trip_id: HOME,
     capacity: 44,
+    // 기본은 일반 버스. 간사 차량은 그 테스트에서 명시적으로 넘긴다 (§26-E).
+    kind: "bus",
     ...o,
   };
 }
@@ -102,5 +104,26 @@ describe("busSelectOptions — 서버가 허용하는 선택지와 일치", () =
     const small = [bus({ id: 9, capacity: 39 })];
     const o = busSelectOptions(small, "up", AM, null, new Map([[9, 30]]));
     expect(o[0].seatsLeft).toBe(9);
+  });
+
+  it("간사 차량은 목록에 없다 — 고르면 DB 가 거부한다 (§26-E)", () => {
+    // 리허설에서 실제로 드러났다. 배차 화면의 수동 배정 드롭다운이 간사 차량을
+    // 제안했는데, 그걸 고르면 DB 가드가 "먼저 고정 탑승자로 지정하세요" 로 거부한다.
+    // 고를 수는 있는데 저장이 거부되는 상태 — 이 레포에서 이미 네 번 나온 결함이다.
+    const withStaff = [
+      bus({ id: 1 }),
+      bus({ id: 9, name: "A간사차", kind: "staff_car", capacity: 4 }),
+    ];
+    const o = busSelectOptions(withStaff, "up", AM, null, new Map());
+    expect(o.map((b) => b.id)).toEqual([1]);
+  });
+
+  it("이미 간사 차에 타 있으면 목록에 남는다 — 아니면 배정을 풀 수도 없다", () => {
+    const withStaff = [
+      bus({ id: 1 }),
+      bus({ id: 9, name: "A간사차", kind: "staff_car", capacity: 4 }),
+    ];
+    const o = busSelectOptions(withStaff, "up", AM, 9, new Map());
+    expect(o.map((b) => b.id).sort()).toEqual([1, 9]);
   });
 });

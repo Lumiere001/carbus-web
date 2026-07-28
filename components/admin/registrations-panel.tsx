@@ -62,6 +62,8 @@ export type BusInfo = {
   down_trip_id: number | null;
   /** 정원(보조석 제외). 잔여석 표기 기준 — 배차 엔진·호차 화면과 동일하게 capacity 를 쓴다. */
   capacity: number;
+  /** 차량 종류 (§26-E). 간사 차량은 이 드롭다운에서 빠진다 — DB 가드가 막는다. */
+  kind: "bus" | "staff_car";
 };
 export type RoleLabel = { label: string; color: string | null };
 

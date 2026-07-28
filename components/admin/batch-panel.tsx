@@ -42,6 +42,8 @@ export type BusOption = {
   up_trip_id: number | null;
   down_trip_id: number | null;
   capacity: number;
+  /** 차량 종류 (§26-E). 간사 차량은 이 드롭다운에서 빠진다 — DB 가드가 막는다. */
+  kind: "bus" | "staff_car";
 };
 
 function fmt(iso: string | null): string {

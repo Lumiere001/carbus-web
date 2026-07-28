@@ -47,13 +47,21 @@ select 2, '우리 버스 탑승 여부 (편 ↔ 이동수단)',
    and l.mode = 'our_bus'
    and (case when l.direction = 'up' then r.up_trip_id else r.down_trip_id end) is null;
 
--- 배정 호차만 남고 편이 비어 있는 유령 배정. 편이 진실원이므로 이건 언제나 결함이다.
+-- 배정 호차만 남고 편이 비어 있는 유령 배정. 편이 진실원이므로 결함이다.
+--
+-- ⚠️ **간사 차량은 예외다** (§26-E). 간사 차를 타는 크루·미디어는 우리 버스를 안 타서
+--    편이 없는 게 정상이고, 그래도 "어느 차에 탔는지" 는 남아야 한다. 그게 이 기능의
+--    존재 이유다. 예외를 안 두면 간사 차를 쓰는 순간 이 검사가 매번 빨간불이 된다.
 insert into _consistency
 select 3, '우리 버스 탑승 여부 (편 ↔ 이동수단)',
-       '편은 비었는데 배정 호차가 유령으로 남아 있다', count(*), true
+       '편은 비었는데 배정 호차가 유령으로 남아 있다 (간사 차량 제외)', count(*), true
   from registrations r
- where (r.up_trip_id is null and r.assigned_up_bus_id is not null)
-    or (r.down_trip_id is null and r.assigned_down_bus_id is not null);
+  left join buses bu on bu.id = r.assigned_up_bus_id
+  left join buses bd on bd.id = r.assigned_down_bus_id
+ where (r.up_trip_id is null and r.assigned_up_bus_id is not null
+        and coalesce(bu.kind, 'bus') <> 'staff_car')
+    or (r.down_trip_id is null and r.assigned_down_bus_id is not null
+        and coalesce(bd.kind, 'bus') <> 'staff_car');
 
 -- ── ② 참여형태 (파생) ────────────────────────────────────────
 --     attendance_type  ↔  두 편에서 파생
@@ -130,19 +138,43 @@ select 51, '차량순장 (buses.driver ↔ profiles.driver_bus_id)',
 -- ── ⑦ 배정 ↔ 그 차가 뛰는 편 ────────────────────────────────
 --     assigned_*_bus_id  ↔  그 차의 *_trip_id
 --     어긋나면 "그 편에 없는 차"에 타 있는 사람이 된다. 현장에서 차를 못 찾는다.
+-- ⚠️ 간사 차량은 우리 버스 편과 짝을 맞추지 않는다 (§26-E) — 여기서도 예외다.
 insert into _consistency
 select 60, '배정 (배정 호차 ↔ 그 차가 뛰는 편)',
-       '상행 배정된 차가 그 사람의 상행 편을 뛰지 않는다', count(*), true
+       '상행 배정된 차가 그 사람의 상행 편을 뛰지 않는다 (간사 차량 제외)', count(*), true
   from registrations r
   join buses b on b.id = r.assigned_up_bus_id
- where b.up_trip_id is distinct from r.up_trip_id;
+ where b.kind <> 'staff_car'
+   and b.up_trip_id is distinct from r.up_trip_id;
 
 insert into _consistency
 select 61, '배정 (배정 호차 ↔ 그 차가 뛰는 편)',
-       '하행 배정된 차가 그 사람의 하행 편을 뛰지 않는다', count(*), true
+       '하행 배정된 차가 그 사람의 하행 편을 뛰지 않는다 (간사 차량 제외)', count(*), true
   from registrations r
   join buses b on b.id = r.assigned_down_bus_id
- where b.down_trip_id is distinct from r.down_trip_id;
+ where b.kind <> 'staff_car'
+   and b.down_trip_id is distinct from r.down_trip_id;
+
+-- 간사 차량 자체의 정합성 — 탑승자는 **고정 탑승자로 지정된 사람**이어야 한다.
+-- 자동 배차는 간사 차를 건드리지 않으므로, 지정 없이 배정된 사람이 있으면
+-- 어딘가 다른 경로가 열려 있다는 뜻이다.
+insert into _consistency
+select 62, '간사 차량 (배정 ↔ 고정 탑승자 지정)',
+       '고정 탑승자로 지정되지 않았는데 간사 차에 배정돼 있다', count(*), true
+  from registrations r
+  join buses b on b.id = r.assigned_up_bus_id
+ where b.kind = 'staff_car'
+   and r.id is distinct from b.driver_registration_id
+   and not (r.id = any (b.fixed_passenger_ids));
+
+insert into _consistency
+select 63, '간사 차량 (배정 ↔ 고정 탑승자 지정)',
+       '하행도 같다 — 지정 없이 간사 차에 배정돼 있다', count(*), true
+  from registrations r
+  join buses b on b.id = r.assigned_down_bus_id
+ where b.kind = 'staff_car'
+   and r.id is distinct from b.down_driver_registration_id
+   and not (r.id = any (b.down_fixed_passenger_ids));
 
 -- ── ⑧ 행사 격리 ─────────────────────────────────────────────
 --     "이 행사의 것" 이 여러 테이블에 따로 적혀 있다. 어긋나면 지난 행사 데이터가 샌다.

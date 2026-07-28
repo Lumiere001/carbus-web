@@ -62,7 +62,7 @@ export default async function AdminBatchPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, up_trip_id, down_trip_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, kind, up_trip_id, down_trip_id, capacity, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),

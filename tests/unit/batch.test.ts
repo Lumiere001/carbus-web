@@ -597,6 +597,23 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
   });
 });
 
+describe("오류 문구는 편 이름으로 말한다", () => {
+  it("좌석이 모자라면 어느 편인지 이름으로 알려준다", () => {
+    // 리허설에서 실제로 `미배정: slot 7 29명` 이 나왔다. 화면에서 그걸 본 운영자는
+    // 7 이 어느 편인지 알 수 없다 — 증편해야 할 편을 못 찾는다.
+    const buses = [bus({ id: 1, up_trip_id: AM, is_cohesion_exempt: false, fill_priority: 0 })];
+    const r = runBatch(paxN(60), buses, "up", { [AM]: "목 오전 10시" });
+    expect(r.errors.some((e) => e.includes("목 오전 10시"))).toBe(true);
+    expect(r.errors.some((e) => e.includes("slot"))).toBe(false);
+  });
+
+  it("이름을 안 넘기면 편 번호로 떨어진다 — 순수 함수라 스스로 조회하지 않는다", () => {
+    const buses = [bus({ id: 1, up_trip_id: AM, is_cohesion_exempt: false, fill_priority: 0 })];
+    const r = runBatch(paxN(60), buses, "up");
+    expect(r.errors.some((e) => e.includes(`편 ${AM}`))).toBe(true);
+  });
+});
+
 describe("간사 차량은 자동 배차에서 빠진다 (§26-E)", () => {
   // 이게 이번 개편에서 **가장 크게 터질 수 있는 자리**다. 안 빼면 캠퍼스 인원이
   // 간사 차에 밀려 들어가고, 현장에서는 간사 차에 모르는 학우가 타 있게 된다.
@@ -655,6 +672,44 @@ describe("간사 차량은 자동 배차에서 빠진다 (§26-E)", () => {
     ];
     const r = runBatch(paxN(50), buses, "down");
     expect(Object.values(r.down_assignments).filter((b) => b === 9)).toHaveLength(0);
+  });
+
+  it("우리 버스 편을 신청하지 않은 사람도 간사 차에 남는다", () => {
+    // 크루·미디어는 우리 버스를 안 타서 편이 아예 없다(attendance_type=self).
+    // 일반 버스라면 "편 불일치" 로 떨어지는 게 맞지만, 간사 차는 우리 버스 편과
+    // 짝을 맞추는 개념이 아니다. 여기서 떨어지면 간사 차 명단이 매번 비워진다.
+    const crew = pax({ id: "crew1", campus: "c1", up_trip_id: null, down_trip_id: null });
+    const buses = [
+      bus({ id: 1, name: "1호차", up_trip_id: AM, is_cohesion_exempt: false, fill_priority: 0 }),
+      bus({
+        id: 9,
+        name: "A간사차",
+        up_trip_id: AM,
+        capacity: 4,
+        hard_cap: 4,
+        kind: "staff_car",
+        fixed_passenger_ids: ["crew1"],
+      }),
+    ];
+    const r = runBatch([crew, ...paxN(10)], buses, "up");
+    expect(r.up_assignments["crew1"]).toBe(9);
+    expect(r.errors.some((e) => e.includes("편 불일치"))).toBe(false);
+  });
+
+  it("일반 버스는 여전히 편이 맞아야 한다 — 느슨해지면 안 된다", () => {
+    const wrong = pax({ id: "w1", campus: "c1", up_trip_id: PM });
+    const buses = [
+      bus({
+        id: 1,
+        name: "1호차",
+        up_trip_id: AM,
+        fixed_passenger_ids: ["w1"],
+        is_cohesion_exempt: false,
+        fill_priority: 0,
+      }),
+    ];
+    const r = runBatch([wrong], buses, "up");
+    expect(r.errors.some((e) => e.includes("편 불일치"))).toBe(true);
   });
 
   it("kind 가 빠지면 크게 실패한다 — 조용히 되살아나면 안 된다", () => {

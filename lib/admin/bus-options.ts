@@ -28,6 +28,13 @@ export type BusOption = {
   up_trip_id: number | null;
   down_trip_id: number | null;
   capacity: number;
+  /**
+   * 차량 종류 (§26-E). 간사 차량은 **여기서 고를 수 없다** — DB 가드가
+   * "고정 탑승자로 지정되지 않은 사람의 간사 차 배정" 을 거부하므로, 목록에 두면
+   * 고를 수는 있는데 저장이 거부되는 상태가 된다(이 레포에서 이미 네 번 나온 결함).
+   * 간사 차 탑승자는 리더 화면에서 고정 탑승자로 지정한다.
+   */
+  kind: "bus" | "staff_car";
 };
 
 export type BusOptionView = { id: number; name: string; seatsLeft: number };
@@ -45,6 +52,10 @@ export function busSelectOptions(
   return buses
     .filter((b) => {
       if (b.id === current) return true;
+      // 간사 차량은 이 드롭다운으로 배정할 수 없다 — DB 가드가 막는다.
+      // 이미 그 차에 타 있는 사람(b.id === current)은 위에서 남겼으므로,
+      // 배정을 **푸는** 것은 여기서도 된다.
+      if (b.kind === "staff_car") return false;
       if (tripId == null) return false;
       const busTrip = which === "up" ? b.up_trip_id : b.down_trip_id;
       return busTrip != null && busTrip === tripId;
