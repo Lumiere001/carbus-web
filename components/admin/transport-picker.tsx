@@ -55,9 +55,14 @@ export function TransportPicker({
           onChange={(e) => {
             const mode = e.target.value as TransportMode;
             // 타지구가 아니게 되면 지구·대기 상태를 같이 지운다 (DB 제약과 동일).
+            //
+            // 타지구로 바꿀 때는 **확정 대기가 기본**이다. "타지구 차를 얻어 타기로
+            // 했다"는 말 자체가 보통 아직 확정 전이고, 확정으로 저장하면 그 자리에서
+            // 좌석이 반납돼 되돌리려면 재배차해야 한다. 기본값은 되돌릴 수 있는
+            // 쪽이어야 한다 — 확정이 나면 그때 체크를 풀거나 이동수단 화면에서 누른다.
             onChange(
               mode === "other_district"
-                ? { ...value, mode }
+                ? { ...value, mode, status: "pending" }
                 : { mode, viaUnitId: null, status: "confirmed" }
             );
           }}

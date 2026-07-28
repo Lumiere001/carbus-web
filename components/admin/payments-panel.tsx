@@ -95,9 +95,19 @@ export function PaymentsPanel({
     setMsg(null);
   }
 
-  /** 캠퍼스가 안 올린 송금분을 총단이 대신 등록. */
+  /**
+   * 총단이 "받았다"고 적어둔 금액 중 캠퍼스 장부에 아직 안 올라온 몫을 대신 등록한다.
+   *
+   * 기준이 **총단 입금**이어야 한다. 예전엔 "걷어야 할 − 캠퍼스 송금"으로 재서,
+   * 총단이 한 푼도 못 받은 캠퍼스에도 버튼이 떴다(간사·타지구 등 16곳). 그걸 누르면
+   * **받지도 않은 돈이 장부에 적힌다.** 임역원 쪽 "맞나요?" 승인 카드와 같은 계산을 쓴다.
+   */
+  function unregisteredByCampus(r: ThreeWayRow): number {
+    return (r.master_received_total ?? 0) - (r.campus_remitted_total ?? 0);
+  }
+
   function remitFor(r: ThreeWayRow) {
-    const gap = r.diff_system_vs_campus ?? 0;
+    const gap = unregisteredByCampus(r);
     // 뷰가 나오는 값이라 campus_id 가 이론상 null 일 수 있다 — 그 행은 대상이 아니다.
     if (gap <= 0 || !r.campus_id) return;
     const campusId = r.campus_id;
@@ -228,14 +238,14 @@ export function PaymentsPanel({
                             캠퍼스가 송금 등록을 안 한 만큼(시스템 완납 − 캠퍼스 송금)을
                             총단이 한 번에 대신 채운다. 실측 0행이던 기록을 살리는 장치다.
                           */}
-                          {(r.diff_system_vs_campus ?? 0) > 0 && (
+                          {unregisteredByCampus(r) > 0 && (
                             <Button
                               size="sm"
                               variant="secondary"
                               disabled={pending}
-                              title={`캠퍼스가 아직 등록하지 않은 ${won(
-                                r.diff_system_vs_campus ?? 0
-                              )}을 총단이 대신 등록합니다`}
+                              title={`총단이 받았다고 기록한 금액 중 캠퍼스 장부에 아직 안 올라온 ${won(
+                                unregisteredByCampus(r)
+                              )}을 대신 등록합니다`}
                               onClick={() => remitFor(r)}
                             >
                               송금 대신 등록

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { X, Check, Loader2, Trash2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ export type PickupRow = {
   id: number;
   direction: "up" | "down";
   pickupAt: string | null;
-  place: string | null;
+  placeName: string | null;
   note: string | null;
 };
 
@@ -41,6 +40,8 @@ export function RegDrawer({
   downLeg,
   pickups,
   places,
+  onSaved,
+  variant = "master",
   onClose,
 }: {
   row: AdminRegRow;
@@ -51,11 +52,24 @@ export function RegDrawer({
   downLeg: LegValue;
   /** 이 사람의 수송 요청들. 여러 건일 수 있다(중간 합류·중간 이탈). */
   pickups: PickupRow[];
-  /** 같은 행사에서 이미 쓰인 픽업 장소 — 자동완성 후보. 마스터 테이블이 아니다. */
-  places: string[];
+  /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다 — 자유 입력이 아니다. */
+  places: { id: number; name: string }[];
+  /**
+   * 저장이 끝났을 때. **새로고침은 부모가 한다** — 사람을 바꾸면 이 서랍이
+   * 통째로 다시 마운트되는데, 그 순간 진행 중이던 저장의 뒷정리가 같이 사라져
+   * "DB 에는 저장됐는데 표는 옛 값 그대로"가 됐다. 저장 버튼이 없는 화면에서
+   * 그건 조용한 데이터 손실이다.
+   */
+  onSaved: (label: string) => void;
+  /**
+   * `master` = 전부 편집. `campus` = 임역원용으로, **그리드에 이미 있는 칸은 뺀다**
+   * (이름·학번·캠퍼스·편·납부·비고). 같은 값을 두 자리에서 고치게 하면 어느 쪽이
+   * 최신인지가 화면마다 달라진다. 임역원에게 없던 것 — 이동수단·참여기간·수송 요청 —
+   * 만 남긴다.
+   */
+  variant?: "master" | "campus";
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [busy, start] = useTransition();
   const [state, setState] = useState<
     { kind: "idle" } | { kind: "saved"; field: string } | { kind: "err"; text: string }
@@ -65,10 +79,13 @@ export function RegDrawer({
   const [name, setName] = useState(row.name);
   const [studentId, setStudentId] = useState(row.student_id);
   const [note, setNote] = useState(row.note ?? "");
+  // 이동수단은 여러 칸이 모여야 한 값이 되므로 화면 상태를 따로 든다 (changeLeg 주석 참고).
+  const [upDraft, setUpDraft] = useState<LegValue>(upLeg);
+  const [downDraft, setDownDraft] = useState<LegValue>(downLeg);
   const [pickupDraft, setPickupDraft] = useState({
     direction: "up" as "up" | "down",
     at: "",
-    place: "",
+    placeId: "",
     note: "",
   });
 
@@ -92,12 +109,33 @@ export function RegDrawer({
       if (!res.ok) {
         setState({ kind: "err", text: res.message });
         // 충돌이면 최신값을 화면에 다시 그려야 한다 — 안 그러면 다음 저장도 같은 값으로 또 실패한다.
-        if (res.conflict) router.refresh();
+        if (res.conflict) onSaved("최신값");
         return;
       }
       setState({ kind: "saved", field: label });
-      router.refresh();
+      onSaved(label);
     });
+  }
+
+  /**
+   * 이동수단은 **여러 칸이 모여야 한 값이 된다.** 타지구 차량은 지구까지 골라야
+   * DB 가 받아준다. 그래서 다른 칸처럼 "고르는 즉시 저장"을 하면:
+   *   타지구를 고름 → 지구가 아직 없어 저장 거부 → 화면 값이 안 바뀜
+   *   → **지구 고르는 칸이 나타나지 않음** → 영원히 못 넣는다.
+   * 실제로 이 상태로 배포돼서, 확정 대기를 만들 방법이 아예 없었다.
+   *
+   * 그래서 이동수단만 화면 상태를 따로 들고, **값이 완성됐을 때 저장한다.**
+   */
+  function changeLeg(dir: "up" | "down", next: LegValue) {
+    if (dir === "up") setUpDraft(next);
+    else setDownDraft(next);
+
+    if (next.mode === "other_district" && !next.viaUnitId) {
+      // 아직 값이 반쪽이다. 저장하지 않고, 무엇이 남았는지 알려준다.
+      setState({ kind: "err", text: "어느 지구 차량인지 마저 골라 주세요 (아직 저장 안 됨)" });
+      return;
+    }
+    saveLeg(dir, next);
   }
 
   /** 이동수단 한 방향 저장. 확정으로 바꾸면 좌석이 반납되므로 먼저 묻는다. */
@@ -123,8 +161,9 @@ export function RegDrawer({
         status: next.status,
       });
       if (!res.ok) return setState({ kind: "err", text: res.message });
-      setState({ kind: "saved", field: dir === "up" ? "갈 때 이동수단" : "올 때 이동수단" });
-      router.refresh();
+      const label = dir === "up" ? "갈 때 이동수단" : "올 때 이동수단";
+      setState({ kind: "saved", field: label });
+      onSaved(label);
     });
   }
 
@@ -135,7 +174,7 @@ export function RegDrawer({
       const res = await setAttendRange(row.id, from, to);
       if (!res.ok) return setState({ kind: "err", text: res.message });
       setState({ kind: "saved", field: "참여기간" });
-      router.refresh();
+      onSaved("참여기간");
     });
   }
 
@@ -147,13 +186,13 @@ export function RegDrawer({
         // 시각·장소를 비워도 등록된다 — "가긴 가는데 아직 모른다"가 가장 흔한 상태고,
         // 그게 보드의 "시각 미정" 묶음이 된다.
         pickupAt: pickupDraft.at || null,
-        place: pickupDraft.place || null,
+        placeId: pickupDraft.placeId ? Number(pickupDraft.placeId) : null,
         note: pickupDraft.note || null,
       });
       if (!res.ok) return setState({ kind: "err", text: res.message });
-      setPickupDraft({ direction: "up", at: "", place: "", note: "" });
+      setPickupDraft({ direction: "up", at: "", placeId: "", note: "" });
       setState({ kind: "saved", field: "수송 요청" });
-      router.refresh();
+      onSaved("수송 요청");
     });
   }
 
@@ -163,7 +202,7 @@ export function RegDrawer({
       const res = await deletePickup(id);
       if (!res.ok) return setState({ kind: "err", text: res.message });
       setState({ kind: "saved", field: "수송 요청 삭제" });
-      router.refresh();
+      onSaved("수송 요청 삭제");
     });
   }
 
@@ -229,6 +268,8 @@ export function RegDrawer({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {variant === "master" && (
+        <>
         <label className={labelCls}>
           이름
           <input
@@ -344,6 +385,8 @@ export function RegDrawer({
             ))}
           </select>
         </label>
+        </>
+        )}
 
         <div className="rounded-lg border border-border bg-surface-2/40 p-3 space-y-2.5">
           <p className="text-xs text-muted-2 leading-snug">
@@ -352,17 +395,17 @@ export function RegDrawer({
           </p>
           <TransportPicker
             label="갈 때 (상행)"
-            value={upLeg}
+            value={upDraft}
             units={units}
             disabled={busy}
-            onChange={(v) => saveLeg("up", v)}
+            onChange={(v) => changeLeg("up", v)}
           />
           <TransportPicker
             label="올 때 (하행)"
-            value={downLeg}
+            value={downDraft}
             units={units}
             disabled={busy}
-            onChange={(v) => saveLeg("down", v)}
+            onChange={(v) => changeLeg("down", v)}
           />
         </div>
 
@@ -424,7 +467,7 @@ export function RegDrawer({
                         : "시각 미정"}
                     </span>
                     <span className="text-muted-2">
-                      {p.place ? ` · ${p.place}` : " · 장소 미정"}
+                      {p.placeName ? ` · ${p.placeName}` : " · 장소 미정"}
                       {p.note ? ` · ${p.note}` : ""}
                     </span>
                   </span>
@@ -467,23 +510,29 @@ export function RegDrawer({
               aria-label="픽업 시각"
             />
           </div>
-          {/* 장소는 자유 입력이다. 같은 행사에서 이미 쓰인 값만 후보로 보여준다 —
-              지명을 코드에 박으면 다음 행사에서 그대로 틀린 값이 된다. */}
-          <input
-            type="text"
-            list="pickup-places"
+          {/* 장소는 **총단이 등록한 목록에서 고른다.** 차를 보내는 건 총단이라
+              갈 수 있는 곳의 목록도 총단만 안다. 자유 입력이면 차가 가지 않는 곳을
+              적을 수 있다. */}
+          <select
             className={inputCls}
-            value={pickupDraft.place}
-            disabled={busy}
-            onChange={(e) => setPickupDraft((d) => ({ ...d, place: e.target.value }))}
-            placeholder="픽업 장소 (자유 입력)"
+            value={pickupDraft.placeId}
+            disabled={busy || places.length === 0}
+            onChange={(e) => setPickupDraft((d) => ({ ...d, placeId: e.target.value }))}
             aria-label="픽업 장소"
-          />
-          <datalist id="pickup-places">
+          >
+            <option value="">장소 미정</option>
             {places.map((p) => (
-              <option key={p} value={p} />
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
-          </datalist>
+          </select>
+          {places.length === 0 && (
+            <p className="text-[11px] text-warning-700 leading-snug">
+              이 행사에 등록된 픽업 장소가 없습니다. 총단 운영자가 <b>편성</b> 화면에서
+              먼저 장소를 등록해야 고를 수 있습니다.
+            </p>
+          )}
           <input
             type="text"
             className={inputCls}
@@ -498,6 +547,7 @@ export function RegDrawer({
           </Button>
         </div>
 
+        {variant === "master" && (
         <label className={labelCls}>
           비고 (부분참 일정·특이사항 등 자유 기록)
           <textarea
@@ -512,6 +562,7 @@ export function RegDrawer({
             placeholder="예: 금요일 저녁 KTX 귀가"
           />
         </label>
+        )}
 
         {row.participation_status === "cancelled" && (
           <Badge variant="danger" dot={false}>

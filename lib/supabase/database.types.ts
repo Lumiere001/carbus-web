@@ -569,6 +569,47 @@ export type Database = {
         }
         Relationships: []
       }
+      pickup_places: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          event_id: string
+          id: number
+          name: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          event_id: string
+          id?: never
+          name: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          event_id?: string
+          id?: never
+          name?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_places_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_requests: {
         Row: {
           created_at: string
@@ -577,7 +618,7 @@ export type Database = {
           id: number
           note: string | null
           pickup_at: string | null
-          place: string | null
+          place_id: number | null
           registration_id: string
           updated_at: string
         }
@@ -588,7 +629,7 @@ export type Database = {
           id?: never
           note?: string | null
           pickup_at?: string | null
-          place?: string | null
+          place_id?: number | null
           registration_id: string
           updated_at?: string
         }
@@ -599,7 +640,7 @@ export type Database = {
           id?: never
           note?: string | null
           pickup_at?: string | null
-          place?: string | null
+          place_id?: number | null
           registration_id?: string
           updated_at?: string
         }
@@ -609,6 +650,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_places"
             referencedColumns: ["id"]
           },
           {
@@ -1610,6 +1658,8 @@ export type Database = {
           pickup_date: string | null
           pickup_time: string | null
           place: string | null
+          place_id: number | null
+          place_note: string | null
           registration_id: string | null
           student_id: string | null
         }

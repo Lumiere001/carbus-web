@@ -169,10 +169,13 @@ export default async function AdminChangesPage() {
     const { data: regs } = await supabase
       .from("registrations")
       .select(
-        "id, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id"
+        "id, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, participation_status"
       )
       .in("id", liveIds);
-    for (const r of regs ?? []) regMap.set(r.id, r);
+    // 취소한 사람은 배차가 비어 있는 게 정상이다. 그걸 "미배정"으로 세면 가짜
+    // **재배차 필요** 경고가 계속 떠서, 진짜 재배차가 필요한 상황과 구분이 안 된다.
+    for (const r of regs ?? [])
+      if (r.participation_status !== "cancelled") regMap.set(r.id, r);
   }
 
   const [busRes, campusRes] = await Promise.all([

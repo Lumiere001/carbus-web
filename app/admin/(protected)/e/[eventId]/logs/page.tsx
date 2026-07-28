@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminHref } from "@/lib/events/route";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,20 +61,29 @@ type Params = {
   noop?: string;
 };
 
-/** 현재 필터를 유지한 채 일부만 바꾼 링크 (페이지는 기본으로 1로 되돌린다). */
-function href(cur: Params, patch: Partial<Params>): string {
+/**
+ * 현재 필터를 유지한 채 일부만 바꾼 링크 (페이지는 기본으로 1로 되돌린다).
+ *
+ * ⚠️ 반드시 **행사 주소**(`/admin/e/<행사>/logs`)로 만들어야 한다. 폴더화 이전
+ * 주소(`/admin/logs`)로 두면 리다이렉트를 한 번 거치는데, 그 과정에서 쿼리스트링이
+ * 통째로 사라져 "이 사람 이력만 보기"가 화면에서 아예 안 먹었다.
+ */
+function href(eventId: string, cur: Params, patch: Partial<Params>): string {
   const next: Record<string, string> = {};
   for (const [k, v] of Object.entries({ ...cur, page: undefined, ...patch }))
     if (v) next[k] = String(v);
   const qs = new URLSearchParams(next).toString();
-  return qs ? `/admin/logs?${qs}` : "/admin/logs";
+  return adminHref(eventId, qs ? `/logs?${qs}` : "/logs");
 }
 
 export default async function AdminLogsPage({
+  params: routeParams,
   searchParams,
 }: {
+  params: Promise<{ eventId: string }>;
   searchParams: Promise<Params>;
 }) {
+  const { eventId } = await routeParams;
   const params = await searchParams;
   const supabase = await createClient();
 
@@ -153,7 +163,7 @@ export default async function AdminLogsPage({
           <span>
             <b>{personName ?? "이 사람"}</b> 의 이력만 보고 있습니다 ({total}건)
           </span>
-          <Link href={href(params, { person: undefined })} className="ml-auto underline">
+          <Link href={href(eventId, params, { person: undefined })} className="ml-auto underline">
             <X size={14} className="inline" /> 전체 보기
           </Link>
         </div>
@@ -187,18 +197,18 @@ export default async function AdminLogsPage({
           </form>
 
           <div className="flex gap-1.5">
-            <Link href={href(params, { type: undefined })} className={chip(!typeFilter)}>
+            <Link href={href(eventId, params, { type: undefined })} className={chip(!typeFilter)}>
               전체
             </Link>
             {(["insert", "update", "delete"] as const).map((t) => (
-              <Link key={t} href={href(params, { type: t })} className={chip(typeFilter === t)}>
+              <Link key={t} href={href(eventId, params, { type: t })} className={chip(typeFilter === t)}>
                 {CHANGE_LABEL[t]}
               </Link>
             ))}
           </div>
 
           <Link
-            href={href(params, { noop: showNoop ? undefined : "1" })}
+            href={href(eventId, params, { noop: showNoop ? undefined : "1" })}
             className={chip(showNoop) + " ml-auto"}
             title="배차를 돌리면 값이 안 바뀐 수정 이력이 대량으로 쌓입니다. 기본은 숨김입니다."
           >
@@ -242,7 +252,7 @@ export default async function AdminLogsPage({
                   <td className="px-4 py-2 text-foreground">
                     {/* 이름을 누르면 그 사람 이력만 — "여러 번 바꾼 사람" 추적용 */}
                     <Link
-                      href={href(params, { person: a.registration_id ?? undefined, q: undefined })}
+                      href={href(eventId, params, { person: a.registration_id ?? undefined, q: undefined })}
                       className="hover:underline"
                     >
                       {a.person_name ?? "—"}
@@ -277,20 +287,20 @@ export default async function AdminLogsPage({
             <span className="ml-auto flex gap-1.5">
               {page > 1 && (
                 <>
-                  <Link href={href(params, { page: "1" })} className={chip(false)}>
+                  <Link href={href(eventId, params, { page: "1" })} className={chip(false)}>
                     처음
                   </Link>
-                  <Link href={href(params, { page: String(page - 1) })} className={chip(false)}>
+                  <Link href={href(eventId, params, { page: String(page - 1) })} className={chip(false)}>
                     이전
                   </Link>
                 </>
               )}
               {page < lastPage && (
                 <>
-                  <Link href={href(params, { page: String(page + 1) })} className={chip(false)}>
+                  <Link href={href(eventId, params, { page: String(page + 1) })} className={chip(false)}>
                     다음
                   </Link>
-                  <Link href={href(params, { page: String(lastPage) })} className={chip(false)}>
+                  <Link href={href(eventId, params, { page: String(lastPage) })} className={chip(false)}>
                     마지막
                   </Link>
                 </>

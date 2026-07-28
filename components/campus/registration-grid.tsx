@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,8 +9,11 @@ import {
   createColumnHelper,
   type CellContext,
 } from "@tanstack/react-table";
-import { Plus, Download, Upload, Trash2, Clock } from "lucide-react";
+import { Plus, Download, Upload, Trash2, Clock, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { RegDrawer, type PickupRow } from "@/components/admin/reg-drawer";
+import type { AdminRegRow } from "@/components/admin/registrations-panel";
+import type { LegValue } from "@/components/admin/transport-picker";
 import {
   type RegistrationRow,
   insertRegistration,
@@ -57,12 +61,24 @@ export function RegistrationGrid({
   initialRows,
   buses,
   trips,
+  legs,
+  units,
+  pickups,
+  places,
 }: {
   campusId: string;
   campusName: string;
   initialRows: RegistrationRow[];
   buses: Bus[];
   trips: EventTrip[];
+  /** "<신청id>:<방향>" → 이동수단. 행이 없으면 우리 버스(기본값). */
+  legs: Record<string, { mode: string; status: string; via: string | null }>;
+  /** 타지구 차량일 때 고를 지구 목록. */
+  units: { id: string; name: string }[];
+  /** 신청id → 수송 요청들. */
+  pickups: Record<string, PickupRow[]>;
+  /** 총단이 등록해 둔 픽업 장소. 고르기만 한다. */
+  places: { id: number; name: string }[];
 }) {
   const emptyDraft: Draft = {
     name: "",
@@ -72,6 +88,46 @@ export function RegistrationGrid({
     note: "",
   };
   const [rows, setRows] = useState<RegistrationRow[]>(initialRows);
+  /** 편집 서랍이 열린 사람. id 로만 들고 있어야 저장 후 최신값이 서랍에 비친다. */
+  const [drawerId, setDrawerId] = useState<string | null>(null);
+  const router = useRouter();
+
+  /** 서랍이 보는 사람. rows 에서 매번 찾으므로 저장 뒤 최신값이 그대로 비친다. */
+  const drawerRow: AdminRegRow | null = useMemo(() => {
+    const r = rows.find((x) => x.id === drawerId);
+    if (!r) return null;
+    return {
+      id: r.id,
+      name: r.name,
+      student_id: r.student_id,
+      campus_id: r.campus_id,
+      attendance_type: r.attendance_type,
+      up_trip_id: r.up_trip_id,
+      down_trip_id: r.down_trip_id,
+      fee: r.fee,
+      payment_status: r.payment_status,
+      roles: r.roles,
+      note: r.note,
+      assigned_up_bus_id: r.assigned_up_bus_id,
+      assigned_down_bus_id: r.assigned_down_bus_id,
+      participation_status: r.participation_status,
+      cancel_reason: r.cancel_reason,
+      attend_from: r.attend_from,
+      attend_to: r.attend_to,
+    };
+  }, [rows, drawerId]);
+
+  /** legs 맵에서 한 방향 값을 꺼낸다. 없으면 우리 버스(기본값). */
+  const legOf = (regId: string, dir: "up" | "down"): LegValue => {
+    const raw = legs[`${regId}:${dir}`];
+    if (!raw) return { mode: "our_bus", viaUnitId: null, status: "confirmed" };
+    const unit = units.find((u) => u.name === raw.via);
+    return {
+      mode: raw.mode as LegValue["mode"],
+      viaUnitId: unit?.id ?? null,
+      status: raw.status as LegValue["status"],
+    };
+  };
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [toast, setToast] = useState<Toast | null>(null);
   /** 충돌난 (rowId, field) 셀 잠깐 강조용. key = `${id}:${field}`. */
@@ -360,6 +416,18 @@ export function RegistrationGrid({
         id: "actions",
         header: "",
         cell: (ctx) => (
+          <span className="inline-flex items-center gap-1">
+          {/* 이동수단·참여기간·수송 요청은 칸이 여러 개 모여야 한 값이 돼서
+              표 안에서 고치기 어렵다. 그 셋만 서랍에서 받는다. */}
+          <button
+            type="button"
+            aria-label="이동수단·참여기간·수송 요청"
+            title="이동수단 · 참여기간 · 수송 요청"
+            onClick={() => setDrawerId((cur) => (cur === ctx.row.original.id ? null : ctx.row.original.id))}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-2 transition hover:bg-surface-2 hover:text-primary-700"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
           <button
             type="button"
             aria-label="삭제"
@@ -368,6 +436,7 @@ export function RegistrationGrid({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
+          </span>
         ),
       }),
     ],
@@ -520,7 +589,8 @@ export function RegistrationGrid({
 
       {/* Grid container — Card 비주얼 */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-1">
-        <div className="max-h-[560px] overflow-auto">
+        <div className="flex flex-col lg:flex-row">
+        <div className="max-h-[560px] overflow-auto flex-1 min-w-0">
           <table className="w-full min-w-[1100px] text-sm">
             <thead className="sticky top-0 z-10 bg-surface-2/95 backdrop-blur">
               {table.getHeaderGroups().map((hg) => (
@@ -633,6 +703,24 @@ export function RegistrationGrid({
               </tr>
             </tbody>
           </table>
+        </div>
+
+        {drawerRow && (
+          <RegDrawer
+            key={drawerRow.id}
+            row={drawerRow}
+            campuses={[{ id: campusId, name: campusName, display_order: 0 }]}
+            trips={trips}
+            units={units}
+            upLeg={legOf(drawerRow.id, "up")}
+            downLeg={legOf(drawerRow.id, "down")}
+            pickups={pickups[drawerRow.id] ?? []}
+            places={places}
+            variant="campus"
+            onSaved={() => router.refresh()}
+            onClose={() => setDrawerId(null)}
+          />
+        )}
         </div>
 
         {/* footer 요약 */}

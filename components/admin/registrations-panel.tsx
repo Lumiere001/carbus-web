@@ -150,9 +150,10 @@ export function RegistrationsPanel({
   legs: Record<string, { mode: string; status: string; via: string | null }>;
   /** 신청id → 수송 요청들. 없으면 요청 없음. */
   pickups: Record<string, PickupRow[]>;
-  /** 같은 행사에서 이미 쓰인 픽업 장소 (자동완성 후보). */
-  places: string[];
+  /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다. */
+  places: { id: number; name: string }[];
 }) {
+  const panelRouter = useRouter();
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
@@ -181,11 +182,18 @@ export function RegistrationsPanel({
     }
     return { up, down };
   }, [rows]);
+  // 탭에 붙는 숫자는 **취소자를 뺀 인원**이다. 취소한 사람의 행은 명단에 계속
+  // 남지만(되돌리려면 보여야 한다), 세는 자리에서는 빠져야 대시보드·배차 화면과
+  // 같은 숫자가 된다. 점검에서 여기만 600, 나머지는 599 였다.
+  const liveRows = useMemo(
+    () => rows.filter((r) => r.participation_status !== "cancelled"),
+    [rows]
+  );
   const countByCampus = useMemo(() => {
     const m = new Map<string, number>();
-    for (const r of rows) m.set(r.campus_id, (m.get(r.campus_id) ?? 0) + 1);
+    for (const r of liveRows) m.set(r.campus_id, (m.get(r.campus_id) ?? 0) + 1);
     return m;
-  }, [rows]);
+  }, [liveRows]);
 
   const colCount = isMaster ? 8 : 7;
 
@@ -332,7 +340,7 @@ export function RegistrationsPanel({
       {/* 캠퍼스 탭 (검색 중에는 비활성 표시) */}
       <div className={"flex flex-wrap gap-1.5" + (searching ? " opacity-50 pointer-events-none" : "")}>
         <button className={tabClass(tab === ALL)} onClick={() => setTab(ALL)}>
-          전체 <span className="tabular-nums">{rows.length}</span>
+          전체 <span className="tabular-nums">{liveRows.length}</span>
         </button>
         {campuses.map((c) => (
           <button
@@ -359,7 +367,7 @@ export function RegistrationsPanel({
             행 아래에 폼을 펼치던 예전 방식은 열 때마다 아래 행들이 통째로 밀렸다. */}
         <div className="flex flex-col lg:flex-row">
         <div className="max-h-[560px] overflow-auto rounded-xl flex-1 min-w-0">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[1040px] text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
                 <th className="px-4 py-2.5">이름</th>
@@ -414,6 +422,8 @@ export function RegistrationsPanel({
             downLeg={legOf(editRow.id, "down")}
             pickups={pickups[editRow.id] ?? []}
             places={places}
+            // 서랍이 리마운트돼도 새로고침이 살아 있게 부모가 받는다.
+            onSaved={() => panelRouter.refresh()}
             onClose={() => setForm(null)}
           />
         )}
@@ -600,7 +610,7 @@ function Row({
         (cancelled ? "bg-surface-2/60 text-muted-2" : "")
       }
     >
-      <td className="px-4 py-2.5 text-foreground">
+      <td className="px-4 py-2.5 text-foreground whitespace-nowrap">
         <div className="flex flex-col gap-1">
           <span className="flex items-center gap-1.5">
             <span className={cancelled ? "line-through text-muted-2" : ""}>
@@ -660,7 +670,7 @@ function Row({
       </td>
       <td className="px-4 py-2.5 text-muted-2">{r.student_id}</td>
       <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{attendanceLabel(r, trips)}</td>
-      <td className="px-4 py-2.5">
+      <td className="px-4 py-2.5 whitespace-nowrap">
         {(() => {
           // 차량비 0원(버스 미이용)이면 완납/미납 대신 '해당없음' — 환불 대기는 드러낸다.
           const ov = paymentDisplayOverride(r.fee, r.note);

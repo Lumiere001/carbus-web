@@ -4,6 +4,8 @@ import type { UserRole } from "@/lib/supabase/types";
 import { FleetPanel, type BusLoad } from "@/components/admin/fleet-panel";
 import type { TripRow } from "@/lib/admin/trips";
 import type { BusRow } from "@/lib/admin/buses";
+import { PickupPlacesPanel } from "@/components/admin/pickup-places-panel";
+import type { PlaceRow } from "@/lib/admin/pickup";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,7 @@ export default async function AdminTripsPage() {
     .single<{ role: UserRole }>();
   if (profile?.role !== "master") redirect("/admin");
 
-  const [tripsRes, busesRes, regsRes] = await Promise.all([
+  const [tripsRes, busesRes, regsRes, placesRes] = await Promise.all([
     supabase
       .from("event_trips")
       .select("*")
@@ -44,6 +46,12 @@ export default async function AdminTripsPage() {
       .from("registrations")
       .select("assigned_up_bus_id, assigned_down_bus_id, up_trip_id, down_trip_id")
       .neq("participation_status", "cancelled"),
+    // 픽업 장소도 행사마다 새로 정하는 것이라 편성 화면이 자리다.
+    supabase
+      .from("pickup_places")
+      .select("id, name, note, display_order, active")
+      .order("display_order")
+      .order("name"),
   ]);
 
   const trips = (tripsRes.data ?? []) as TripRow[];
@@ -102,6 +110,16 @@ export default async function AdminTripsPage() {
         loads={loads}
         upRequests={upRequests}
         downRequests={downRequests}
+      />
+
+      <PickupPlacesPanel
+        places={(placesRes.data ?? []).map((p): PlaceRow => ({
+          id: p.id,
+          name: p.name,
+          note: p.note,
+          displayOrder: p.display_order,
+          active: p.active,
+        }))}
       />
     </div>
   );

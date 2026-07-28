@@ -61,6 +61,7 @@ const TABLES = [
   { name: "campus_payment_settlements" },
   { name: "payment_ledger" },
   { name: "transport_legs" },
+  { name: "pickup_places" },
   { name: "pickup_requests" },
 ];
 

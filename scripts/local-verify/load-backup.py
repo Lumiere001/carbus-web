@@ -39,7 +39,7 @@ TABLES = [
     "profiles", "registrations", "role_labels", "system_config",
     "batch_runs", "registration_audit",
     "campus_remittances", "campus_payment_settlements", "payment_ledger",
-    "transport_legs", "pickup_requests",
+    "transport_legs", "pickup_places", "pickup_requests",
 ]
 
 # 백업하지 않아도 되는 테이블 (마이그레이션이 전량 생성 = 데이터가 아니라 스키마의 일부)
@@ -130,7 +130,15 @@ def check_coverage() -> None:
     mf = BACKUP / "_manifest.json"
     if mf.exists():
         try:
-            manifest_tables = set(json.loads(mf.read_text()).get("tables", {}).keys())
+            _tables = json.loads(mf.read_text()).get("tables", {})
+            # 백업 당시 **운영에 그 테이블이 아직 없었던** 경우는 매니페스트에
+            # `absent: true` 로 남는다. 그건 사고가 아니라 정상이다 — 새 테이블을
+            # 만든 직후 뜬 백업은 항상 이 상태가 된다. 구분하지 않으면 배포할 때마다
+            # 재적재가 막힌다(실제로 막혔다).
+            manifest_tables = {
+                k for k, v in _tables.items()
+                if not (isinstance(v, dict) and v.get("absent"))
+            }
         except Exception:
             manifest_tables = set()
 

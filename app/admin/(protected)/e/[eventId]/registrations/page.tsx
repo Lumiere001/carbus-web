@@ -24,7 +24,7 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes] =
+  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes, placeRes] =
     await Promise.all([
     supabase
       .from("registrations")
@@ -56,8 +56,15 @@ export default async function AdminRegistrationsPage() {
     // 수송 요청 — 서랍에서 사람별로 넣고 지운다. 보드(부분참 화면)는 이걸 묶어 읽는다.
     supabase
       .from("pickup_requests")
-      .select("id, registration_id, direction, pickup_at, place, note")
+      .select("id, registration_id, direction, pickup_at, note, pickup_places(name)")
       .order("pickup_at", { ascending: true, nullsFirst: true }),
+    // 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다 — 자유 입력이 아니다.
+    supabase
+      .from("pickup_places")
+      .select("id, name")
+      .eq("active", true)
+      .order("display_order")
+      .order("name"),
   ]);
   const trips = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
@@ -104,15 +111,11 @@ export default async function AdminRegistrationsPage() {
       id: p.id,
       direction: p.direction === "down" ? "down" : "up",
       pickupAt: p.pickup_at,
-      place: p.place,
+      placeName: p.pickup_places?.name ?? null,
       note: p.note,
     });
   }
-  // 같은 행사에서 이미 쓰인 장소 = 자동완성 후보. **장소 마스터 테이블을 두지 않는다**
-  // (동규님 지시 — 픽업 장소는 행사마다 달라진다). 쓰인 값을 모으면 표기가 통일된다.
-  const places = [
-    ...new Set((pickupRes.data ?? []).map((p) => p.place).filter((x): x is string => !!x)),
-  ].sort();
+  const places = placeRes.data ?? [];
 
   return (
     <div className="space-y-5">
