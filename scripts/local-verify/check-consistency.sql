@@ -83,10 +83,24 @@ select 30, '청구액 (동결 fee ↔ 지금 계산 fee_now)',
  where b.fee_now is distinct from (select fee from registrations where id = b.registration_id);
 
 -- ── ⑤ 취소자 ────────────────────────────────────────────────
+-- 진행 중인 행사와 보관된 행사를 나눈다. **손해가 나는 쪽이 다르기 때문이다** —
+-- 진행 중이면 빈 좌석을 태우고 출발하지만, 끝난 행사에서는 아무도 안 탄다.
+-- 보관된 행사는 write_mode 가 closed 라 고치려면 잠금을 열어야 하는데, 그걸
+-- 강제하면 "고치려고 지난 행사를 여는" 더 위험한 습관이 생긴다.
 insert into _consistency
 select 40, '취소자 (participation_status ↔ 좌석)',
-       '취소했는데 편이나 배정 호차가 남아 있다', count(*), true
+       '진행 중인 행사에서 취소했는데 편·배정이 남아 있다', count(*), true
   from registrations r
+  join events e on e.id = r.event_id and e.is_active
+ where r.participation_status = 'cancelled'
+   and (r.up_trip_id is not null or r.down_trip_id is not null
+        or r.assigned_up_bus_id is not null or r.assigned_down_bus_id is not null);
+
+insert into _consistency
+select 41, '취소자 (participation_status ↔ 좌석)',
+       '보관된 행사에 남아 있다 (잠금을 열 때 같이 정리하면 된다)', count(*), false
+  from registrations r
+  join events e on e.id = r.event_id and not e.is_active
  where r.participation_status = 'cancelled'
    and (r.up_trip_id is not null or r.down_trip_id is not null
         or r.assigned_up_bus_id is not null or r.assigned_down_bus_id is not null);

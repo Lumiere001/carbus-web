@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   transportBadge,
   transportSummaryText,
+  legSkipsOurBus,
   TRANSPORT_MODES,
   TRANSPORT_LABELS,
 } from "@/lib/transport/labels";
@@ -74,5 +75,32 @@ describe("transportSummaryText", () => {
         { mode: "other_district", via: "부산지구" }
       )
     ).toBe("부산지구 차량");
+  });
+});
+
+describe("legSkipsOurBus — 좌석을 놓을 것인가 (§26-B)", () => {
+  // ⚠️ 이 표는 DB 의 `public.leg_skips_our_bus` 와 **같아야 한다.**
+  //    화면이 더 느슨하면 확인창 없이 좌석이 사라지고, 더 엄격하면 아무 일도
+  //    안 일어나는데 경고만 뜬다. 둘 중 하나만 고치는 사고를 막으려고 적어 둔다.
+  it("우리 버스는 좌석을 놓지 않는다", () => {
+    expect(legSkipsOurBus("our_bus", "confirmed")).toBe(false);
+  });
+
+  it("KTX·자차·기타는 놓는다 — 예전에는 아무 일도 안 일어났다", () => {
+    expect(legSkipsOurBus("ktx", "confirmed")).toBe(true);
+    expect(legSkipsOurBus("own_car", "confirmed")).toBe(true);
+    expect(legSkipsOurBus("other", "confirmed")).toBe(true);
+  });
+
+  it("타지구는 확정일 때만 놓는다 — 대기는 자리를 잡아둔다", () => {
+    expect(legSkipsOurBus("other_district", "confirmed")).toBe(true);
+    // 무산되면 바로 타야 하므로 우리 자리를 비워 두면 안 된다.
+    expect(legSkipsOurBus("other_district", "pending")).toBe(false);
+  });
+
+  it("모든 수단이 판정된다 — 새 수단이 생기면 여기서 걸린다", () => {
+    for (const m of TRANSPORT_MODES) {
+      expect(typeof legSkipsOurBus(m, "confirmed")).toBe("boolean");
+    }
   });
 });

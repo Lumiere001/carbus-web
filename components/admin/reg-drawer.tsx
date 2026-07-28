@@ -12,6 +12,8 @@ import { TransportPicker, type LegValue } from "@/components/admin/transport-pic
 import {
   DIRECTION_LABELS,
   PICKUP_DIRECTION_LABELS,
+  TRANSPORT_LABELS,
+  legSkipsOurBus,
 } from "@/lib/transport/labels";
 import type { AdminRegRow, CampusInfo } from "@/components/admin/registrations-panel";
 import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
@@ -142,18 +144,21 @@ export function RegDrawer({
     saveLeg(dir, next);
   }
 
-  /** 이동수단 한 방향 저장. 확정으로 바꾸면 좌석이 반납되므로 먼저 묻는다. */
+  /**
+   * 이동수단 한 방향 저장.
+   *
+   * 우리 버스를 안 타는 수단으로 바꾸면 **그 방향 좌석이 반납된다**(§26-B).
+   * 되돌리려면 재배차해야 하므로 좌석을 잡고 있을 때만 먼저 묻는다 — 이미 비어
+   * 있으면 잃을 게 없는데도 묻는 셈이라 확인창이 소음이 된다.
+   */
   function saveLeg(dir: "up" | "down", next: LegValue) {
     const tripId = dir === "up" ? row.up_trip_id : row.down_trip_id;
-    if (
-      next.mode === "other_district" &&
-      next.status === "confirmed" &&
-      tripId != null
-    ) {
+    if (legSkipsOurBus(next.mode, next.status) && tripId != null) {
       const ok = window.confirm(
-        `${DIRECTION_LABELS[dir]} — 타지구 차량이 확정으로 저장됩니다.\n\n` +
-          `해당 방향의 운행편과 배정 호차가 비워져 좌석이 반납됩니다.\n` +
-          `되돌리려면 편을 다시 지정하고 배차를 다시 실행해야 합니다.\n\n진행할까요?`
+        `${DIRECTION_LABELS[dir]} — ${TRANSPORT_LABELS[next.mode]}(으)로 저장됩니다.\n\n` +
+          `우리 버스를 안 타므로 이 방향의 운행편과 배정 호차가 비워져\n` +
+          `좌석이 반납됩니다. 되돌리려면 편을 다시 지정하고 배차를 다시\n` +
+          `실행해야 합니다.\n\n진행할까요?`
       );
       if (!ok) return;
     }

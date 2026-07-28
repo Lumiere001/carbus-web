@@ -68,6 +68,23 @@ export const DIRECTION_SHORT: Record<LegDirection, string> = {
   down: "오는 편",
 };
 
+/**
+ * 이 이동수단이면 우리 버스 좌석을 잡고 있을 이유가 없다 (§26-B).
+ *
+ * ⚠️ DB 의 `public.leg_skips_our_bus` 와 **같은 술어여야 한다.** 화면이 더 느슨하면
+ * 확인창 없이 좌석이 사라지고, 더 엄격하면 아무 일도 안 일어나는데 경고만 뜬다.
+ *
+ * 타지구 "확정 대기" 만 예외다 — 무산되면 바로 타야 하므로 자리를 잡아둔다.
+ */
+export function legSkipsOurBus(
+  mode: TransportMode,
+  status: TransportStatus
+): boolean {
+  if (mode === "our_bus") return false;
+  if (mode === "other_district") return status === "confirmed";
+  return true; // ktx · own_car · other
+}
+
 export type BadgeTone = "mute" | "primary" | "warning" | "success" | "danger";
 
 /**
