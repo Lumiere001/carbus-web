@@ -547,6 +547,7 @@ export type Database = {
           id: string
           kind: string
           name: string
+          retired_at: string | null
         }
         Insert: {
           aliases?: string[]
@@ -555,6 +556,7 @@ export type Database = {
           id?: string
           kind?: string
           name: string
+          retired_at?: string | null
         }
         Update: {
           aliases?: string[]
@@ -563,6 +565,7 @@ export type Database = {
           id?: string
           kind?: string
           name?: string
+          retired_at?: string | null
         }
         Relationships: []
       }
@@ -1602,6 +1605,7 @@ export type Database = {
         Args: { p_amount: number; p_campus_id: string; p_note?: string }
         Returns: undefined
       }
+      request_event_header: { Args: never; Returns: string }
       set_attendance: {
         Args: { p_field: string; p_reg_id: string; p_value: boolean }
         Returns: undefined

@@ -42,7 +42,12 @@ export default async function AdminRegistrationsPage() {
     supabase.from("system_config").select("current_phase").maybeSingle(),
     supabase.from("event_trips").select("*").order("direction").order("display_order"),
     // 타지구 차량일 때 고를 지구 목록.
-    supabase.from("org_units").select("id, name").order("display_order"),
+    // 새로 고를 수 있는 소속만(내린 것 제외). 과거 데이터가 가리키는 옛 이름은
+    // 아래 unitName 에서 따로 읽어 **표시에는 계속 쓴다** — 과거는 과거대로 남긴다.
+    supabase
+      .from("org_units")
+      .select("id, name, retired_at")
+      .order("display_order"),
     // 방향별 이동수단 — 명단에 배지로 띄우고, 수정 폼의 초기값이 된다.
     supabase
       .from("transport_legs")
@@ -66,8 +71,12 @@ export default async function AdminRegistrationsPage() {
     for (const id of b.down_fixed_passenger_ids ?? []) fixedIds.add(id);
   }
 
-  const units = unitRes.data ?? [];
-  const unitName = new Map(units.map((u) => [u.id, u.name]));
+  const allUnits = unitRes.data ?? [];
+  // 표시는 전부(옛 이름 포함), 선택지는 안 내린 것만.
+  const unitName = new Map(allUnits.map((u) => [u.id, u.name]));
+  const units = allUnits
+    .filter((u) => u.retired_at === null)
+    .map((u) => ({ id: u.id, name: u.name }));
   // 사람 → 방향별 이동수단. 없으면 우리 버스(기본값)라 행을 안 만든다.
   const legs = new Map<
     string,
