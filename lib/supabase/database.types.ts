@@ -105,6 +105,7 @@ export type Database = {
           hard_cap: number
           id: number
           is_cohesion_exempt: boolean
+          kind: Database["public"]["Enums"]["bus_kind"]
           name: string
           up_trip_id: number | null
         }
@@ -121,6 +122,7 @@ export type Database = {
           hard_cap?: number
           id?: number
           is_cohesion_exempt?: boolean
+          kind?: Database["public"]["Enums"]["bus_kind"]
           name: string
           up_trip_id?: number | null
         }
@@ -137,6 +139,7 @@ export type Database = {
           hard_cap?: number
           id?: number
           is_cohesion_exempt?: boolean
+          kind?: Database["public"]["Enums"]["bus_kind"]
           name?: string
           up_trip_id?: number | null
         }
@@ -569,6 +572,88 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_ledger: {
+        Row: {
+          actor: string | null
+          amount: number
+          created_at: string
+          event_id: string
+          id: string
+          kind: string
+          occurred_at: string
+          reason: string | null
+          registration_id: string
+          source: string
+        }
+        Insert: {
+          actor?: string | null
+          amount: number
+          created_at?: string
+          event_id: string
+          id?: string
+          kind: string
+          occurred_at?: string
+          reason?: string | null
+          registration_id: string
+          source?: string
+        }
+        Update: {
+          actor?: string | null
+          amount?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          occurred_at?: string
+          reason?: string | null
+          registration_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_ledger_actor_fkey"
+            columns: ["actor"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "payment_ledger_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["registration_id"]
+          },
+        ]
+      }
       pickup_places: {
         Row: {
           active: boolean
@@ -666,83 +751,22 @@ export type Database = {
             referencedRelation: "registrations"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      payment_ledger: {
-        Row: {
-          actor: string | null
-          amount: number
-          created_at: string
-          event_id: string
-          id: string
-          kind: string
-          occurred_at: string
-          reason: string | null
-          registration_id: string
-          source: string
-        }
-        Insert: {
-          actor?: string | null
-          amount: number
-          created_at?: string
-          event_id: string
-          id?: string
-          kind: string
-          occurred_at?: string
-          reason?: string | null
-          registration_id: string
-          source?: string
-        }
-        Update: {
-          actor?: string | null
-          amount?: number
-          created_at?: string
-          event_id?: string
-          id?: string
-          kind?: string
-          occurred_at?: string
-          reason?: string | null
-          registration_id?: string
-          source?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "payment_ledger_actor_fkey"
-            columns: ["actor"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_ledger_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_ledger_registration_id_fkey"
-            columns: ["registration_id"]
-            isOneToOne: false
-            referencedRelation: "registrations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_ledger_registration_id_fkey"
+            foreignKeyName: "pickup_requests_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_cancelled"
             referencedColumns: ["registration_id"]
           },
           {
-            foreignKeyName: "payment_ledger_registration_id_fkey"
+            foreignKeyName: "pickup_requests_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_payment_balance"
             referencedColumns: ["registration_id"]
           },
           {
-            foreignKeyName: "payment_ledger_registration_id_fkey"
+            foreignKeyName: "pickup_requests_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_transport_summary"
@@ -1389,13 +1413,6 @@ export type Database = {
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["departure_slot_id"]
-            isOneToOne: false
-            referencedRelation: "departure_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "departure_slots"
@@ -1405,7 +1422,7 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
-            referencedRelation: "event_trips"
+            referencedRelation: "departure_slots"
             referencedColumns: ["id"]
           },
           {
@@ -1419,8 +1436,8 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
-            referencedRelation: "v_day_capacity"
-            referencedColumns: ["slot_id"]
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
@@ -1432,13 +1449,20 @@ export type Database = {
           {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["up_trip_id"]
+            columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
@@ -1612,6 +1636,103 @@ export type Database = {
         }
         Relationships: []
       }
+      v_pickup_board: {
+        Row: {
+          attend_from: string | null
+          attend_to: string | null
+          campus_id: string | null
+          campus_name: string | null
+          created_at: string | null
+          direction: string | null
+          event_id: string | null
+          id: number | null
+          note: string | null
+          participation_status:
+            | Database["public"]["Enums"]["participation_status"]
+            | null
+          person_name: string | null
+          pickup_at: string | null
+          pickup_date: string | null
+          pickup_time: string | null
+          place: string | null
+          place_id: number | null
+          place_note: string | null
+          registration_id: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_campus_stats"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_3way_comparison"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_summary"
+            referencedColumns: ["campus_id"]
+          },
+        ]
+      }
       v_registration_changes: {
         Row: {
           campus_id: string | null
@@ -1642,32 +1763,6 @@ export type Database = {
           },
         ]
       }
-      v_pickup_board: {
-        Row: {
-          attend_from: string | null
-          attend_to: string | null
-          campus_id: string | null
-          campus_name: string | null
-          created_at: string | null
-          direction: string | null
-          event_id: string | null
-          id: number | null
-          note: string | null
-          participation_status:
-            | Database["public"]["Enums"]["participation_status"]
-            | null
-          person_name: string | null
-          pickup_at: string | null
-          pickup_date: string | null
-          pickup_time: string | null
-          place: string | null
-          place_id: number | null
-          place_note: string | null
-          registration_id: string | null
-          student_id: string | null
-        }
-        Relationships: []
-      }
       v_transport_legs_detail: {
         Row: {
           campus_id: string | null
@@ -1692,7 +1787,78 @@ export type Database = {
           via_unit_id: string | null
           via_unit_name: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_campus_stats"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_3way_comparison"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_summary"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "transport_legs_via_unit_id_fkey"
+            columns: ["via_unit_id"]
+            isOneToOne: false
+            referencedRelation: "org_units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_transport_summary: {
         Row: {
@@ -1760,6 +1926,13 @@ export type Database = {
         }[]
       }
       is_event_writable: { Args: { p_event: string }; Returns: boolean }
+      leg_skips_our_bus: {
+        Args: {
+          p_mode: Database["public"]["Enums"]["transport_mode"]
+          p_status: Database["public"]["Enums"]["transport_status"]
+        }
+        Returns: boolean
+      }
       lock_event_writes: { Args: { p_event_id: string }; Returns: undefined }
       master_remit_add: {
         Args: { p_amount: number; p_campus_id: string; p_note?: string }
@@ -1787,6 +1960,7 @@ export type Database = {
     }
     Enums: {
       attendance_type: "roundtrip" | "oneway" | "self"
+      bus_kind: "bus" | "staff_car"
       event_write_mode: "live" | "closed"
       participation_status: "registered" | "cancelled"
       payment_status: "unpaid" | "paid" | "waived"
@@ -1926,6 +2100,7 @@ export const Constants = {
   public: {
     Enums: {
       attendance_type: ["roundtrip", "oneway", "self"],
+      bus_kind: ["bus", "staff_car"],
       event_write_mode: ["live", "closed"],
       participation_status: ["registered", "cancelled"],
       payment_status: ["unpaid", "paid", "waived"],

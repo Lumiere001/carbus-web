@@ -73,14 +73,18 @@ function assertBusFlags(buses: Bus[]): void {
     (b) =>
       typeof b.fill_priority !== "number" ||
       Number.isNaN(b.fill_priority) ||
-      typeof b.is_cohesion_exempt !== "boolean"
+      typeof b.is_cohesion_exempt !== "boolean" ||
+      // `kind` 가 undefined 면 `b.kind !== "staff_car"` 가 참이라 간사 차량이
+      // **자동 배차 대상으로 되살아난다.** 정확히 이 가드가 막으려던 종류의 사고다.
+      (b.kind !== "bus" && b.kind !== "staff_car")
   );
   if (bad.length > 0) {
     throw new Error(
       `배차 플래그 누락: ${bad
         .map((b) => b.name ?? b.id)
-        .join(", ")} — is_cohesion_exempt(boolean) / fill_priority(number) 가 필요합니다. ` +
-        `빠뜨리면 짐차 특례가 조용히 반대로 적용됩니다.`
+        .join(", ")} — is_cohesion_exempt(boolean) / fill_priority(number) / ` +
+        `kind('bus'|'staff_car') 가 필요합니다. ` +
+        `빠뜨리면 짐차 특례가 조용히 반대로 적용되고, 간사 차량이 자동 배차에 되살아납니다.`
     );
   }
 
@@ -307,13 +311,22 @@ export function runBatch(
         if (d) upDriverCampus.set(b.id, d.campus);
       }
     }
+    // 자동으로 **채울** 대상에서 간사 차량을 뺀다 (§26-E).
+    //
+    // Step 1(고정 배정)에서는 빼지 않았다 — 간사 차 탑승자는 고정 탑승자로 지정되고,
+    // 그게 재배차에도 살아남는 유일한 길이기 때문이다. 여기서만 빼야 "크루·미디어를
+    // 적어 뒀는데 캠퍼스 인원이 밀려 들어오는" 일이 안 생긴다.
+    //
+    // 편 목록도 이 목록에서 뽑는다. 간사 차만 뛰는 편을 slots 에 넣으면 그 편에
+    // 채울 차가 없어 fillBuses 가 그 편 전원을 미배정으로 만든다.
+    const upFillBuses = upBuses.filter((b) => b.kind !== "staff_car");
     const slots = [
       ...new Set(
-        upBuses.map((b) => b.up_trip_id).filter((id): id is number => id !== null)
+        upFillBuses.map((b) => b.up_trip_id).filter((id): id is number => id !== null)
       ),
     ];
     for (const slotId of slots) {
-      const slotBuses = upBuses.filter((b) => b.up_trip_id === slotId);
+      const slotBuses = upFillBuses.filter((b) => b.up_trip_id === slotId);
       const grp = upParticipants.filter((p) => p.up_trip_id === slotId);
       fillBuses(`slot ${slotId}`, grp, slotBuses, assignUp, errors, upDriverCampus);
     }
@@ -398,13 +411,17 @@ export function runBatch(
     }
     // 상행과 같은 편별 루프. 하행 편이 하나뿐이면 이 루프는 1회 돌고, 결과는
     // 예전의 "전 호차 대상 1회 호출"과 동일하다 — 골든 스냅샷이 그걸 고정한다.
+    // 상행과 같은 이유로 간사 차량은 **채움 대상에서만** 뺀다 (§26-E).
+    const downFillBuses = downBuses.filter((b) => b.kind !== "staff_car");
     const downTrips = [
       ...new Set(
-        downBuses.map((b) => b.down_trip_id).filter((id): id is number => id !== null)
+        downFillBuses
+          .map((b) => b.down_trip_id)
+          .filter((id): id is number => id !== null)
       ),
     ];
     for (const tripId of downTrips) {
-      const tripBuses = downBuses.filter((b) => b.down_trip_id === tripId);
+      const tripBuses = downFillBuses.filter((b) => b.down_trip_id === tripId);
       const grp = downParticipants.filter((p) => p.down_trip_id === tripId);
       fillBuses(`하행 편 ${tripId}`, grp, tripBuses, assignDown, errors, downDriverCampus);
     }

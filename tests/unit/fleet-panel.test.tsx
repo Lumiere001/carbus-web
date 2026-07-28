@@ -50,6 +50,8 @@ const bus = (o: Partial<BusRow> & Pick<BusRow, "id" | "name">) =>
     down_fixed_passenger_ids: [],
     is_cohesion_exempt: false,
     fill_priority: 0,
+    // 기본은 일반 버스. 간사 차량은 그 테스트에서 명시적으로 넘긴다 (§26-E).
+    kind: "bus",
     ...o,
   }) as BusRow;
 
@@ -191,6 +193,34 @@ describe("FleetPanel", () => {
     const add = screen.getAllByRole("button", { name: "추가" });
     expect((add[add.length - 1] as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/활성 운행편이 없습니다/)).toBeDefined();
+  });
+
+  it("간사 차량은 운행편 대수에도, 먼저 채울 차 목록에도 안 들어간다 (§26-E)", () => {
+    // 화면이 4대라고 하는데 저장 로직은 3대로 세면, 4를 그대로 저장하는 것만으로
+    // 버스가 한 대 늘어난다. 두 기준이 같아야 한다.
+    const withStaffCar = [
+      bus({ id: 1, name: "1호차", up_trip_id: 1, down_trip_id: null }),
+      bus({
+        id: 9,
+        name: "A간사차",
+        up_trip_id: 1,
+        down_trip_id: null,
+        kind: "staff_car",
+        capacity: 4,
+        hard_cap: 4,
+      }),
+    ];
+    render(
+      <FleetPanel trips={TRIPS} buses={withStaffCar} loads={{}} upRequests={{}} downRequests={{}} />
+    );
+    // 상행 1편의 대수는 간사 차를 뺀 1대다.
+    expect(screen.getByText("차량 1대")).toBeDefined();
+    // 하행이 비어 있는 차로 제안되는 것은 1호차뿐 — 간사 차는 안 섞인다.
+    expect(screen.getByText(/하행 편이 비어 있는/)).toBeDefined();
+    expect(screen.queryByText("1호차·A간사차")).toBeNull();
+    expect(screen.queryByText(/A간사차부터 채우고/)).toBeNull();
+    // 목록에서는 배지로 구분되어 보인다 (같은 문구가 "종류" 선택지에도 있다).
+    expect(screen.getAllByText("간사 차량").length).toBeGreaterThanOrEqual(2);
   });
 
   it("운행편이 없는 방향도 깨지지 않는다", () => {

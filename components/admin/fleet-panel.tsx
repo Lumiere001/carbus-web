@@ -160,12 +160,18 @@ function TripSection({
    * 있던 차가 쓰이는지 눌러 보기 전엔 알 수 없다(그래서 6대가 됐다).
    */
   const freeBuses = [...buses]
+    .filter((b) => b.kind === "bus")
     .filter((b) => (direction === "up" ? b.up_trip_id : b.down_trip_id) === null)
     .sort((a, b) => a.display_order - b.display_order || a.id - b.id);
 
+  // 간사 차량은 이 대수에 안 들어간다 (§26-E) — `setTripBusCount` 와 같은 기준이다.
+  // 화면이 4대라고 하는데 저장 로직은 3대로 세면, 4를 그대로 저장하는 것만으로
+  // 버스가 한 대 늘어난다.
   const busCount = (tripId: number) =>
-    buses.filter((b) =>
-      direction === "up" ? b.up_trip_id === tripId : b.down_trip_id === tripId
+    buses.filter(
+      (b) =>
+        b.kind === "bus" &&
+        (direction === "up" ? b.up_trip_id === tripId : b.down_trip_id === tripId)
     ).length;
 
   return (
@@ -420,6 +426,7 @@ function BusSection({
   onDelete: (id: number) => void;
 }) {
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<"bus" | "staff_car">("bus");
   const upTrips = trips.filter((t) => t.direction === "up");
   const downTrips = trips.filter((t) => t.direction === "down");
   // 신규 차량의 기본 배정은 **활성** 편에만 건다. 비활성 편에 붙이면
@@ -473,14 +480,34 @@ function BusSection({
               className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg w-40"
             />
           </label>
+          {/* 간사 차량(§26-E)은 여기서 만든다. 이름을 자유 입력으로 둔 것은
+              `N호차` 자동 번호와 섞이면 안 되기 때문이다 — "A간사차" 가 번호를
+              밀어내면 다음 버스가 엉뚱한 번호를 받는다. */}
+          <label className="flex flex-col gap-1 text-xs text-muted-2">
+            종류
+            <select
+              value={kind}
+              onChange={(e) => setKind(e.target.value as "bus" | "staff_car")}
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg"
+              aria-label="차량 종류"
+            >
+              <option value="bus">버스</option>
+              <option value="staff_car">간사 차량</option>
+            </select>
+          </label>
           <Button
             variant="secondary"
             size="sm"
             disabled={pending || !name.trim() || !canAddBus}
             title={canAddBus ? undefined : "먼저 운행편을 만드세요"}
             onClick={() => {
+              const isStaff = kind === "staff_car";
               onCreate({
                 name,
+                kind,
+                // 간사 차량은 승용차다. 44석으로 만들어 두면 대시보드의 남은 좌석이
+                // 40석 넘게 부풀고, 그 숫자를 보고 버스를 덜 부르게 된다.
+                ...(isStaff ? { capacity: 4, hardCap: 4 } : {}),
                 upTripId: activeUp[0]?.id ?? null,
                 downTripId: activeDown[0]?.id ?? null,
               });
@@ -490,9 +517,11 @@ function BusSection({
             추가
           </Button>
           <span className="text-xs text-muted-2 self-center">
-            {canAddBus
-              ? "정원 44 / 보조석 45 로 만들어지고, 첫 활성 운행편에 배정됩니다. 이후 수정하세요."
-              : "활성 운행편이 없습니다 — 먼저 운행편을 만드세요."}
+            {!canAddBus
+              ? "활성 운행편이 없습니다 — 먼저 운행편을 만드세요."
+              : kind === "staff_car"
+                ? "정원 4로 만들어집니다. 간사 차량은 자동 배차에서 빠지고, 탈 사람은 리더 화면에서 고정 탑승자로 지정합니다."
+                : "정원 44 / 보조석 45 로 만들어지고, 첫 활성 운행편에 배정됩니다. 이후 수정하세요."}
           </span>
         </div>
       </div>
@@ -563,6 +592,16 @@ function BusRowItem({
       <div className="grid md:grid-cols-[1fr_5rem_5rem_1fr_1fr_auto] gap-2 items-center rounded-lg border border-border px-3 py-2 text-sm">
         <span className="font-medium flex items-center gap-1.5">
           {bus.name}
+          {/* 간사 차량은 규칙이 다르다(자동 배차 제외·수동 지정). 목록에서 버스와
+              구분되지 않으면 "왜 이 차만 비어 있지" 가 된다. */}
+          {bus.kind === "staff_car" && (
+            <Badge
+              variant="primary"
+              title="간사 차량 — 자동 배차에서 빠집니다. 탈 사람은 리더 화면에서 고정 탑승자로 지정하세요."
+            >
+              간사 차량
+            </Badge>
+          )}
           {/* 배지만으로는 "이 차가 왜 다른지" 를 알 수 없었다. 무슨 뜻인지 붙이고,
               눌러서 바로 고칠 수 있게 한다 — 끄는 자리가 수정 폼 안에 있다는 걸
               모르면 영영 못 찾는다. */}

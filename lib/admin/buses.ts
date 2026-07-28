@@ -69,6 +69,11 @@ export type NewBusInput = {
   isCohesionExempt?: boolean;
   /** 클수록 나중에 채운다. 짐을 싣는 차는 1 이상으로 두어 빈자리를 남긴다. */
   fillPriority?: number;
+  /**
+   * 차량 종류 (§26-E). `staff_car` = 간사 차량 — 호차 화면·출석에는 같이 나오지만
+   * **자동 배차 대상이 아니다.** 탑승자는 고정 탑승자로 수동 지정한다.
+   */
+  kind?: "bus" | "staff_car";
 };
 
 export type BusPatch = Partial<NewBusInput> & { displayOrder?: number };
@@ -110,6 +115,7 @@ export async function createBus(
       down_trip_id: input.downTripId ?? null,
       is_cohesion_exempt: input.isCohesionExempt ?? false,
       fill_priority: input.fillPriority ?? 0,
+      kind: input.kind ?? "bus",
       display_order: maxOrder + 10,
     })
     .select()
@@ -138,6 +144,7 @@ export async function updateBus(
   if (patch.isCohesionExempt !== undefined)
     body.is_cohesion_exempt = patch.isCohesionExempt;
   if (patch.fillPriority !== undefined) body.fill_priority = patch.fillPriority;
+  if (patch.kind !== undefined) body.kind = patch.kind;
   if (patch.displayOrder !== undefined) body.display_order = patch.displayOrder;
 
   if (Object.keys(body).length === 0)

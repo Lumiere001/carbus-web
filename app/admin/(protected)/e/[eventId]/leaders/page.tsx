@@ -25,7 +25,9 @@ export default async function AdminLeadersPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        // `kind` — 드롭다운에서 간사 차량인지 알아야 한다 (§26-E).
+        // 이 화면이 간사 차 탑승자를 지정하는 유일한 통로다.
+        "id, name, kind, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
@@ -145,6 +147,7 @@ export default async function AdminLeadersPage() {
   const busOpts: BusOpt[] = buses.map((b) => ({
     id: b.id,
     name: b.name,
+    kind: b.kind,
     up_trip_id: b.up_trip_id,
     down_trip_id: b.down_trip_id,
   }));

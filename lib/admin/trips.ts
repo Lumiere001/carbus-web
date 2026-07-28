@@ -199,10 +199,14 @@ export async function setTripBusCount(
   const supabase = createClient();
   const col = direction === "up" ? "up_trip_id" : "down_trip_id";
   const otherCol = direction === "up" ? "down_trip_id" : "up_trip_id";
+  // 간사 차량은 이 대수에 들어가지 않는다 (§26-E) — 세지도, 지우지도 않는다.
+  // 넣으면 "이 편 3대" 가 간사 차를 포함한 숫자가 되어, 3 을 그대로 저장하는
+  // 것만으로 버스가 한 대 사라진다.
   const { data: mine, error } = await supabase
     .from("buses")
     .select("id, name, up_trip_id, down_trip_id")
     .eq(col, tripId)
+    .eq("kind", "bus")
     .order("display_order")
     .order("id");
   if (error) return { ok: false, message: error.message };
@@ -295,10 +299,14 @@ async function attachBusesTo(
 
   // 이 방향이 비어 있는 차 — 붙일 자리가 있는 차다.
   // 정렬은 화면 순서 그대로. 1호차부터 채워야 "1·2·3호차가 왕복" 이 된다.
+  //
+  // ⚠️ 간사 차량은 제외한다 (§26-E). "하행 3대" 라고 하면 그건 버스 3대라는 뜻이지
+  //    간사 차를 끌어다 쓰라는 뜻이 아니다.
   const { data: free, error: freeErr } = await supabase
     .from("buses")
     .select("id, name")
     .is(col, null)
+    .eq("kind", "bus")
     .order("display_order")
     .order("id");
   if (freeErr) return { ok: false, message: humanize(freeErr.message) };

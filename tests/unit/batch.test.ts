@@ -49,6 +49,8 @@ function bus(overrides: Partial<Bus> = {}): Bus {
     // 기존 테스트가 검증하던 동작이 그대로 유지된다. 플래그를 직접 지정하면 그게 이긴다.
     is_cohesion_exempt: name === "1호차",
     fill_priority: name === "1호차" ? 1 : 0,
+    // 기본은 일반 버스. 간사 차량은 그 테스트에서 명시적으로 넘긴다(§26-E).
+    kind: "bus",
     ...overrides,
   };
 }
@@ -592,5 +594,74 @@ describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
     expect(r.total_assigned).toBe(180);
     // 약 170명 미배정
     expect(r.errors.length).toBeGreaterThan(0);
+  });
+});
+
+describe("간사 차량은 자동 배차에서 빠진다 (§26-E)", () => {
+  // 이게 이번 개편에서 **가장 크게 터질 수 있는 자리**다. 안 빼면 캠퍼스 인원이
+  // 간사 차에 밀려 들어가고, 현장에서는 간사 차에 모르는 학우가 타 있게 된다.
+
+  it("좌석이 모자라도 간사 차에는 아무도 안 들어간다", () => {
+    // 일반 버스 1대(45석)에 60명 → 15명이 미배정이 되어야 한다.
+    // 간사 차(4석)가 있어도 그 15명이 거기로 흘러들면 안 된다.
+    const buses = [
+      bus({ id: 1, name: "1호차", up_trip_id: AM, is_cohesion_exempt: false, fill_priority: 0 }),
+      bus({ id: 9, name: "A간사차", up_trip_id: AM, capacity: 4, hard_cap: 4, kind: "staff_car" }),
+    ];
+    const passengers = Array.from({ length: 60 }, (_, i) => pax({ campus: `c${i % 6}` }));
+    const r = runBatch(passengers, buses, "up");
+
+    const onStaffCar = Object.values(r.up_assignments).filter((b) => b === 9);
+    expect(onStaffCar).toHaveLength(0);
+    expect(r.total_assigned).toBe(45); // 일반 버스 hard_cap 만큼만
+  });
+
+  it("고정 탑승자로 지정된 사람은 간사 차에 남는다 — 재배차에도 살아남아야 한다", () => {
+    // 수동 지정의 유일한 통로다. 여기가 깨지면 크루·미디어를 적어 둬도
+    // 배차를 다시 돌리는 순간 사라진다.
+    const crew = pax({ id: "crew1", campus: "c1" });
+    const others = Array.from({ length: 30 }, (_, i) => pax({ campus: `c${i % 3}` }));
+    const buses = [
+      bus({ id: 1, name: "1호차", up_trip_id: AM, is_cohesion_exempt: false, fill_priority: 0 }),
+      bus({
+        id: 9,
+        name: "A간사차",
+        up_trip_id: AM,
+        capacity: 4,
+        hard_cap: 4,
+        kind: "staff_car",
+        fixed_passenger_ids: ["crew1"],
+      }),
+    ];
+    const r = runBatch([crew, ...others], buses, "up");
+
+    expect(r.up_assignments["crew1"]).toBe(9);
+    // 나머지는 전원 일반 버스로
+    for (const p of others) expect(r.up_assignments[p.id]).toBe(1);
+  });
+
+  it("간사 차만 뛰는 편은 '운행 호차 없음'으로 드러난다 — 조용히 미배정되지 않는다", () => {
+    // 간사 차를 편 목록에서 안 빼면 그 편에 채울 차가 없어 전원이 조용히 미배정된다.
+    const buses = [bus({ id: 9, name: "A간사차", up_trip_id: AM, kind: "staff_car" })];
+    const r = runBatch(paxN(10), buses, "up");
+    expect(r.total_assigned).toBe(0);
+    expect(r.errors.some((e) => e.includes("운행 호차 없는"))).toBe(true);
+  });
+
+  it("하행도 같은 규칙이다", () => {
+    const buses = [
+      bus({ id: 1, name: "1호차", up_trip_id: AM, down_trip_id: DOWN, is_cohesion_exempt: false, fill_priority: 0 }),
+      bus({ id: 9, name: "A간사차", up_trip_id: null, down_trip_id: DOWN, capacity: 4, hard_cap: 4, kind: "staff_car" }),
+    ];
+    const r = runBatch(paxN(50), buses, "down");
+    expect(Object.values(r.down_assignments).filter((b) => b === 9)).toHaveLength(0);
+  });
+
+  it("kind 가 빠지면 크게 실패한다 — 조용히 되살아나면 안 된다", () => {
+    // `kind` 가 undefined 면 `b.kind !== "staff_car"` 가 참이라 간사 차량이
+    // 자동 배차 대상으로 되살아난다. 타입 검사를 안 받는 경로(JSON 픽스처·
+    // 진단 스크립트)를 위한 방어선이다.
+    const broken = [{ ...bus({ id: 1 }), kind: undefined } as unknown as Parameters<typeof runBatch>[1][number]];
+    expect(() => runBatch(paxN(3), broken)).toThrow(/배차 플래그 누락/);
   });
 });

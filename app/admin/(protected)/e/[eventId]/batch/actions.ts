@@ -58,7 +58,9 @@ export async function runBatchAction(
     supabase
       .from("buses")
       .select(
-        "id, name, capacity, hard_cap, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids, is_cohesion_exempt, fill_priority"
+        // `kind` 를 빠뜨리면 간사 차량이 자동 배차에 되살아난다 (§26-E).
+        // 엔진의 assertBusFlags 가 한 번 더 막지만, 원인은 여기서 안 가져오는 것이다.
+        "id, name, capacity, hard_cap, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids, is_cohesion_exempt, fill_priority, kind"
       ),
   ]);
   if (regRes.error) return { ok: false, message: regRes.error.message };

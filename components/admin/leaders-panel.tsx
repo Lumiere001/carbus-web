@@ -38,6 +38,12 @@ export type BusOpt = {
   name: string;
   up_trip_id: number | null;
   down_trip_id: number | null;
+  /**
+   * 차량 종류 (§26-E). 이 화면이 **간사 차량 탑승자를 지정하는 유일한 통로**다 —
+   * 자동 배차는 간사 차를 건드리지 않으므로, 여기서 고정 탑승자로 넣지 않으면
+   * 그 사람이 어디에 탔는지가 아무 데도 안 남는다.
+   */
+  kind: "bus" | "staff_car";
 };
 
 function badgeVariant(role: string): "warning" | "primary" | "mute" {
@@ -121,7 +127,9 @@ export function LeadersPanel({
         <option value="">미지정</option>
         {opts.map((b) => (
           <option key={b.id} value={b.id}>
-            {b.name} ({tripLabel(mode === "up" ? b.up_trip_id : b.down_trip_id, trips)})
+            {b.name}
+            {b.kind === "staff_car" ? " · 간사 차량" : ""} (
+            {tripLabel(mode === "up" ? b.up_trip_id : b.down_trip_id, trips)})
           </option>
         ))}
       </select>
