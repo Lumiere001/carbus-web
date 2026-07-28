@@ -38,6 +38,9 @@ const DIRECTION_LABEL: Record<TripDirection, string> = {
   down: "하행 (오는 편)",
 };
 
+/** 문장 안에 넣는 짧은 이름. "상행 편이 비어 있는 1호차" 처럼 쓴다. */
+const DIRECTION_NOUN: Record<TripDirection, string> = { up: "상행", down: "하행" };
+
 export function FleetPanel({
   trips,
   buses,
@@ -151,6 +154,15 @@ function TripSection({
     return Number.isFinite(n) ? Math.max(m, n) : m;
   }, 0);
 
+  /**
+   * 이 방향이 비어 있는 차 — 새로 만들기 전에 **먼저 채워지는** 차들이다.
+   * 화면에 이름까지 보여준다. 안 그러면 "3대" 를 넣었을 때 새 차가 3대 생기는지
+   * 있던 차가 쓰이는지 눌러 보기 전엔 알 수 없다(그래서 6대가 됐다).
+   */
+  const freeBuses = [...buses]
+    .filter((b) => (direction === "up" ? b.up_trip_id : b.down_trip_id) === null)
+    .sort((a, b) => a.display_order - b.display_order || a.id - b.id);
+
   const busCount = (tripId: number) =>
     buses.filter((b) =>
       direction === "up" ? b.up_trip_id === tripId : b.down_trip_id === tripId
@@ -190,9 +202,12 @@ function TripSection({
           </label>
           {/* 차량 대수를 여기서 같이 받는다. 편만 만들면 차가 0대라 아무도 못 타는데,
               지금까지는 아래 차량 섹션으로 내려가 한 대씩 따로 추가해야 했다 —
-              편성을 처음 짤 때 반드시 이어서 하는 일이다. */}
+              편성을 처음 짤 때 반드시 이어서 하는 일이다.
+
+              라벨이 그냥 "차량 대수" 였을 때 **새로 만드는 대수인지 그 편을 뛰는 총
+              대수인지** 알 수 없었다. 총 대수다 — 이미 있는 차부터 채운다. */}
           <label className="flex flex-col gap-1 text-xs text-muted-2">
-            차량 대수
+            이 편을 뛸 차량 대수
             <input
               type="number"
               min={0}
@@ -229,8 +244,26 @@ function TripSection({
             추가
           </Button>
           <p className="w-full text-[11px] text-muted-2 leading-snug">
-            차량은 <b>{lastBusNo + 1}호차</b>부터 이어서 만들어집니다. 이름이 겹치면
-            현장에서 “몇 호차 타세요”가 통하지 않습니다.
+            {freeBuses.length > 0 ? (
+              <>
+                {DIRECTION_NOUN[direction]} 편이 비어 있는{" "}
+                <b>
+                  {freeBuses
+                    .slice(0, 3)
+                    .map((b) => b.name)
+                    .join("·")}
+                  {freeBuses.length > 3 ? ` 외 ${freeBuses.length - 3}대` : ""}
+                </b>
+                부터 채우고, 모자라면 <b>{lastBusNo + 1}호차</b>부터 새로 만듭니다.
+                그래서 상행 3대·하행 3대로 지정하면 <b>같은 3대가 왕복</b>합니다.
+              </>
+            ) : (
+              <>
+                {DIRECTION_NOUN[direction]} 편이 비어 있는 차가 없어{" "}
+                <b>{lastBusNo + 1}호차</b>부터 새로 만들어집니다. 이름이 겹치면 현장에서
+                “몇 호차 타세요”가 통하지 않습니다.
+              </>
+            )}
             {" "}출발 일시는 비워도 됩니다 — 지금은 편 이름의 시각으로 운영합니다.
           </p>
         </div>
@@ -277,9 +310,14 @@ function TripRowItem({
             className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-fg"
           />
           {/* 이미 있는 편도 대수를 다시 잡을 수 있어야 한다. 편성을 짜다 보면
-              "이 편은 9대로" 처럼 바꾸는 일이 잦다. */}
-          <label className="flex items-center gap-1 text-xs text-muted-2">
-            차량
+              "이 편은 9대로" 처럼 바꾸는 일이 잦다.
+              늘리면 이 방향이 비어 있는 차부터 채우고, 줄이면 반대 방향도 뛰는 차는
+              **이 편에서만 뗀다**(차를 지우면 반대 방향까지 사라진다). */}
+          <label
+            className="flex items-center gap-1 text-xs text-muted-2"
+            title="이 편을 뛰는 총 대수입니다. 늘리면 이 방향이 비어 있는 차부터 채우고, 줄이면 반대 방향도 뛰는 차는 이 편에서만 뗍니다."
+          >
+            이 편 차량
             <input
               type="number"
               min={0}

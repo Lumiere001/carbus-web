@@ -204,7 +204,29 @@ describe("FleetPanel", () => {
     // "하행만 운행하는 차량" 같은 편성이 가능해야 범용이다.
     const orphan = [bus({ id: 9, name: "9호차", up_trip_id: null, down_trip_id: null })];
     render(<FleetPanel trips={TRIPS} buses={orphan} loads={{ 9: { up: 0, down: 0 } }} upRequests={{ 9: [] }} downRequests={{ 9: [] }} />);
-    expect(screen.getByText("9호차")).toBeDefined();
+    // 차량 목록에 한 번, 상·하행 안내문에 "먼저 채워지는 차" 로 한 번씩 나온다.
+    expect(screen.getAllByText(/9호차/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("—")).toHaveLength(2); // 상행·하행 둘 다 미지정
+  });
+
+  it("대수를 넣기 전에 '어느 차가 먼저 쓰이는지' 가 보인다 (§26-A)", () => {
+    // 라벨이 "차량 대수" 뿐이던 시절엔 새로 만드는 대수인지 그 편의 총 대수인지
+    // 알 수 없었다. 상행 3대 · 하행 3대를 지정했더니 6대가 된 결함의 절반은
+    // 이 화면이 만들었다.
+    const upOnly = [
+      bus({ id: 1, name: "1호차", up_trip_id: 1, down_trip_id: null }),
+      bus({ id: 2, name: "2호차", up_trip_id: 1, down_trip_id: null }),
+    ];
+    render(
+      <FleetPanel trips={TRIPS} buses={upOnly} loads={{}} upRequests={{}} downRequests={{}} />
+    );
+    // 하행 섹션은 "하행 편이 비어 있는 1호차·2호차부터 채운다" 고 말해야 한다.
+    expect(screen.getByText(/하행 편이 비어 있는/)).toBeDefined();
+    expect(screen.getByText("1호차·2호차")).toBeDefined();
+    expect(screen.getByText(/같은 3대가 왕복/)).toBeDefined();
+    // 상행은 빈 차가 없으므로 새로 만든다고 말한다.
+    expect(screen.getByText(/상행 편이 비어 있는 차가 없어/)).toBeDefined();
+    // 두 방향 모두 "이 편을 뛸 차량 대수" 라고 묻는다 — 총 대수라는 뜻이다.
+    expect(screen.getAllByText("이 편을 뛸 차량 대수")).toHaveLength(2);
   });
 });
