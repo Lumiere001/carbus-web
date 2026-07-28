@@ -2219,8 +2219,10 @@ node scripts/local-verify/seed-dummy.mjs --cleanup --prod
 
 ### 28-E. 그 다음
 
-1. 코드 push → Vercel 배포 확인
-2. **배포 후 백업을 한 번 더 떠서** `buses.kind` 가 잡히는지 확인
-3. 더미로 화면 확인 → `--cleanup --prod` 로 회수
+1. ✅ 코드 push → Vercel 배포 확인
+2. ✅ 배포 후 백업으로 `buses.kind` 확인
+3. **더미 30명으로 화면 확인** (동규님) → 끝나면 `--cleanup --prod` 로 회수
+   - 특히 편성 화면에서 **간사 차량을 하나 만들어** 보고, 리더 화면에서 크루·미디어를
+     그 차에 지정한 뒤 배차를 돌려 보세요. 자동 배차가 안 건드리는지가 핵심입니다.
 4. §25-D 미검증 RPC 3개 (`activate_event`·`campus_remit_delete`·`unlock_event`)
-5. v2.0.0 태그
+5. v2.0.0 태그 — 위가 끝난 뒤
