@@ -43,6 +43,14 @@ MIGRATIONS=(
   "supabase/migrations/20260721050000_bus_batch_flags.sql"   # Phase 3 배차 특례 플래그
   "supabase/migrations/20260721070000_event_trips.sql"       # Phase 3 하행 편 생성 + 차량 연결
   "supabase/migrations/20260721100000_symmetric_views_guards.sql"  # 위가 되돌린 뷰·가드 복구
+  # ⚠️ 아래 셋은 **20260721070000 이 create_event 를 다시 정의해서 되돌리는 것**을
+  #    복구한다. 그 재실행 하나 때문에 로컬의 create_event 가 §24·§25 수정이 빠진
+  #    옛 버전으로 되돌아가 있었다 — 즉 **로컬에서는 행사 전환이 여전히 두 가지
+  #    방식으로 터지는 상태**였고, 고친 것을 검증할 방법도 없었다.
+  #    (2026-07-28 에 실제로 그 옛 정의를 베낄 뻔했다.)
+  "supabase/migrations/20260728120000_fix_create_event_delete_where.sql"   # 조건 없는 DELETE
+  "supabase/migrations/20260728130000_create_event_declares_new_event.sql" # 새 행사 선언
+  "supabase/migrations/20260728160000_create_event_copies_kind.sql"        # 간사 차량 종류 복제
 )
 
 run_sql_file() {
