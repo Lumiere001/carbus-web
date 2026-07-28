@@ -28,12 +28,17 @@ export const dynamic = "force-dynamic";
  * 읽는다 — "무엇으로 오는지 모르는 사람"을 눈으로 찾지 않아도 된다.
  */
 
-type Filter = "all" | "oneway" | "self" | "pending" | "missing";
+type Filter = "all" | "oneway" | "self" | "period" | "pending" | "missing";
 
 const FILTERS: { key: Filter; label: string; hint: string }[] = [
-  { key: "all", label: "전체", hint: "편도 + 개인 이동 전부" },
+  { key: "all", label: "전체", hint: "편도 · 개인 이동 · 며칠만 참석 전부" },
   { key: "oneway", label: "편도", hint: "갈 때나 올 때 한쪽만 버스를 타는 사람" },
   { key: "self", label: "개인 이동", hint: "우리 버스를 아예 안 타는 사람" },
+  {
+    key: "period",
+    label: "며칠만 참석",
+    hint: "참여기간이 행사 전체가 아닌 사람 — 왕복으로 타더라도 부분참이다",
+  },
   {
     key: "pending",
     label: "확정 대기",
@@ -63,7 +68,12 @@ export default async function AdminPartialPage({
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
-      .in("attendance_type", ["oneway", "self"])
+      // 버스 이용만으로 거르면 **왕복으로 타면서 며칠만 있다 가는 사람이 통째로
+      // 빠진다.** 부분참은 "버스를 덜 타는 것"만이 아니라 "며칠만 있는 것"이기도
+      // 하다 — 참여기간 필드를 만든 이유가 그것이다.
+      .or(
+        "attendance_type.in.(oneway,self),attend_from.not.is.null,attend_to.not.is.null"
+      )
       .order("name"),
     supabase.from("campuses").select("id, name, display_order"),
     supabase.from("event_trips").select("id, label").order("direction").order("display_order"),
@@ -104,7 +114,10 @@ export default async function AdminPartialPage({
     // 비고도 없는 사람. 예전엔 비고 유무로만 판단해서, 비고에 딴 얘기가 적혀 있으면
     // 기재된 것으로 쳤다.
     const missing = r.attendance_type === "self" && !up && !down && !r.note?.trim();
+    // 며칠만 참석 — 왕복이어도 부분참이다.
+    const partialPeriod = r.attend_from != null || r.attend_to != null;
     return {
+      partialPeriod,
       ...r,
       up,
       down,
@@ -119,6 +132,7 @@ export default async function AdminPartialPage({
     all: rows.length,
     oneway: rows.filter((r) => r.attendance_type === "oneway").length,
     self: rows.filter((r) => r.attendance_type === "self").length,
+    period: rows.filter((r) => r.partialPeriod).length,
     pending: rows.filter((r) => r.pending).length,
     missing: rows.filter((r) => r.missing).length,
   };
@@ -128,6 +142,7 @@ export default async function AdminPartialPage({
       if (filter === "all") return true;
       if (filter === "oneway") return r.attendance_type === "oneway";
       if (filter === "self") return r.attendance_type === "self";
+      if (filter === "period") return r.partialPeriod;
       if (filter === "pending") return r.pending;
       return r.missing;
     })
@@ -144,7 +159,8 @@ export default async function AdminPartialPage({
       <div>
         <h2 className="text-xl font-semibold text-foreground">부분 참석 · 개인 이동</h2>
         <p className="text-sm text-muted mt-0.5">
-          한쪽만 버스를 타거나, 우리 버스를 아예 안 타는 사람을 한 표에서 봅니다.
+          한쪽만 버스를 타거나, 우리 버스를 아예 안 타거나, <b>며칠만 참석하는</b> 사람을
+          한 표에서 봅니다.
         </p>
       </div>
 
@@ -218,9 +234,13 @@ export default async function AdminPartialPage({
                     <td className="px-4 py-2 text-foreground whitespace-nowrap">{r.name}</td>
                     <td className="px-4 py-2 text-muted-2">{r.student_id}</td>
                     <td className="px-4 py-2 text-muted-2 whitespace-nowrap">
-                      {r.attend_from || r.attend_to
-                        ? `${r.attend_from ?? "처음"} ~ ${r.attend_to ?? "끝"}`
-                        : "전체"}
+                      {r.partialPeriod ? (
+                        <span className="text-foreground">
+                          {r.attend_from ?? "처음"} ~ {r.attend_to ?? "끝"}
+                        </span>
+                      ) : (
+                        "전체"
+                      )}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       <Badge variant="mute" dot={false}>
