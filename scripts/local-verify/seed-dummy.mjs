@@ -25,6 +25,7 @@
 // ============================================================
 import { createClient } from "/Users/east_star/Projects/carbus-web/node_modules/.pnpm/@supabase+supabase-js@2.106.0/node_modules/@supabase/supabase-js/dist/index.mjs";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
@@ -56,9 +57,24 @@ if (PROD) {
   url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
   key = env.SUPABASE_SERVICE_ROLE_KEY;
 } else {
-  url = "http://127.0.0.1:54321";
-  key =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+  // 로컬 키는 **박아두지 않는다.** 어차피 supabase CLI 가 알려주고, 값을 코드에
+  // 남기면 공개 저장소에서 시크릿 스캐너가 잡는다(로컬 데모 키라 실제 위험은 없지만,
+  // 진짜 키가 섞여 들어와도 아무도 못 알아채는 상태가 된다).
+  const status = Object.fromEntries(
+    execFileSync("supabase", ["status", "-o", "env"], { encoding: "utf8" })
+      .split("\n")
+      .filter((l) => l.includes("="))
+      .map((l) => {
+        const i = l.indexOf("=");
+        return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, "")];
+      })
+  );
+  url = status.API_URL;
+  key = status.SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    console.error("로컬 Supabase 가 안 떠 있습니다. supabase start 먼저.");
+    process.exit(1);
+  }
 }
 
 const anon = createClient(url, key, { auth: { persistSession: false } });
