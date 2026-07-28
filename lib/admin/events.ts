@@ -88,8 +88,35 @@ export async function activateEvent(eventId: string): Promise<Result> {
   return { ok: true, value: undefined };
 }
 
+/**
+ * 지난 행사의 잠금을 잠시 연다.
+ *
+ * 화면 상단 띠가 예전부터 "고쳐야 하면 Phase 화면에서 사유를 적고 잠금을 여세요" 라고
+ * 안내했는데 **그런 자리가 어디에도 없었다.** RPC 는 있는데 부르는 곳이 0곳이었다 —
+ * 시키는 대로 할 수 없는 안내였다(§25-D 의 "아직 안 눌러 본 RPC" 중 하나).
+ *
+ * 사유를 필수로 받는 건 DB 가 강제한다. 지난 행사를 여는 일은 드물어야 하고,
+ * 무엇을 고치려고 열었는지가 안 남으면 나중에 그 수정이 왜 있는지 알 수 없다.
+ */
+export async function unlockEventWrites(
+  eventId: string,
+  reason: string,
+  minutes: number
+): Promise<Result<string>> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("unlock_event_writes", {
+    p_event_id: eventId,
+    p_reason: reason,
+    p_minutes: minutes,
+  });
+  if (error) return { ok: false, message: humanize(error.message) };
+  return { ok: true, value: data as unknown as string };
+}
+
 function humanize(msg: string): string {
   if (msg.includes("master")) return "행사 전환은 총단(master)만 할 수 있습니다.";
+  if (msg.includes("사유를 적어")) return "무엇을 고치려고 여는지 사유를 적어 주세요.";
+  if (msg.includes("1분~8시간")) return "잠금 해제 시간은 1분~8시간 사이로 정해 주세요.";
   if (msg.includes("이름은 비울 수 없습니다")) return "행사 이름을 입력해 주세요.";
   if (msg.includes("row-level security") || msg.includes("policy"))
     return "권한이 없습니다.";
