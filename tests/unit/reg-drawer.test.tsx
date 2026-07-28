@@ -44,6 +44,8 @@ const ROW: AdminRegRow = {
   assigned_down_bus_id: 2,
   participation_status: "registered",
   cancel_reason: null,
+  attend_from: null,
+  attend_to: null,
 };
 
 const CAMPUSES = [
@@ -67,6 +69,8 @@ function renderDrawer() {
       units={[{ id: "unit-1", name: "경주지구" }]}
       upLeg={{ ...OUR_BUS }}
       downLeg={{ ...OUR_BUS }}
+      pickups={[]}
+      places={[]}
       onClose={() => {}}
     />
   );

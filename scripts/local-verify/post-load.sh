@@ -73,11 +73,12 @@ begin
   foreach t in array array[
     'registrations','buses','event_trips','batch_runs',
     'campus_payment_settlements','campus_remittances','registration_audit','payment_ledger',
-    'transport_legs'
+    'transport_legs','pickup_requests'
   ] loop
     execute format('alter table public.%I enable always trigger trg_%s_event_writable', t, t);
   end loop;
   alter table public.transport_legs enable always trigger trg_transport_legs_scope;
+  alter table public.pickup_requests enable always trigger trg_pickup_requests_scope;
   -- 좌석 자동 반납. 이게 꺼진 채 적재되면 "타지구 확정인데 좌석을 잡고 있는" 행이
   -- 조용히 남는다 — 화면은 정상으로 보이고 버스만 빈자리를 태우고 간다.
   alter table public.transport_legs enable always trigger trg_transport_legs_zz_release;
@@ -146,7 +147,8 @@ begin
   select count(*) into v_bad
     from unnest(array['registrations','buses','event_trips','batch_runs',
                       'campus_payment_settlements','campus_remittances',
-                      'registration_audit','payment_ledger','transport_legs']) as t(name)
+                      'registration_audit','payment_ledger','transport_legs',
+                      'pickup_requests']) as t(name)
    where not exists (
      select 1 from pg_trigger tg join pg_class c on c.oid = tg.tgrelid
       where c.relname = t.name and tg.tgname = 'trg_' || t.name || '_event_writable'

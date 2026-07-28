@@ -39,7 +39,7 @@ TABLES = [
     "profiles", "registrations", "role_labels", "system_config",
     "batch_runs", "registration_audit",
     "campus_remittances", "campus_payment_settlements", "payment_ledger",
-    "transport_legs",
+    "transport_legs", "pickup_requests",
 ]
 
 # 백업하지 않아도 되는 테이블 (마이그레이션이 전량 생성 = 데이터가 아니라 스키마의 일부)

@@ -569,6 +569,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pickup_requests: {
+        Row: {
+          created_at: string
+          direction: string
+          event_id: string
+          id: number
+          note: string | null
+          pickup_at: string | null
+          place: string | null
+          registration_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          event_id: string
+          id?: never
+          note?: string | null
+          pickup_at?: string | null
+          place?: string | null
+          registration_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          event_id?: string
+          id?: never
+          note?: string | null
+          pickup_at?: string | null
+          place?: string | null
+          registration_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_ledger: {
         Row: {
           actor: string | null
@@ -779,6 +830,8 @@ export type Database = {
         Row: {
           assigned_down_bus_id: number | null
           assigned_up_bus_id: number | null
+          attend_from: string | null
+          attend_to: string | null
           attendance_type: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
           cancel_reason: string | null
@@ -808,6 +861,8 @@ export type Database = {
         Insert: {
           assigned_down_bus_id?: number | null
           assigned_up_bus_id?: number | null
+          attend_from?: string | null
+          attend_to?: string | null
           attendance_type?: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
           cancel_reason?: string | null
@@ -837,6 +892,8 @@ export type Database = {
         Update: {
           assigned_down_bus_id?: number | null
           assigned_up_bus_id?: number | null
+          attend_from?: string | null
+          attend_to?: string | null
           attendance_type?: Database["public"]["Enums"]["attendance_type"]
           campus_id?: string
           cancel_reason?: string | null
@@ -1533,6 +1590,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_pickup_board: {
+        Row: {
+          attend_from: string | null
+          attend_to: string | null
+          campus_id: string | null
+          campus_name: string | null
+          created_at: string | null
+          direction: string | null
+          event_id: string | null
+          id: number | null
+          note: string | null
+          participation_status:
+            | Database["public"]["Enums"]["participation_status"]
+            | null
+          person_name: string | null
+          pickup_at: string | null
+          pickup_date: string | null
+          pickup_time: string | null
+          place: string | null
+          registration_id: string | null
+          student_id: string | null
+        }
+        Relationships: []
       }
       v_transport_legs_detail: {
         Row: {

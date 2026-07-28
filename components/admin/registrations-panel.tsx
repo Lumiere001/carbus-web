@@ -21,7 +21,7 @@ import {
 } from "@/lib/admin/registrations";
 import { busSelectOptions } from "@/lib/admin/bus-options";
 import { RegForm } from "@/components/admin/reg-form";
-import { RegDrawer } from "@/components/admin/reg-drawer";
+import { RegDrawer, type PickupRow } from "@/components/admin/reg-drawer";
 import { TransportBadges } from "@/components/admin/transport-picker";
 import type { LegValue } from "@/components/admin/transport-picker";
 import type { TransportMode, TransportStatus } from "@/lib/transport/labels";
@@ -48,6 +48,9 @@ export type AdminRegRow = {
   /** 'cancelled' 면 취소된 신청. 행은 남아 있고 좌석만 반납된 상태. */
   participation_status: "registered" | "cancelled";
   cancel_reason: string | null;
+  /** 부분참 참여기간 (date). null = 행사 전체 참석. */
+  attend_from: string | null;
+  attend_to: string | null;
 };
 export type CampusInfo = { id: string; name: string; display_order: number };
 export type BusInfo = {
@@ -127,6 +130,8 @@ export function RegistrationsPanel({
   trips,
   units,
   legs,
+  pickups,
+  places,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -143,6 +148,10 @@ export function RegistrationsPanel({
   units: { id: string; name: string }[];
   /** "<신청id>:<방향>" → 이동수단. 행이 없으면 우리 버스(기본값). */
   legs: Record<string, { mode: string; status: string; via: string | null }>;
+  /** 신청id → 수송 요청들. 없으면 요청 없음. */
+  pickups: Record<string, PickupRow[]>;
+  /** 같은 행사에서 이미 쓰인 픽업 장소 (자동완성 후보). */
+  places: string[];
 }) {
   const [tab, setTab] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -403,6 +412,8 @@ export function RegistrationsPanel({
             units={units}
             upLeg={legOf(editRow.id, "up")}
             downLeg={legOf(editRow.id, "down")}
+            pickups={pickups[editRow.id] ?? []}
+            places={places}
             onClose={() => setForm(null)}
           />
         )}

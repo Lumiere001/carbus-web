@@ -7,6 +7,7 @@ import {
   type AdminRegRow,
   type CampusInfo,
 } from "@/components/admin/registrations-panel";
+import type { PickupRow } from "@/components/admin/reg-drawer";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +24,12 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes] =
+  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes] =
     await Promise.all([
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, fee, payment_status, participation_status, cancel_reason, roles, note, assigned_up_bus_id, assigned_down_bus_id, created_at"
+        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, fee, payment_status, participation_status, cancel_reason, roles, note, assigned_up_bus_id, assigned_down_bus_id, attend_from, attend_to, created_at"
       )
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name, display_order"),
@@ -52,6 +53,11 @@ export default async function AdminRegistrationsPage() {
     supabase
       .from("transport_legs")
       .select("registration_id, direction, mode, status, via_unit_id"),
+    // 수송 요청 — 서랍에서 사람별로 넣고 지운다. 보드(부분참 화면)는 이걸 묶어 읽는다.
+    supabase
+      .from("pickup_requests")
+      .select("id, registration_id, direction, pickup_at, place, note")
+      .order("pickup_at", { ascending: true, nullsFirst: true }),
   ]);
   const trips = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
@@ -91,6 +97,23 @@ export default async function AdminRegistrationsPage() {
   }
   const pendingCount = (legRes.data ?? []).filter((l) => l.status === "pending").length;
 
+  // 사람 → 수송 요청들. 한 사람이 여러 건일 수 있다(중간 합류·중간 이탈).
+  const pickups: Record<string, PickupRow[]> = {};
+  for (const p of pickupRes.data ?? []) {
+    (pickups[p.registration_id] ??= []).push({
+      id: p.id,
+      direction: p.direction === "down" ? "down" : "up",
+      pickupAt: p.pickup_at,
+      place: p.place,
+      note: p.note,
+    });
+  }
+  // 같은 행사에서 이미 쓰인 장소 = 자동완성 후보. **장소 마스터 테이블을 두지 않는다**
+  // (동규님 지시 — 픽업 장소는 행사마다 달라진다). 쓰인 값을 모으면 표기가 통일된다.
+  const places = [
+    ...new Set((pickupRes.data ?? []).map((p) => p.place).filter((x): x is string => !!x)),
+  ].sort();
+
   return (
     <div className="space-y-5">
       <div>
@@ -102,7 +125,7 @@ export default async function AdminRegistrationsPage() {
         {pendingCount > 0 && (
           <p className="text-sm text-warning mt-1">
             타지구 차량 <b>확정 대기 {pendingCount}건</b> — 그동안 우리 버스 좌석을
-            잡아두고 있습니다. 확정되면 그 방향 운행편을 비워 자리를 반납하세요.
+            잡아두고 있습니다. <b>이동수단</b> 화면에서 확정하면 자리가 자동으로 반납됩니다.
           </p>
         )}
       </div>
@@ -118,6 +141,8 @@ export default async function AdminRegistrationsPage() {
         trips={trips}
         units={units}
         legs={Object.fromEntries(legs)}
+        pickups={pickups}
+        places={places}
       />
     </div>
   );

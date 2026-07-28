@@ -61,6 +61,7 @@ const TABLES = [
   { name: "campus_payment_settlements" },
   { name: "payment_ledger" },
   { name: "transport_legs" },
+  { name: "pickup_requests" },
 ];
 
 /** 테이블 전체를 1000행씩 읽는다. 없는 테이블이면 null. */

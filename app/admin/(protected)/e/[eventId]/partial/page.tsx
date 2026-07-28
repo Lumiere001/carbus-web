@@ -9,6 +9,7 @@ import {
   type TransportStatus,
 } from "@/lib/transport/labels";
 import type { EventTrip } from "@/lib/supabase/types";
+import { PickupBoard, type BoardRow } from "@/components/admin/pickup-board";
 
 export const dynamic = "force-dynamic";
 
@@ -54,11 +55,11 @@ export default async function AdminPartialPage({
   const filter: Filter = FILTERS.some((x) => x.key === f) ? (f as Filter) : "all";
 
   const supabase = await createClient();
-  const [regRes, campusRes, tripRes, legRes, unitRes] = await Promise.all([
+  const [regRes, campusRes, tripRes, legRes, unitRes, boardRes] = await Promise.all([
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, note"
+        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, note, attend_from, attend_to"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
@@ -70,6 +71,12 @@ export default async function AdminPartialPage({
       .from("transport_legs")
       .select("registration_id, direction, mode, status, via_unit_id"),
     supabase.from("org_units").select("id, name"),
+    // 수송 요청 보드. 시각 미정(NULL)이 먼저 오게 읽는다 — 그게 곧 할 일이다.
+    supabase
+      .from("v_pickup_board")
+      .select("*")
+      .neq("participation_status", "cancelled")
+      .order("pickup_at", { ascending: true, nullsFirst: true }),
   ]);
 
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
@@ -153,7 +160,7 @@ export default async function AdminPartialPage({
           {counts.pending > 0 && (
             <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
               타지구 차량 <b>확정 대기 {counts.pending}명</b> — 그동안 우리 버스 좌석을
-              잡아두고 있습니다. 확정되면 그 방향 운행편을 비워 자리를 반납하세요.
+              잡아두고 있습니다. <b>이동수단</b> 화면에서 확정하면 자리가 자동으로 반납됩니다.
             </div>
           )}
         </div>
@@ -183,6 +190,7 @@ export default async function AdminPartialPage({
                 <th className="px-4 py-2.5">캠퍼스</th>
                 <th className="px-4 py-2.5">이름</th>
                 <th className="px-4 py-2.5">학번</th>
+                <th className="px-4 py-2.5">참여기간</th>
                 <th className="px-4 py-2.5">버스 이용</th>
                 <th className="px-4 py-2.5">이동 수단</th>
                 <th className="px-4 py-2.5">비고</th>
@@ -191,7 +199,7 @@ export default async function AdminPartialPage({
             <tbody>
               {shown.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted-2 py-8">
+                  <td colSpan={7} className="text-center text-muted-2 py-8">
                     해당하는 사람이 없습니다.
                   </td>
                 </tr>
@@ -209,6 +217,11 @@ export default async function AdminPartialPage({
                     <td className="px-4 py-2 text-muted-2 whitespace-nowrap">{r.campus}</td>
                     <td className="px-4 py-2 text-foreground whitespace-nowrap">{r.name}</td>
                     <td className="px-4 py-2 text-muted-2">{r.student_id}</td>
+                    <td className="px-4 py-2 text-muted-2 whitespace-nowrap">
+                      {r.attend_from || r.attend_to
+                        ? `${r.attend_from ?? "처음"} ~ ${r.attend_to ?? "끝"}`
+                        : "전체"}
+                    </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       <Badge variant="mute" dot={false}>
                         {attendanceSummary(r.up_trip_id, r.down_trip_id, trips)}
@@ -248,6 +261,8 @@ export default async function AdminPartialPage({
           </table>
         </div>
       </Card>
+
+      <PickupBoard rows={(boardRes.data ?? []) as BoardRow[]} />
     </div>
   );
 }

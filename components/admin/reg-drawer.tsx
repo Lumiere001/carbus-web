@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, Check, Loader2 } from "lucide-react";
+import { X, Check, Loader2, Trash2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PAYMENT_LABELS, PAYMENT_STATUSES, tripOptions, attendanceSummary } from "@/lib/labels";
 import { updateRegField } from "@/lib/admin/registrations";
 import { setTransportLeg } from "@/lib/admin/transport";
+import { addPickup, deletePickup, setAttendRange } from "@/lib/admin/pickup";
 import { TransportPicker, type LegValue } from "@/components/admin/transport-picker";
 import type { AdminRegRow, CampusInfo } from "@/components/admin/registrations-panel";
 import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
@@ -22,6 +24,14 @@ import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
  * `updateCells`). 통째 저장이면 내가 안 건드린 칸까지 내가 열었을 때의 값으로
  * 되돌아가고, 그 사이 다른 사람이 고친 것이 조용히 덮인다.
  */
+export type PickupRow = {
+  id: number;
+  direction: "up" | "down";
+  pickupAt: string | null;
+  place: string | null;
+  note: string | null;
+};
+
 export function RegDrawer({
   row,
   campuses,
@@ -29,6 +39,8 @@ export function RegDrawer({
   units,
   upLeg,
   downLeg,
+  pickups,
+  places,
   onClose,
 }: {
   row: AdminRegRow;
@@ -37,6 +49,10 @@ export function RegDrawer({
   units: { id: string; name: string }[];
   upLeg: LegValue;
   downLeg: LegValue;
+  /** 이 사람의 수송 요청들. 여러 건일 수 있다(중간 합류·중간 이탈). */
+  pickups: PickupRow[];
+  /** 같은 행사에서 이미 쓰인 픽업 장소 — 자동완성 후보. 마스터 테이블이 아니다. */
+  places: string[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -49,6 +65,12 @@ export function RegDrawer({
   const [name, setName] = useState(row.name);
   const [studentId, setStudentId] = useState(row.student_id);
   const [note, setNote] = useState(row.note ?? "");
+  const [pickupDraft, setPickupDraft] = useState({
+    direction: "up" as "up" | "down",
+    at: "",
+    place: "",
+    note: "",
+  });
 
   // 다른 사람을 고르면 이 컴포넌트가 통째로 다시 마운트돼(부모가 key={row.id})
   // 위 상태가 그 사람 값으로 새로 잡힌다. effect 로 되돌리면 저장 직후 새로고침에서
@@ -102,6 +124,45 @@ export function RegDrawer({
       });
       if (!res.ok) return setState({ kind: "err", text: res.message });
       setState({ kind: "saved", field: dir === "up" ? "갈 때 이동수단" : "올 때 이동수단" });
+      router.refresh();
+    });
+  }
+
+  /** 참여기간 — 둘 다 비우면 "행사 전체 참석"으로 돌아간다. */
+  function saveAttend(from: string | null, to: string | null) {
+    setState({ kind: "idle" });
+    start(async () => {
+      const res = await setAttendRange(row.id, from, to);
+      if (!res.ok) return setState({ kind: "err", text: res.message });
+      setState({ kind: "saved", field: "참여기간" });
+      router.refresh();
+    });
+  }
+
+  function addPickupRow() {
+    setState({ kind: "idle" });
+    start(async () => {
+      const res = await addPickup(row.id, {
+        direction: pickupDraft.direction,
+        // 시각·장소를 비워도 등록된다 — "가긴 가는데 아직 모른다"가 가장 흔한 상태고,
+        // 그게 보드의 "시각 미정" 묶음이 된다.
+        pickupAt: pickupDraft.at || null,
+        place: pickupDraft.place || null,
+        note: pickupDraft.note || null,
+      });
+      if (!res.ok) return setState({ kind: "err", text: res.message });
+      setPickupDraft({ direction: "up", at: "", place: "", note: "" });
+      setState({ kind: "saved", field: "수송 요청" });
+      router.refresh();
+    });
+  }
+
+  function removePickup(id: number) {
+    setState({ kind: "idle" });
+    start(async () => {
+      const res = await deletePickup(id);
+      if (!res.ok) return setState({ kind: "err", text: res.message });
+      setState({ kind: "saved", field: "수송 요청 삭제" });
       router.refresh();
     });
   }
@@ -303,6 +364,138 @@ export function RegDrawer({
             disabled={busy}
             onChange={(v) => saveLeg("down", v)}
           />
+        </div>
+
+        {/* 참여기간 — 부분참이 "며칠부터 며칠까지"인지. 지금까지는 비고에 글로 적혔다. */}
+        <div className="grid grid-cols-2 gap-2">
+          <label className={labelCls}>
+            참여 시작일
+            <input
+              type="date"
+              className={inputCls}
+              defaultValue={row.attend_from ?? ""}
+              disabled={busy}
+              onChange={(e) => saveAttend(e.target.value || null, row.attend_to)}
+            />
+          </label>
+          <label className={labelCls}>
+            참여 종료일
+            <input
+              type="date"
+              className={inputCls}
+              defaultValue={row.attend_to ?? ""}
+              disabled={busy}
+              onChange={(e) => saveAttend(row.attend_from, e.target.value || null)}
+            />
+          </label>
+        </div>
+        <p className="text-[11px] text-muted-2 leading-snug">
+          비워 두면 <b>행사 전체 참석</b>입니다. 부분참만 채우세요.
+        </p>
+
+        {/* 수송 요청 — 개인을 데리러 가는 건. 보드(부분참 화면)에서 (날짜·시각·장소)로
+            묶이면 그대로 간사 차량 배차표가 된다. */}
+        <div className="rounded-lg border border-border bg-surface-2/40 p-3 space-y-2.5">
+          <p className="text-xs text-muted-2 leading-snug">
+            <b className="text-foreground">수송 요청</b> — 따로 데리러 가야 하는 경우.
+            <b> 시각·장소를 몰라도 등록하세요</b> — 미정인 채로 남아야 “물어볼 사람”으로
+            보드에 뜹니다.
+          </p>
+
+          {pickups.length > 0 && (
+            <ul className="space-y-1">
+              {pickups.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-start justify-between gap-2 text-xs bg-surface rounded-md border border-border px-2 py-1.5"
+                >
+                  <span className="min-w-0">
+                    <b className="text-foreground">
+                      {p.direction === "up" ? "갈 때" : "올 때"}
+                    </b>{" "}
+                    <span className={p.pickupAt ? "text-muted" : "text-danger"}>
+                      {p.pickupAt
+                        ? new Date(p.pickupAt).toLocaleString("ko-KR", {
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "시각 미정"}
+                    </span>
+                    <span className="text-muted-2">
+                      {p.place ? ` · ${p.place}` : " · 장소 미정"}
+                      {p.note ? ` · ${p.note}` : ""}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => removePickup(p.id)}
+                    aria-label="수송 요청 삭제"
+                    className="text-muted-2 hover:text-danger shrink-0"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              className={inputCls}
+              value={pickupDraft.direction}
+              disabled={busy}
+              onChange={(e) =>
+                setPickupDraft((d) => ({
+                  ...d,
+                  direction: e.target.value as "up" | "down",
+                }))
+              }
+              aria-label="수송 방향"
+            >
+              <option value="up">갈 때</option>
+              <option value="down">올 때</option>
+            </select>
+            <input
+              type="datetime-local"
+              className={inputCls}
+              value={pickupDraft.at}
+              disabled={busy}
+              onChange={(e) => setPickupDraft((d) => ({ ...d, at: e.target.value }))}
+              aria-label="픽업 시각"
+            />
+          </div>
+          {/* 장소는 자유 입력이다. 같은 행사에서 이미 쓰인 값만 후보로 보여준다 —
+              지명을 코드에 박으면 다음 행사에서 그대로 틀린 값이 된다. */}
+          <input
+            type="text"
+            list="pickup-places"
+            className={inputCls}
+            value={pickupDraft.place}
+            disabled={busy}
+            onChange={(e) => setPickupDraft((d) => ({ ...d, place: e.target.value }))}
+            placeholder="픽업 장소 (자유 입력)"
+            aria-label="픽업 장소"
+          />
+          <datalist id="pickup-places">
+            {places.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+          <input
+            type="text"
+            className={inputCls}
+            value={pickupDraft.note}
+            disabled={busy}
+            onChange={(e) => setPickupDraft((d) => ({ ...d, note: e.target.value }))}
+            placeholder="메모 (선택)"
+            aria-label="수송 요청 메모"
+          />
+          <Button size="sm" disabled={busy} onClick={addPickupRow}>
+            <Plus size={14} /> 수송 요청 추가
+          </Button>
         </div>
 
         <label className={labelCls}>
