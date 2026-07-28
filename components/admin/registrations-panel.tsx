@@ -26,6 +26,7 @@ import { TransportBadges } from "@/components/admin/transport-picker";
 import type { LegValue } from "@/components/admin/transport-picker";
 import type { TransportMode, TransportStatus } from "@/lib/transport/labels";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Pencil, Plus } from "lucide-react";
 import { setLeaderRole } from "@/lib/admin/leaders";
 import { ROLE_DRIVER, ROLE_FIXED, isSpecialRole } from "@/lib/roles/special";
@@ -370,7 +371,10 @@ export function RegistrationsPanel({
           <table className="w-full min-w-[1040px] text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
-                <th className="px-4 py-2.5">이름</th>
+                {/* 이름 열이 좁아지면 역할 배지(총단·고정 탑승자)가 세로로 쌓이면서
+                    행 높이가 커지고, 그만큼 아래 행이 밀린다. 서랍을 만든 이유가
+                    바로 그 밀림을 없애는 것이었으므로 최소 폭을 잡아 둔다. */}
+                <th className="px-4 py-2.5 min-w-[13rem]">이름</th>
                 <th className="px-4 py-2.5">학번</th>
                 <th className="px-4 py-2.5">참석/일정</th>
                 <th className="px-4 py-2.5">납부</th>
@@ -479,6 +483,8 @@ function Row({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  /** 되돌리기 어려운 조작은 앱 모달로 확인한다 (브라우저 기본 대화상자는 탭을 멈춘다). */
+  const [ask, setAsk] = useState<null | "exclude" | "restore">(null);
 
   const roleColor = (label: string) =>
     roleHex(roleLabels.find((rl) => rl.label === label)?.color ?? null);
@@ -539,15 +545,8 @@ function Row({
     });
   }
 
-  function exclude() {
-    const reason = prompt(
-      `${r.name} 님의 신청을 취소할까요?\n` +
-        `좌석과 출석이 반납되고, 명단에서 빠집니다.\n` +
-        `기록은 남으므로 나중에 되돌릴 수 있습니다.\n\n` +
-        `취소 사유 (선택)`,
-      ""
-    );
-    if (reason === null) return; // 취소 버튼
+  function exclude(reason: string) {
+    setAsk(null);
     startTransition(async () => {
       const res = await excludeRegistration(r.id, reason);
       if (!res.ok) return onMsg({ type: "err", text: res.message });
@@ -559,14 +558,7 @@ function Row({
   const cancelled = r.participation_status === "cancelled";
 
   function restore() {
-    if (
-      !confirm(
-        `${r.name} 님의 취소를 되돌릴까요?\n` +
-          `좌석은 자동으로 복구되지 않습니다 — 다른 분이 이미 앉았을 수 있어서\n` +
-          `배차를 다시 돌리거나 직접 지정해 주세요.`
-      )
-    )
-      return;
+    setAsk(null);
     startTransition(async () => {
       const res = await restoreRegistration(r.id);
       if (!res.ok) return onMsg({ type: "err", text: res.message });
@@ -722,7 +714,7 @@ function Row({
               <button
                 type="button"
                 disabled={pending}
-                onClick={restore}
+                onClick={() => setAsk("restore")}
                 className="text-xs text-primary hover:underline whitespace-nowrap"
               >
                 되돌리기
@@ -731,7 +723,7 @@ function Row({
               <button
                 type="button"
                 disabled={pending}
-                onClick={exclude}
+                onClick={() => setAsk("exclude")}
                 className="text-muted-2 hover:text-danger"
                 aria-label="신청 취소"
               >
@@ -739,6 +731,35 @@ function Row({
               </button>
             )}
           </div>
+          <ConfirmDialog
+            open={ask === "exclude"}
+            title={`${r.name} 님의 신청을 취소할까요?`}
+            description={
+              <>
+                좌석과 출석이 <b>반납되고 명단에서 빠집니다.</b> 기록은 남으므로
+                나중에 되돌릴 수 있습니다.
+              </>
+            }
+            confirmLabel="신청 취소"
+            tone="danger"
+            reasonLabel="취소 사유 (선택)"
+            reasonPlaceholder="예: 개인 사정으로 불참"
+            onConfirm={exclude}
+            onCancel={() => setAsk(null)}
+          />
+          <ConfirmDialog
+            open={ask === "restore"}
+            title={`${r.name} 님의 취소를 되돌릴까요?`}
+            description={
+              <>
+                <b>좌석은 자동으로 복구되지 않습니다</b> — 다른 분이 이미 앉았을 수
+                있어서, 배차를 다시 돌리거나 직접 지정해 주세요.
+              </>
+            }
+            confirmLabel="되돌리기"
+            onConfirm={() => restore()}
+            onCancel={() => setAsk(null)}
+          />
         </td>
       )}
     </tr>

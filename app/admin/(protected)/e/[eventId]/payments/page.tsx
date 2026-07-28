@@ -42,7 +42,10 @@ export default async function AdminPaymentsPage() {
       )
       // 3-D: 장부 잔액이 아니라 **지금 기준 환불 대상**으로 고른다. 납부 후 편성을
       // 바꾼 사람은 장부가 안 움직여서 예전엔 이 목록에 아예 안 떴다.
-      .gt("refund_due", 0)
+      // 돌려줄 돈이 **확정된** 사람(refund_due > 0)만 보면, 낸 기록이 장부에 없는
+      // 사람은 청구액이 줄어도 안 잡힌다. 타지구 확정으로 좌석이 반납되면 바로
+      // 그 상태가 되므로(왕복 → 편도), 사유가 있는 사람은 전부 싣는다.
+      .or("refund_due.gt.0,refund_reason.not.is.null")
       .order("refund_due", { ascending: false }),
   ]);
 

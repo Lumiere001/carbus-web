@@ -174,8 +174,15 @@ export default async function AdminChangesPage() {
       .in("id", liveIds);
     // 취소한 사람은 배차가 비어 있는 게 정상이다. 그걸 "미배정"으로 세면 가짜
     // **재배차 필요** 경고가 계속 떠서, 진짜 재배차가 필요한 상황과 구분이 안 된다.
-    for (const r of regs ?? [])
+    for (const r of regs ?? []) {
       if (r.participation_status !== "cancelled") regMap.set(r.id, r);
+      // 취소된 사람은 유형을 "제외"로 바로잡는다. 감사 로그에는 추가(insert)만
+      // 남아 있어 "신규"로 보이는데, 지금 상태가 취소면 그게 사실이 아니다.
+      else {
+        const e = byReg.get(r.id);
+        if (e) e.kind = "제외";
+      }
+    }
   }
 
   const [busRes, campusRes] = await Promise.all([

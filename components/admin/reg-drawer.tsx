@@ -485,8 +485,7 @@ export function RegDrawer({
             </ul>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <select
+          <select
               className={inputCls}
               value={pickupDraft.direction}
               disabled={busy}
@@ -501,15 +500,16 @@ export function RegDrawer({
               <option value="up">갈 때</option>
               <option value="down">올 때</option>
             </select>
-            <input
-              type="datetime-local"
-              className={inputCls}
-              value={pickupDraft.at}
-              disabled={busy}
-              onChange={(e) => setPickupDraft((d) => ({ ...d, at: e.target.value }))}
-              aria-label="픽업 시각"
-            />
-          </div>
+          {/* 날짜+시각이 한 칸에 들어가는 입력이라 좁으면 시각이 잘린다.
+              전화로 도착 시각을 받아 적는 칸이라 잘리면 확인이 안 된다. */}
+          <input
+            type="datetime-local"
+            className={inputCls}
+            value={pickupDraft.at}
+            disabled={busy}
+            onChange={(e) => setPickupDraft((d) => ({ ...d, at: e.target.value }))}
+            aria-label="픽업 시각"
+          />
           {/* 장소는 **총단이 등록한 목록에서 고른다.** 차를 보내는 건 총단이라
               갈 수 있는 곳의 목록도 총단만 안다. 자유 입력이면 차가 가지 않는 곳을
               적을 수 있다. */}

@@ -104,14 +104,9 @@ export default async function AdminTripsPage() {
         </p>
       </header>
 
-      <FleetPanel
-        trips={trips}
-        buses={buses}
-        loads={loads}
-        upRequests={upRequests}
-        downRequests={downRequests}
-      />
-
+      {/* 픽업 장소를 운행편·차량보다 **위**에 둔다. 총단이 행사를 처음 세팅할 때
+          이걸 먼저 해야 임역원이 수송 요청에서 장소를 고를 수 있는데, 맨 아래에
+          두면 운행편 4개와 차량 11대를 다 지나야 나온다. */}
       <PickupPlacesPanel
         places={(placesRes.data ?? []).map((p): PlaceRow => ({
           id: p.id,
@@ -120,6 +115,14 @@ export default async function AdminTripsPage() {
           displayOrder: p.display_order,
           active: p.active,
         }))}
+      />
+
+      <FleetPanel
+        trips={trips}
+        buses={buses}
+        loads={loads}
+        upRequests={upRequests}
+        downRequests={downRequests}
       />
     </div>
   );

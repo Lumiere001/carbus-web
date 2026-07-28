@@ -52,6 +52,11 @@ export function PickupPlacesPanel({ places }: { places: PlaceRow[] }) {
           <p className="text-sm text-danger">{err}</p>
         )}
 
+        <p className="text-xs text-muted-2 leading-snug">
+          <b className="text-foreground">안 씀으로</b> 내리면 <b>새로 고를 때만</b>
+          목록에서 빠집니다 — 이미 그 장소로 잡힌 수송 요청은 그대로 남습니다.
+        </p>
+
         {places.length === 0 ? (
           <p className="text-sm text-muted-2">
             아직 등록된 픽업 장소가 없습니다. 등록하기 전에는 수송 요청에서
@@ -81,6 +86,11 @@ export function PickupPlacesPanel({ places }: { places: PlaceRow[] }) {
                     disabled={busy}
                     onClick={() =>
                       run(() => updatePickupPlace(p.id, { active: !p.active }))
+                    }
+                    title={
+                      p.active
+                        ? "새 수송 요청에서만 감춥니다. 이미 이 장소로 잡힌 요청은 그대로 남습니다."
+                        : "다시 고를 수 있게 됩니다."
                     }
                     className="text-xs text-muted hover:text-foreground whitespace-nowrap"
                   >

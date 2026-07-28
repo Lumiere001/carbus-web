@@ -415,8 +415,10 @@ export function RegistrationGrid({
       columnHelper.display({
         id: "actions",
         header: "",
+        // 되돌릴 수 없는 삭제를 자주 쓰는 연필 바로 옆에 두지 않는다.
+        // 점검에서 실제로 연필을 누르려다 휴지통을 눌렀다.
         cell: (ctx) => (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-3">
           {/* 이동수단·참여기간·수송 요청은 칸이 여러 개 모여야 한 값이 돼서
               표 안에서 고치기 어렵다. 그 셋만 서랍에서 받는다. */}
           <button
@@ -432,7 +434,7 @@ export function RegistrationGrid({
             type="button"
             aria-label="삭제"
             onClick={() => handleDelete(ctx.row.original)}
-            className="opacity-0 group-hover:opacity-100 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-2 transition hover:bg-danger-bg hover:text-danger"
+            className="opacity-0 group-hover:opacity-100 ml-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-2 transition hover:bg-danger-bg hover:text-danger"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>

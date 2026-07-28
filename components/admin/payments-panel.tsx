@@ -296,9 +296,9 @@ export function PaymentsPanel({
       {isMaster && balances.length > 0 && (
         <Card
           title="차액 확인 필요"
-          subtitle={`${balances.length}명 · 합계 ${won(
+          subtitle={`${balances.length}명 · 돌려줄 돈 ${won(
             balances.reduce((s, b) => s + b.refund_due, 0)
-          )}원 — 낸 금액이 지금 청구액보다 많습니다`}
+          )}원 — 낸 금액이 더 많거나, 납부 뒤 편성이 줄어든 사람`}
         >
           <div className="px-5 pt-4 text-xs text-muted leading-relaxed">
             왕복으로 내고 나서 하행을 타지구 차량으로 바꾸거나 참석을 취소한 경우입니다.
@@ -320,8 +320,13 @@ export function PaymentsPanel({
                   {b.refund_reason === "fee_dropped" && (
                     <Badge variant="warning" dot={false}>편성 변경</Badge>
                   )}
+                  {/* 낸 기록이 장부에 있으면 돌려줄 금액이 나오고, 없으면 금액을
+                      단정할 수 없다 — 그때는 청구액이 얼마 줄었는지를 대신 보여준다.
+                      "+0원" 으로 적으면 돌려줄 게 없다는 뜻이 돼 정반대가 된다. */}
                   <span className="ml-auto text-sm font-medium text-warning tabular-nums">
-                    +{won(b.refund_due)}원
+                    {b.refund_due > 0
+                      ? `+${won(b.refund_due)}원`
+                      : `청구 −${won(Math.max(0, b.charged_now - b.fee_now))}원`}
                   </span>
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-2">
