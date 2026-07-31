@@ -50,10 +50,10 @@ export default async function HomePage() {
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
-              광주지구 여름수련회 차량 관리
+              광주지구 차량 관리
             </h1>
             <p className="text-muted text-base">
-              CCC 71기 여름수련회 차량 신청·배차·정산 시스템
+              광주지구 CCC 차량 신청·배차·정산 시스템
             </p>
           </div>
         </div>
