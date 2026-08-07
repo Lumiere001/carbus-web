@@ -9,7 +9,7 @@ import {
   createColumnHelper,
   type CellContext,
 } from "@tanstack/react-table";
-import { Plus, Download, Upload, Trash2, Clock, Pencil } from "lucide-react";
+import { Plus, Download, Upload, Trash2, Clock, Pencil, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { RegDrawer, type PickupRow } from "@/components/admin/reg-drawer";
 import type { AdminRegRow } from "@/components/admin/registrations-panel";
@@ -18,8 +18,14 @@ import {
   type RegistrationRow,
   insertRegistration,
   updateCells,
-  deleteRegistration,
 } from "@/lib/registrations/mutations";
+// 취소·되돌리기는 총단 화면과 **같은 함수**를 쓴다. 화면마다 다른 경로를 두면
+// 한쪽만 고쳐지고, 실제로 그렇게 갈라져 있어서 임역원 쪽이 동작하지 않았다.
+import {
+  excludeRegistration,
+  restoreRegistration,
+} from "@/lib/admin/registrations";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   PAYMENT_LABELS,
   PAYMENT_STATUSES,
@@ -138,6 +144,13 @@ export function RegistrationGrid({
   const [toast, setToast] = useState<Toast | null>(null);
   /** 충돌난 (rowId, field) 셀 잠깐 강조용. key = `${id}:${field}`. */
   const [conflictCells, setConflictCells] = useState<Set<string>>(new Set());
+  /**
+   * 취소/되돌리기 확인 대화상자. `window.confirm` 을 안 쓰는 이유는
+   * `ConfirmDialog` 주석 참고 — 탭이 멈추고, 사유를 따로 받을 수가 없다.
+   */
+  const [ask, setAsk] = useState<
+    { kind: "cancel" | "restore"; row: RegistrationRow } | null
+  >(null);
 
   const busName = (id: number | null): string =>
     id == null ? "—" : (buses.find((b) => b.id === id)?.name ?? "—");
@@ -277,15 +290,61 @@ export function RegistrationGrid({
     replaceRow(res.row);
   }
 
-  async function handleDelete(row: RegistrationRow) {
-    if (!confirm(`${row.name} 순장/순원 신청을 취소(삭제)할까요?`)) return;
-    const res = await deleteRegistration(row.id);
+  /**
+   * 신청 취소 — **지우지 않는다.**
+   *
+   * 예전엔 여기서 진짜 삭제(DELETE)를 시도했다. 그런데 DB 가 로그인한 사용자의
+   * 삭제를 전부 막는다("삭제하면 납부·배차 기록이 함께 사라집니다"). 그래서
+   * 임역원이 휴지통을 눌러도 **아무 일도 안 일어나고 에러만 떴다** — 버튼은
+   * 있는데 되지 않는 상태였다.
+   *
+   * DB 는 원래부터 임역원 취소를 허용하도록 돼 있었다. 배차 가드에 "그러면
+   * 임역원이 취소를 아예 못 하게 된다" 는 예외가 명시돼 있다(20260721040000).
+   * 화면만 잘못된 함수를 부르고 있었다.
+   */
+  async function handleCancel(row: RegistrationRow, reason: string) {
+    setAsk(null);
+    const res = await excludeRegistration(row.id, reason || null);
     if (!res.ok) {
       setToast({ type: "err", text: res.message });
       return;
     }
-    setRows((prev) => prev.filter((r) => r.id !== row.id));
-    setToast({ type: "ok", text: `${row.name} 순장/순원 삭제 완료` });
+    // 행을 지우지 않는다 — 취소 표시로 남겨야 되돌릴 수 있고, 무엇이 취소됐는지도 보인다.
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              participation_status: "cancelled" as const,
+              cancel_reason: reason || null,
+              assigned_up_bus_id: null,
+              assigned_down_bus_id: null,
+            }
+          : r
+      )
+    );
+    setToast({ type: "ok", text: `${row.name} 신청 취소됨 (좌석 반납)` });
+  }
+
+  /** 취소 되돌리기. 좌석은 자동 복구하지 않는다 — 다른 분이 이미 앉았을 수 있다. */
+  async function handleRestore(row: RegistrationRow) {
+    setAsk(null);
+    const res = await restoreRegistration(row.id);
+    if (!res.ok) {
+      setToast({ type: "err", text: res.message });
+      return;
+    }
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === row.id
+          ? { ...r, participation_status: "registered" as const, cancel_reason: null }
+          : r
+      )
+    );
+    setToast({
+      type: "ok",
+      text: `${row.name} 취소 되돌림 — 배차는 총단이 다시 지정합니다`,
+    });
   }
 
   // 빈 행 → 신규 순장/순원 추가.
@@ -323,15 +382,38 @@ export function RegistrationGrid({
     () => [
       columnHelper.accessor("name", {
         header: "이름",
-        cell: (ctx) => (
-          <TextCell
-            ctx={ctx}
-            field="name"
-            conflict={isConflict(ctx.row.original.id, "name")}
-            muted={ctx.row.original.payment_status === "waived"}
-            onSave={saveText}
-          />
-        ),
+        cell: (ctx) => {
+          const cancelled = ctx.row.original.participation_status === "cancelled";
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className={cancelled ? "line-through text-muted-2" : ""}>
+                <TextCell
+                  ctx={ctx}
+                  field="name"
+                  conflict={isConflict(ctx.row.original.id, "name")}
+                  muted={
+                    cancelled || ctx.row.original.payment_status === "waived"
+                  }
+                  onSave={saveText}
+                />
+              </span>
+              {/* 취소는 지운 게 아니라 남아 있는 상태다. 사유까지 보여야
+                  "왜 빠졌더라" 를 나중에 다시 묻지 않는다. */}
+              {cancelled && (
+                <span className="flex flex-wrap items-center gap-1">
+                  <span className="rounded bg-danger-bg px-1.5 py-0.5 text-[11px] text-danger">
+                    취소
+                  </span>
+                  {ctx.row.original.cancel_reason && (
+                    <span className="text-[11px] text-muted-2">
+                      {ctx.row.original.cancel_reason}
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor("student_id", {
         header: "학번",
@@ -436,14 +518,29 @@ export function RegistrationGrid({
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button
-            type="button"
-            aria-label="삭제"
-            onClick={() => handleDelete(ctx.row.original)}
-            className="opacity-0 group-hover:opacity-100 ml-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-2 transition hover:bg-danger-bg hover:text-danger"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          {/* 취소된 사람은 되돌리기, 아니면 취소. 지우는 게 아니라 **취소**다 —
+              지우면 납부·배차 기록이 함께 사라지고 되돌릴 수도 없다. */}
+          {ctx.row.original.participation_status === "cancelled" ? (
+            <button
+              type="button"
+              aria-label="취소 되돌리기"
+              title="취소 되돌리기"
+              onClick={() => setAsk({ kind: "restore", row: ctx.row.original })}
+              className="ml-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-2 transition hover:bg-surface-2 hover:text-primary-700"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-label="신청 취소"
+              title="신청 취소 (좌석 반납 · 되돌릴 수 있음)"
+              onClick={() => setAsk({ kind: "cancel", row: ctx.row.original })}
+              className="opacity-0 group-hover:opacity-100 ml-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-2 transition hover:bg-danger-bg hover:text-danger"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           </span>
         ),
       }),
@@ -582,6 +679,38 @@ export function RegistrationGrid({
           {toast.text}
         </div>
       )}
+
+      {/* 취소·되돌리기 확인. 총단 화면과 **같은 문구**를 쓴다 — 같은 일인데 화면마다
+          다르게 설명하면 무엇이 일어나는지가 자리마다 달라 보인다. */}
+      <ConfirmDialog
+        open={ask?.kind === "cancel"}
+        title={`${ask?.row.name ?? ""} 님의 신청을 취소할까요?`}
+        description={
+          <>
+            좌석과 출석이 <b>반납되고 명단에서 빠집니다.</b> 기록은 남으므로 나중에
+            되돌릴 수 있습니다.
+          </>
+        }
+        confirmLabel="신청 취소"
+        tone="danger"
+        reasonLabel="취소 사유 (선택)"
+        reasonPlaceholder="예: 개인 사정으로 불참"
+        onConfirm={(reason) => ask && handleCancel(ask.row, reason)}
+        onCancel={() => setAsk(null)}
+      />
+      <ConfirmDialog
+        open={ask?.kind === "restore"}
+        title={`${ask?.row.name ?? ""} 님의 취소를 되돌릴까요?`}
+        description={
+          <>
+            <b>좌석은 자동으로 복구되지 않습니다</b> — 다른 분이 이미 앉았을 수
+            있어서입니다. 배차는 총단이 다시 지정합니다.
+          </>
+        }
+        confirmLabel="되돌리기"
+        onConfirm={() => ask && handleRestore(ask.row)}
+        onCancel={() => setAsk(null)}
+      />
 
       {/* 안내: 미이용 사용법 + 비고 비어있는 미이용 행 알림 (조건부) */}
       <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-xs text-muted-2 space-y-1">
