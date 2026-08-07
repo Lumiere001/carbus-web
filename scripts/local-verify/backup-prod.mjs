@@ -63,6 +63,9 @@ const TABLES = [
   { name: "transport_legs" },
   { name: "pickup_places" },
   { name: "pickup_requests" },
+  // 수강신청 조사 (2026-07-31). 새 테이블을 여기 안 넣으면 **백업에서 통째로 빠진다** —
+  // 행수만 보는 검사로는 안 걸리고, 롤백이 필요한 순간에야 없다는 걸 알게 된다.
+  { name: "course_signups" },
 ];
 
 /** 테이블 전체를 1000행씩 읽는다. 없는 테이블이면 null. */

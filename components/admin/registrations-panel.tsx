@@ -135,6 +135,8 @@ export function RegistrationsPanel({
   legs,
   pickups,
   places,
+  courses,
+  dayCount,
 }: {
   rows: AdminRegRow[];
   campuses: CampusInfo[];
@@ -155,6 +157,10 @@ export function RegistrationsPanel({
   pickups: Record<string, PickupRow[]>;
   /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다. */
   places: { id: number; name: string }[];
+  /** 사람별 수강신청 — 날짜가 아니라 몇째 날이다. */
+  courses: Record<string, { dayNo: number; atTime: string | null }[]>;
+  /** 이 행사에서 고를 수 있는 날 수 (행사 기간에서 계산). */
+  dayCount: number;
 }) {
   const panelRouter = useRouter();
   const [tab, setTab] = useState<string>(ALL);
@@ -432,6 +438,8 @@ export function RegistrationsPanel({
             upLeg={legOf(editRow.id, "up")}
             downLeg={legOf(editRow.id, "down")}
             pickups={pickups[editRow.id] ?? []}
+            courses={courses[editRow.id] ?? []}
+            dayCount={dayCount}
             places={places}
             // 서랍이 리마운트돼도 새로고침이 살아 있게 부모가 받는다.
             onSaved={() => panelRouter.refresh()}

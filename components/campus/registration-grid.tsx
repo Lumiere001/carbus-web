@@ -65,6 +65,8 @@ export function RegistrationGrid({
   units,
   pickups,
   places,
+  courses,
+  dayCount,
 }: {
   campusId: string;
   campusName: string;
@@ -79,6 +81,10 @@ export function RegistrationGrid({
   pickups: Record<string, PickupRow[]>;
   /** 총단이 등록해 둔 픽업 장소. 고르기만 한다. */
   places: { id: number; name: string }[];
+  /** 사람별 수강신청 — 날짜가 아니라 몇째 날이다. */
+  courses: Record<string, { dayNo: number; atTime: string | null }[]>;
+  /** 이 행사에서 고를 수 있는 날 수 (행사 기간에서 계산). */
+  dayCount: number;
 }) {
   const emptyDraft: Draft = {
     name: "",
@@ -717,6 +723,8 @@ export function RegistrationGrid({
             upLeg={legOf(drawerRow.id, "up")}
             downLeg={legOf(drawerRow.id, "down")}
             pickups={pickups[drawerRow.id] ?? []}
+            courses={courses[drawerRow.id] ?? []}
+            dayCount={dayCount}
             places={places}
             variant="campus"
             onSaved={() => router.refresh()}

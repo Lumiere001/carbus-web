@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegistrationGrid } from "@/components/campus/registration-grid";
 import type { PickupRow } from "@/components/admin/reg-drawer";
+import { eventDayCount } from "@/lib/courses/days";
 
 export default async function CampusPage() {
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export default async function CampusPage() {
   const campusId = profile?.campus_id;
   if (!campusId) redirect("/pending");
 
-  const [regRes, campusRes, busRes, slotRes, legRes, unitRes, pickupRes, placeRes] =
+  const [regRes, campusRes, busRes, slotRes, legRes, unitRes, pickupRes, placeRes, courseRes, eventRes] =
     await Promise.all([
     supabase
       .from("registrations")
@@ -51,6 +52,10 @@ export default async function CampusPage() {
       .eq("active", true)
       .order("display_order")
       .order("name"),
+    // 수강신청 — 임역원도 자기 캠퍼스 사람 것을 서랍에서 켜고 끈다(RLS 가 범위를 좁힌다).
+    supabase.from("course_signups").select("registration_id, day_no, at_time"),
+    // 고를 수 있는 날 수 계산용. **날짜를 저장하지는 않는다.**
+    supabase.from("events").select("starts_on, ends_on").eq("is_active", true).maybeSingle(),
   ]);
 
   const allUnits = unitRes.data ?? [];
@@ -74,6 +79,16 @@ export default async function CampusPage() {
     });
   }
 
+  // 사람 → 수강신청. **날짜가 아니라 몇째 날**이다 — 행사 날짜는 해마다 바뀐다.
+  const courses: Record<string, { dayNo: number; atTime: string | null }[]> = {};
+  for (const c of courseRes.data ?? []) {
+    (courses[c.registration_id] ??= []).push({ dayNo: c.day_no, atTime: c.at_time });
+  }
+  const dayCount = eventDayCount(
+    eventRes.data?.starts_on ?? null,
+    eventRes.data?.ends_on ?? null
+  );
+
   return (
     <RegistrationGrid
       campusId={campusId}
@@ -85,6 +100,8 @@ export default async function CampusPage() {
       units={allUnits.filter((u) => u.retired_at === null).map((u) => ({ id: u.id, name: u.name }))}
       pickups={pickups}
       places={placeRes.data ?? []}
+      courses={courses}
+      dayCount={dayCount}
     />
   );
 }

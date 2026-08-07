@@ -441,6 +441,75 @@ export type Database = {
         }
         Relationships: []
       }
+      course_signups: {
+        Row: {
+          at_time: string | null
+          created_at: string
+          day_no: number
+          event_id: string
+          id: number
+          note: string | null
+          registration_id: string
+          updated_at: string
+        }
+        Insert: {
+          at_time?: string | null
+          created_at?: string
+          day_no: number
+          event_id: string
+          id?: never
+          note?: string | null
+          registration_id: string
+          updated_at?: string
+        }
+        Update: {
+          at_time?: string | null
+          created_at?: string
+          day_no?: number
+          event_id?: string
+          id?: never
+          note?: string | null
+          registration_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_signups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["registration_id"]
+          },
+        ]
+      }
       event_trips: {
         Row: {
           active: boolean
@@ -1413,13 +1482,6 @@ export type Database = {
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["up_trip_id"]
-            isOneToOne: false
-            referencedRelation: "departure_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "departure_slots"
@@ -1429,7 +1491,7 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
-            referencedRelation: "event_trips"
+            referencedRelation: "departure_slots"
             referencedColumns: ["id"]
           },
           {
@@ -1443,8 +1505,8 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
-            referencedRelation: "v_day_capacity"
-            referencedColumns: ["slot_id"]
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
@@ -1456,13 +1518,20 @@ export type Database = {
           {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["departure_slot_id"]
+            columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
@@ -1497,6 +1566,88 @@ export type Database = {
           student_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_campus_stats"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_3way_comparison"
+            referencedColumns: ["campus_id"]
+          },
+          {
+            foreignKeyName: "registrations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_summary"
+            referencedColumns: ["campus_id"]
+          },
+        ]
+      }
+      v_course_board: {
+        Row: {
+          at_time: string | null
+          campus_id: string | null
+          campus_name: string | null
+          campus_order: number | null
+          created_at: string | null
+          day_no: number | null
+          event_id: string | null
+          id: number | null
+          note: string | null
+          on_date: string | null
+          person_name: string | null
+          registration_id: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_signups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_cancelled"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "course_signups_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["registration_id"]
+          },
           {
             foreignKeyName: "registrations_campus_id_fkey"
             columns: ["campus_id"]

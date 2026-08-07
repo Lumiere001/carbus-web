@@ -79,6 +79,8 @@ function renderDrawer() {
       upLeg={{ ...OUR_BUS }}
       downLeg={{ ...OUR_BUS }}
       pickups={[]}
+      courses={[]}
+      dayCount={3}
       places={[]}
       onSaved={() => {}}
       onClose={() => {}}
@@ -269,6 +271,8 @@ describe("RegDrawer — 픽업 장소는 고르는 것", () => {
         upLeg={{ ...OUR_BUS }}
         downLeg={{ ...OUR_BUS }}
         pickups={[]}
+        courses={[]}
+        dayCount={3}
         places={[{ id: 7, name: "○○역" }]}
         onSaved={() => {}}
         onClose={() => {}}

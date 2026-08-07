@@ -8,6 +8,7 @@ import {
   type CampusInfo,
 } from "@/components/admin/registrations-panel";
 import type { PickupRow } from "@/components/admin/reg-drawer";
+import { eventDayCount } from "@/lib/courses/days";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function AdminRegistrationsPage() {
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes, placeRes] =
+  const [regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes, placeRes, courseRes, eventRes] =
     await Promise.all([
     supabase
       .from("registrations")
@@ -65,7 +66,12 @@ export default async function AdminRegistrationsPage() {
       .eq("active", true)
       .order("display_order")
       .order("name"),
+    // 수강신청 — 서랍에서 사람별로 켜고 끈다. 보드는 이걸 (날, 시간)으로 묶어 읽는다.
+    supabase.from("course_signups").select("registration_id, day_no, at_time"),
+    // 고를 수 있는 날 수를 계산하려고 행사 기간을 읽는다. **날짜를 저장하지는 않는다.**
+    supabase.from("events").select("starts_on, ends_on").eq("is_active", true).maybeSingle(),
   ]);
+  const eventRow = eventRes.data;
   const trips = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
   const phase2 = cfgRes.data?.current_phase === "phase2";
@@ -117,6 +123,14 @@ export default async function AdminRegistrationsPage() {
   }
   const places = placeRes.data ?? [];
 
+  // 사람 → 수강신청. **날짜가 아니라 몇째 날**이다 — 행사 날짜는 해마다 바뀐다.
+  const courses: Record<string, { dayNo: number; atTime: string | null }[]> = {};
+  for (const c of courseRes.data ?? []) {
+    (courses[c.registration_id] ??= []).push({ dayNo: c.day_no, atTime: c.at_time });
+  }
+  // 고를 수 있는 날 수는 행사 기간에서 계산한다 — 4박 행사면 넷째날이 저절로 생긴다.
+  const dayCount = eventDayCount(eventRow?.starts_on ?? null, eventRow?.ends_on ?? null);
+
   return (
     <div className="space-y-5">
       <div>
@@ -145,6 +159,8 @@ export default async function AdminRegistrationsPage() {
         units={units}
         legs={Object.fromEntries(legs)}
         pickups={pickups}
+        courses={courses}
+        dayCount={dayCount}
         places={places}
       />
     </div>

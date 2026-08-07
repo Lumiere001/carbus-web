@@ -8,6 +8,8 @@ import { PAYMENT_LABELS, PAYMENT_STATUSES, tripOptions, attendanceSummary } from
 import { updateRegField } from "@/lib/admin/registrations";
 import { setTransportLeg } from "@/lib/admin/transport";
 import { addPickup, deletePickup, setAttendRange } from "@/lib/admin/pickup";
+import { setCourseSignup, clearCourseSignup } from "@/lib/admin/courses";
+import { dayLabel } from "@/lib/courses/days";
 import { TransportPicker, type LegValue } from "@/components/admin/transport-picker";
 import {
   DIRECTION_LABELS,
@@ -46,6 +48,8 @@ export function RegDrawer({
   downLeg,
   pickups,
   places,
+  courses,
+  dayCount,
   onSaved,
   variant = "master",
   onClose,
@@ -60,6 +64,13 @@ export function RegDrawer({
   pickups: PickupRow[];
   /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다 — 자유 입력이 아니다. */
   places: { id: number; name: string }[];
+  /**
+   * 이 사람의 수강신청 — `day_no → 시간(HH:MM)`. 시간이 없으면 빈 문자열.
+   * **날짜가 아니라 몇째 날**이다(행사 날짜는 해마다 바뀐다).
+   */
+  courses: { dayNo: number; atTime: string | null }[];
+  /** 이 행사에서 고를 수 있는 날 수. 행사 기간에서 계산해 부모가 넘긴다. */
+  dayCount: number;
   /**
    * 저장이 끝났을 때. **새로고침은 부모가 한다** — 사람을 바꾸면 이 서랍이
    * 통째로 다시 마운트되는데, 그 순간 진행 중이던 저장의 뒷정리가 같이 사라져
@@ -88,6 +99,12 @@ export function RegDrawer({
   // 이동수단은 여러 칸이 모여야 한 값이 되므로 화면 상태를 따로 든다 (changeLeg 주석 참고).
   const [upDraft, setUpDraft] = useState<LegValue>(upLeg);
   const [downDraft, setDownDraft] = useState<LegValue>(downLeg);
+  // 수강신청은 서버 값에서 곧바로 읽는다 — 저장이 끝나면 부모가 새로고침하므로
+  // 화면 상태를 따로 들면 그 둘이 어긋난다(저장 버튼이 없는 화면이라 더 그렇다).
+  const courseDays = new Set(courses.map((c) => c.dayNo));
+  const courseTimes = new Map(
+    courses.map((c) => [c.dayNo, (c.atTime ?? "").slice(0, 5)] as const)
+  );
   const [pickupDraft, setPickupDraft] = useState({
     direction: "up" as "up" | "down",
     at: "",
@@ -184,6 +201,37 @@ export function RegDrawer({
       if (!res.ok) return setState({ kind: "err", text: res.message });
       setState({ kind: "saved", field: "참여기간" });
       onSaved("참여기간");
+    });
+  }
+
+  /**
+   * 수강신청 켜기/끄기.
+   *
+   * 끄면 **행을 지운다.** "안 들음" 을 값으로 남기면 아직 안 고른 사람과 구분되지
+   * 않는다(동규님 결정: 해당 없는 사람은 아무것도 안 고른다).
+   */
+  function toggleCourse(dayNo: number, on: boolean) {
+    setState({ kind: "idle" });
+    const label = `수강신청 ${dayLabel(dayNo)}`;
+    start(async () => {
+      const res = on
+        ? await setCourseSignup(row.id, dayNo, courseTimes.get(dayNo) || null)
+        : await clearCourseSignup(row.id, dayNo);
+      if (!res.ok) return setState({ kind: "err", text: res.message });
+      setState({ kind: "saved", field: label });
+      onSaved(label);
+    });
+  }
+
+  /** 시간만 고치기. 빈 값은 "시간 미정" 으로 그대로 저장된다. */
+  function saveCourseTime(dayNo: number, value: string) {
+    setState({ kind: "idle" });
+    const label = `수강신청 ${dayLabel(dayNo)} 시간`;
+    start(async () => {
+      const res = await setCourseSignup(row.id, dayNo, value || null);
+      if (!res.ok) return setState({ kind: "err", text: res.message });
+      setState({ kind: "saved", field: label });
+      onSaved(label);
     });
   }
 
@@ -449,6 +497,65 @@ export function RegDrawer({
         <p className="text-[11px] text-muted-2 leading-snug">
           비워 두면 <b>행사 전체 참석</b>입니다. 부분참만 채우세요.
         </p>
+
+        {/* 수강신청 조사 — 캠프에서 함께 받는다.
+            ⚠️ **날짜를 저장하지 않는다.** 저장하는 건 "첫째날" 뿐이다 — 행사 날짜는
+            해마다 바뀌지만 "첫째날" 은 안 바뀐다(동규님 지시). */}
+        <div className="rounded-lg border border-border bg-surface-2/40 p-3 space-y-2.5">
+          <p className="text-xs text-muted-2 leading-snug">
+            <b className="text-foreground">수강신청</b> — 듣는 날만 고르세요.
+            <b> 해당 없으면 아무것도 안 고르면 됩니다.</b>
+          </p>
+
+          {Array.from({ length: dayCount }, (_, i) => i + 1).map((day) => {
+            const on = courseDays.has(day);
+            return (
+              <div
+                key={day}
+                className={
+                  "flex items-center gap-2 rounded-md border px-2 py-1.5 " +
+                  (on
+                    ? "border-primary-300 bg-primary-50/60"
+                    : "border-border bg-surface")
+                }
+              >
+                <label className="flex items-center gap-2 text-sm flex-1 min-w-0 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    disabled={busy}
+                    onChange={(e) => toggleCourse(day, e.target.checked)}
+                    aria-label={`${dayLabel(day)} 수강신청`}
+                  />
+                  <span className="truncate">
+                    {dayLabel(day)}
+                    {on && !courseTimes.get(day) && (
+                      <span className="ml-1 text-[11px] text-warning">시간 미정</span>
+                    )}
+                  </span>
+                </label>
+                {/* 시간은 비워 둘 수 있다. "듣긴 듣는데 몇 시인지 모른다" 가 실제로
+                    흔하고, 강제로 받으면 아무 값이나 찍혀 할 일이 안 보이게 된다. */}
+                <input
+                  type="time"
+                  value={courseTimes.get(day) ?? ""}
+                  disabled={busy || !on}
+                  onChange={(e) => saveCourseTime(day, e.target.value)}
+                  aria-label={`${dayLabel(day)} 시간`}
+                  className={
+                    "rounded-md border border-border-2 bg-surface px-2 py-1 text-sm text-fg tabular-nums " +
+                    (on ? "" : "opacity-40")
+                  }
+                />
+              </div>
+            );
+          })}
+
+          <p className="text-[11px] text-muted-2 leading-snug">
+            시간은 나중에 적어도 됩니다 — 비워 두면 수강신청 화면에 <b>시간 미정</b>으로
+            모입니다.
+          </p>
+        </div>
 
         {/* 수송 요청 — 개인을 데리러 가는 건. 보드(부분참 화면)에서 (날짜·시각·장소)로
             묶이면 그대로 간사 차량 배차표가 된다. */}
