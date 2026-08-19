@@ -186,12 +186,22 @@ begin
   end if;
   raise notice '검증 ①: 행사를 넘겨도 간사 차량으로 남음 OK';
 
-  -- 일반 버스는 그대로 일반 버스여야 한다 (반대로 뒤집히면 배차가 통째로 멈춘다)
-  if exists (select 1 from buses where event_id = v_new and name <> '__검증용 간사차__'
-                                   and kind <> 'bus') then
-    raise exception '검증 실패: 일반 버스가 간사 차량으로 복제됐습니다';
+  -- 종류가 **원본 그대로** 넘어와야 한다. 뒤집히면 배차가 통째로 멈춘다.
+  --
+  -- ⚠️ 예전엔 "검증용 간사차 말고는 전부 bus 여야 한다" 였다. 그건 운영에 간사
+  --    차량이 하나도 없던 2026-07-28 에만 참이었다. 실제 간사 차량이 생긴 뒤로는
+  --    **정상 복제를 오류로 잡아** post-load.sh 가 여기서 통째로 멈췄고,
+  --    그 바람에 로컬 검증 경로가 막혔다(2026-08-19 에 발견).
+  --    비교 대상을 원본 행사의 같은 이름 차량으로 바꾼다 — 이쪽이 진짜 불변식이고,
+  --    간사 차량이 몇 대든 늘어나든 계속 성립한다.
+  if exists (
+    select 1 from buses nb
+      join buses ob on ob.event_id = v_old and ob.name = nb.name
+     where nb.event_id = v_new and nb.kind <> ob.kind
+  ) then
+    raise exception '검증 실패: 복제 과정에서 차량 종류가 바뀌었습니다';
   end if;
-  raise notice '검증 ②: 일반 버스는 그대로 OK';
+  raise notice '검증 ②: 차량 종류가 원본 그대로 복제됨 OK';
 
   raise exception '__검증완료_롤백';
 exception when others then
