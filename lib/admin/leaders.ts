@@ -88,13 +88,18 @@ async function clearDriverEverywhere(supabase: SupabaseClient, regId: string): P
   if (a.error) return { ok: false, message: humanize(a.error.message) };
   const b = await supabase.from("buses").update({ down_driver_registration_id: null }).eq("down_driver_registration_id", regId);
   if (b.error) return { ok: false, message: humanize(b.error.message) };
+  const kinds = await fetchBusKinds(supabase);
+  for (const m of ["up", "down"] as Mode[]) {
+    const sync = await applyStaffCarSync(supabase, regId, m, null, kinds);
+    if (!sync.ok) return sync;
+  }
   return { ok: true };
 }
 
 async function clearFixedEverywhere(supabase: SupabaseClient, regId: string): Promise<Result> {
   const { data: all, error } = await supabase
     .from("buses")
-    .select("id, fixed_passenger_ids, down_fixed_passenger_ids");
+    .select("id, kind, fixed_passenger_ids, down_fixed_passenger_ids");
   if (error) return { ok: false, message: humanize(error.message) };
   for (const b of all ?? []) {
     if ((b.fixed_passenger_ids ?? []).includes(regId)) {
@@ -105,6 +110,12 @@ async function clearFixedEverywhere(supabase: SupabaseClient, regId: string): Pr
       const u = await supabase.from("buses").update({ down_fixed_passenger_ids: (b.down_fixed_passenger_ids ?? []).filter((x) => x !== regId) }).eq("id", b.id);
       if (u.error) return { ok: false, message: humanize(u.error.message) };
     }
+  }
+  // 간사 차 고정을 풀었으면 배정도 같이 푼다 — 안 그러면 아무 데도 안 묶인
+  // 사람이 호차 명단에 유령으로 남는다 (§26-E).
+  for (const m of ["up", "down"] as Mode[]) {
+    const sync = await applyStaffCarSync(supabase, regId, m, null, all ?? []);
+    if (!sync.ok) return sync;
   }
   return { ok: true };
 }
@@ -239,7 +250,8 @@ export async function assignDriverBus(
       if (s.error) return { ok: false, message: humanize(s.error.message) };
     }
   }
-  return { ok: true };
+  // 고정 탑승자와 같은 이유로, 간사 차량의 차량순장도 배정까지 같이 쓴다 (§26-E).
+  return applyStaffCarSync(supabase, personId, mode, busId, await fetchBusKinds(supabase));
 }
 
 /** 사람을 (방향) busId 의 고정탑승으로 지정. busId=null 이면 해제. 이전 고정 호차는 자동 해제. */
@@ -260,7 +272,8 @@ export async function assignFixedBus(
   const { data: all, error: fErr } = await supabase
     .from("buses")
     .select(
-      "id, name, hard_cap, driver_registration_id, down_driver_registration_id, fixed_passenger_ids, down_fixed_passenger_ids"
+      // `kind` — 간사 차량이면 배정까지 같이 써야 한다 (applyStaffCarSync).
+      "id, name, kind, hard_cap, driver_registration_id, down_driver_registration_id, fixed_passenger_ids, down_fixed_passenger_ids"
     );
   if (fErr) return { ok: false, message: humanize(fErr.message) };
 
@@ -308,5 +321,97 @@ export async function assignFixedBus(
       if (u.error) return { ok: false, message: humanize(u.error.message) };
     }
   }
+  // ⚠️ 반드시 fixed_passenger_ids 를 쓴 **뒤에** — DB 가드가 순서를 강제한다.
+  return applyStaffCarSync(supabase, personId, mode, busId, all ?? []);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 간사 차량 — 고정/순장 지정을 **실제 배정까지** 반영한다 (§26-E)
+// ════════════════════════════════════════════════════════════════════
+//
+// 왜 필요한가. 일반 버스는 `registrations.assigned_*_bus_id` 를 **배차 엔진이**
+// 채운다. 그런데 간사 차량은 자동 배차의 "빈자리 채움" 단계에서 빠지므로,
+// 배차를 돌리기 전까지 이 화면의 지정이 `buses.fixed_passenger_ids` 에만 남는다.
+// 대시보드·전체 순장/순원·출석부·CSV 는 전부 `assigned_*_bus_id` 를 읽는다
+// (`v_bus_occupancy` 가 그 컬럼을 센다). 그래서 운영자 눈에는 **리더 화면에서
+// 지정했는데 아무 일도 안 일어난 것**으로 보인다 — 실제로 그 신고가 들어왔다.
+//
+// 배차를 돌리면 엔진 Step 1(고정 배정)이 정확히 같은 값을 쓴다. 즉 여기서 하는
+// 일은 **배차 이후 상태를 미리 만드는 것뿐**이고, 없던 상태를 새로 만들지 않는다.
+//
+// 일반 버스는 건드리지 않는다. 그건 배차 엔진 소관이고, 여기서 손대면 배차를
+// 돌리기도 전에 그 사람이 좌석을 차지해 남은 좌석 계산이 어긋난다.
+
+/** `applyStaffCarSync` 가 내릴 결정. `null` = 손대지 않음. */
+export type StaffCarSync = { action: "assign"; busId: number } | { action: "clear" } | null;
+
+/**
+ * 순수 판정부 — 부수효과가 없어 단위 테스트가 가능하다.
+ *
+ * @param nextKind    이 방향에서 새로 묶인 호차의 종류. 해제면 null.
+ * @param nextBusId   그 호차 id. 해제면 null.
+ * @param currentKind 지금 `assigned_*_bus_id` 가 가리키는 호차의 종류. 미배정이면 null.
+ */
+export function staffCarSync(opts: {
+  nextKind: "bus" | "staff_car" | null;
+  nextBusId: number | null;
+  currentKind: "bus" | "staff_car" | null;
+}): StaffCarSync {
+  if (opts.nextKind === "staff_car" && opts.nextBusId != null)
+    return { action: "assign", busId: opts.nextBusId };
+  // 간사 차에서 내린 경우(해제·다른 차로 이동)에만 배정을 푼다. 일반 버스 배정은
+  // 배차 엔진의 결과라 여기서 지우면 멀쩡한 배차가 사라진다.
+  if (opts.currentKind === "staff_car") return { action: "clear" };
+  return null;
+}
+
+type BusKindRow = { id: number; kind: "bus" | "staff_car" };
+
+/** 판정에 필요한 최소 정보만. 호차 목록을 이미 들고 있으면 그걸 넘기고 이건 부르지 마라. */
+async function fetchBusKinds(supabase: SupabaseClient): Promise<BusKindRow[]> {
+  const { data } = await supabase.from("buses").select("id, kind");
+  return data ?? [];
+}
+
+/**
+ * ⚠️ 반드시 `fixed_passenger_ids` / `driver_registration_id` 를 쓴 **뒤에** 호출할 것.
+ * DB 가드(`guard_staff_car_assignment`)가 "고정 탑승자도 차량순장도 아닌 사람의
+ * 간사 차 배정"을 거부하므로, 순서가 뒤집히면 저장이 통째로 실패한다.
+ */
+async function applyStaffCarSync(
+  supabase: SupabaseClient,
+  personId: string,
+  mode: Mode,
+  nextBusId: number | null,
+  buses: BusKindRow[]
+): Promise<Result> {
+  // 목록에 없는 호차는 일반 버스로 본다 — 모르는 차를 간사 차로 추정해 배정을
+  // 지워 버리는 것보다, 손대지 않는 쪽이 안전하다.
+  const kindOf = (id: number | null) =>
+    id == null ? null : (buses.find((b) => b.id === id)?.kind ?? "bus");
+
+  const { data: reg, error } = await supabase
+    .from("registrations")
+    .select("assigned_up_bus_id, assigned_down_bus_id")
+    .eq("id", personId)
+    .single();
+  if (error) return { ok: false, message: humanize(error.message) };
+  const currentBusId =
+    (mode === "up" ? reg?.assigned_up_bus_id : reg?.assigned_down_bus_id) ?? null;
+
+  const decision = staffCarSync({
+    nextKind: kindOf(nextBusId),
+    nextBusId,
+    currentKind: kindOf(currentBusId),
+  });
+  if (decision === null) return { ok: true };
+
+  const value = decision.action === "assign" ? decision.busId : null;
+  if (value === currentBusId) return { ok: true }; // 이미 같다 — 감사 로그를 더럽히지 않는다
+
+  const patch =
+    mode === "up" ? { assigned_up_bus_id: value } : { assigned_down_bus_id: value };
+  const u = await supabase.from("registrations").update(patch).eq("id", personId);
+  if (u.error) return { ok: false, message: humanize(u.error.message) };
   return { ok: true };
 }
