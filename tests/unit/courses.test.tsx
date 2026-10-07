@@ -75,7 +75,7 @@ describe("CourseBoard — 날 → 시간으로 묶는다", () => {
     );
     expect(screen.getByText("10:00")).toBeTruthy();
     // "2명" 은 날 머리글과 시간 묶음 배지 양쪽에 나온다 — 둘 다 2명이면 맞다.
-    expect(screen.getAllByText("2명").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("2건")).toBeTruthy();
   });
 
   it("시간 미정은 그 날의 맨 위에 오고 건수를 경고로 알린다", () => {
@@ -87,11 +87,11 @@ describe("CourseBoard — 날 → 시간으로 묶는다", () => {
         ]}
       />
     );
-    expect(screen.getByText("시간 미정")).toBeTruthy();
+    expect(screen.getByRole("rowheader", { name: "시간 미정" })).toBeTruthy();
     // 경고에 미정 인원이 숫자로 — 그게 곧 물어볼 사람 수다.
     expect(screen.getByText("신청 1건", { selector: "b" })).toBeTruthy();
-    const texts = [...document.querySelectorAll("span")].map((e) => e.textContent);
-    expect(texts.indexOf("시간 미정")).toBeLessThan(texts.indexOf("10:00"));
+    const times = screen.getAllByRole("rowheader").map((item) => item.textContent);
+    expect(times).toEqual(["미정", "10:00"]);
   });
 
   it("날짜는 **계산된 값**을 보여준다 — 저장된 게 아니다", () => {
@@ -99,7 +99,7 @@ describe("CourseBoard — 날 → 시간으로 묶는다", () => {
     render(<CourseBoard rows={[row({ id: 1, dayNo: 1, onDate: "2026-08-20" })]} />);
     // 요약 칩과 날 머리글 양쪽에 나온다.
     expect(screen.getAllByText("첫째날").length).toBeGreaterThan(0);
-    expect(screen.getByText(/8\. 20\.|8\/20/)).toBeTruthy();
+    expect(screen.getAllByText(/8\. 20\.|8\/20/).length).toBeGreaterThan(0);
   });
 
   it("여러 날이면 날짜순으로 나뉜다", () => {
@@ -111,10 +111,9 @@ describe("CourseBoard — 날 → 시간으로 묶는다", () => {
         ]}
       />
     );
-    const heads = [...document.querySelectorAll("section")].map(
-      (s) => s.getAttribute("aria-label")
-    );
-    expect(heads).toEqual(["첫째날 수강신청", "둘째날 수강신청"]);
+    const heads = screen.getAllByRole("columnheader").slice(1).map((item) => item.textContent);
+    expect(heads[0]).toContain("첫째날");
+    expect(heads[1]).toContain("둘째날");
   });
 
   it("아무도 없으면 어디서 넣는지 알려준다", () => {
@@ -123,12 +122,9 @@ describe("CourseBoard — 날 → 시간으로 묶는다", () => {
     expect(screen.getByText(/전체 순장\/순원/)).toBeTruthy();
   });
 
-  it("묶음을 접으면 명단이 사라진다 — 인원이 많을 때 스크롤을 줄인다", async () => {
-    const { default: userEvent } = await import("@testing-library/user-event");
-    render(<CourseBoard rows={[row({ id: 1, personName: "김민준" })]} />);
-    expect(screen.getByText("김민준")).toBeTruthy();
-    // 요약 칩이 아니라 **날 머리글**을 눌러야 접힌다.
-    await userEvent.click(screen.getByRole("button", { name: /첫째날/ }));
-    expect(screen.queryByText("김민준")).toBeNull();
+  it("한 사람의 다른 날 신청을 서로 다른 날짜 칸에 유지한다", () => {
+    render(<CourseBoard rows={[row({ id: 1 }), row({ id: 2, dayNo: 2, onDate: "2026-08-21" })]} />);
+    expect(screen.getAllByRole("cell")).toHaveLength(2);
+    expect(screen.getAllByText("김민준")).toHaveLength(2);
   });
 });

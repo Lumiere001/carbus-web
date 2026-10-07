@@ -59,8 +59,8 @@ describe("PickupBoard — 묶음", () => {
     );
     // 위 요약 칩과 묶음 머리글 양쪽에 나온다 — 요약은 "스크롤 없이 어디에 몇 건인지"
     // 를 보여주는 자리라 같은 문구가 두 번 있는 게 맞다.
-    expect(screen.getAllByText("2026-08-11 23:30").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("2건")).toHaveLength(2);
+    expect(screen.getByRole("rowheader", { name: "23:30" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: /2건/ })).toBeTruthy();
   });
 
   it("장소가 다르면 다른 묶음이다 (차를 따로 보내야 하므로)", () => {
@@ -73,7 +73,8 @@ describe("PickupBoard — 묶음", () => {
         ]}
       />
     );
-    expect(screen.getAllByText("1건")).toHaveLength(2);
+    expect(screen.getByText("가 장소")).toBeTruthy();
+    expect(screen.getByText("나 장소")).toBeTruthy();
   });
 
   it("시각 미정은 맨 위에 모이고 건수를 경고로 알린다", () => {
@@ -87,12 +88,9 @@ describe("PickupBoard — 묶음", () => {
         ]}
       />
     );
-    expect(screen.getAllByText("시각 미정").length).toBeGreaterThan(0);
-    // 경고 문구에 미정 건수가 숫자로 나와야 한다 — 그게 곧 할 일 개수다.
-    expect(screen.getAllByText("2건")).toHaveLength(3);
-    // 미정 묶음이 먼저 그려진다
-    const texts = [...document.querySelectorAll("span")].map((e) => e.textContent);
-    expect(texts.indexOf("시각 미정")).toBeLessThan(texts.indexOf("2026-08-11 09:00"));
+    expect(screen.getByRole("rowheader", { name: "시간 미정" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: /날짜 미정.*2건/ })).toBeTruthy();
+    expect(screen.getAllByRole("rowheader").map((item) => item.textContent)).toEqual(["미정", "09:00"]);
   });
 
   it("요청이 없으면 어디서 넣는지 알려준다", () => {
@@ -137,12 +135,11 @@ describe("PickupBoard — 관리자와 임역원이 보는 것이 다르다", ()
     expect(screen.queryByText(/참여 2026-08-21/)).toBeNull();
   });
 
-  it("묶음을 접으면 명단이 사라진다 — 인원이 많을 때 스크롤을 줄이는 자리다", async () => {
-    const { default: userEvent } = await import("@testing-library/user-event");
+  it("날짜 칸에 수송 장소와 인원을 함께 표시한다", () => {
     render(<PickupBoard rows={rows} audience="campus" />);
     expect(screen.getByText("김순장")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", {name: /어딘가 역.*1건/}));
-    expect(screen.queryByText("김순장")).toBeNull();
+    expect(screen.getByText("어딘가 역")).toBeTruthy();
+    expect(screen.getByRole("rowheader", { name: "23:30" })).toBeTruthy();
   });
 });
 

@@ -46,8 +46,8 @@ export default async function CampusPickupPage() {
       <div>
         <h2 className="text-lg font-semibold text-foreground">수송 요청</h2>
         <p className="text-sm text-muted mt-0.5">
-          우리 캠퍼스에서 <b>따로 데리러 가야 하는</b> 사람들입니다. 장소별로 묶여 있어요.
-          시각이 안 정해진 사람은 맨 위에 빨갛게 나옵니다 — 그 사람들에게 도착 시각을
+          우리 캠퍼스에서 <b>따로 데리러 가야 하는</b> 사람들입니다. 날짜와 시각별로 모아 봅니다.
+          시각이 안 정해진 사람은 미정 칸에 보입니다. 그 사람들에게 수송 시각을
           먼저 물어봐 주세요.
         </p>
       </div>
@@ -55,9 +55,9 @@ export default async function CampusPickupPage() {
       <PickupBoard
         rows={rows}
         audience="campus"
-        defaultGroupBy="place"
+
         title="우리 캠퍼스 수송 요청"
-        emptyHint="아직 수송 요청이 없습니다. ‘순장/순원 입력’ 화면에서 사람을 열고 수송 요청을 추가하면 여기에 장소별로 묶여서 보입니다."
+        emptyHint="아직 수송 요청이 없습니다. ‘순장/순원 입력’ 화면에서 사람을 열고 수송 요청을 추가하면 여기에 날짜별 시간표로 모입니다."
       />
     </div>
   );
