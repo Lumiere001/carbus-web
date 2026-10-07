@@ -1,6 +1,6 @@
 {
   "name": "carbus-web",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "description": "CCC 71기 광주지구 여름수련회 차량 신청·배차·정산 웹앱",
