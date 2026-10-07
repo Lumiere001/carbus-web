@@ -24,31 +24,25 @@ export default async function AdminLeadersPage({ params }: { params: Promise<{ e
     .single<{ role: UserRole }>();
   const isMaster = profile?.role === "master";
 
-  const [busRes, campusRes, labelRes, tripRes] = await Promise.all([
+  const [busRes, campusRes, tripRes] = await Promise.all([
     supabase
       .from("buses")
       .select(
         // `kind` — 드롭다운에서 간사 차량인지 알아야 한다 (§26-E).
         // 이 화면이 간사 차 탑승자를 지정하는 유일한 통로다.
-        "id, name, kind, up_trip_id, down_trip_id, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, kind, up_trip_id, down_trip_id, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase.from("campuses").select("id, name"),
-    supabase.from("role_labels").select("label"),
     // 하행도 편을 갖는다(3-C). 상행만 가져오면 하행 호차를 편으로 거를 수 없다.
     supabase.from("event_trips").select("id, label").order("display_order"),
   ]);
-  if ([busRes, campusRes, labelRes, tripRes].some((result) => result.error)) {
+  if ([busRes, campusRes, tripRes].some((result) => result.error)) {
     return <DataLoadError retryHref={adminHref(eventId, "/leaders")} />;
   }
 
   const buses = busRes.data ?? [];
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
-  // 일반 역할(차량순장/고정 제외) — roles[]에 저장되는 라벨
-  const plainLabels = (labelRes.data ?? [])
-    .map((l) => l.label)
-    .filter((l) => l !== ROLE_DRIVER && l !== ROLE_FIXED);
-
   // 호차 바인딩 → 차량순장/고정 파생
   const upDriverOf = new Map<string, number>();
   const downDriverOf = new Map<string, number>();
@@ -60,33 +54,15 @@ export default async function AdminLeadersPage({ params }: { params: Promise<{ e
     for (const id of b.fixed_passenger_ids ?? []) upFixedOf.set(id, b.id);
     for (const id of b.down_fixed_passenger_ids ?? []) downFixedOf.set(id, b.id);
   }
-  const boundIds = new Set<string>([
-    ...upDriverOf.keys(),
-    ...downDriverOf.keys(),
-    ...upFixedOf.keys(),
-    ...downFixedOf.keys(),
-  ]);
-
-  // 리더 = 호차에 묶인 사람(차량순장/고정 파생) ∪ 일반 역할 보유자(총단·간사 등)
-  const [boundRes, roleRes] = await Promise.all([
-    boundIds.size > 0
-      ? supabase
-          .from("registrations")
-          .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, roles")
-          // 취소자는 리더 목록에서 제외 (좌석·차량순장은 DB 트리거가 이미 반납했다)
-          .neq("participation_status", "cancelled")
-          .in("id", [...boundIds])
-      : Promise.resolve({ data: [] as never[], error: null }),
-    plainLabels.length > 0
-      ? supabase
-          .from("registrations")
-          .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, roles")
-          .neq("participation_status", "cancelled")
-          .overlaps("roles", plainLabels)
-      : Promise.resolve({ data: [] as never[], error: null }),
-  ]);
-
-  if (boundRes.error || roleRes.error) return <DataLoadError retryHref={adminHref(eventId, "/leaders")} />;
+  const allPeople: { id: string; name: string; student_id: string; campus_id: string; up_trip_id: number | null; down_trip_id: number | null; roles: string[] }[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const result = await supabase.from("registrations")
+      .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, roles")
+      .neq("participation_status", "cancelled").order("id").range(offset, offset + 999);
+    if (result.error) return <DataLoadError retryHref={adminHref(eventId, "/leaders")} />;
+    allPeople.push(...result.data);
+    if (result.data.length < 1000) break;
+  }
 
   const byId = new Map<
     string,
@@ -100,7 +76,7 @@ export default async function AdminLeadersPage({ params }: { params: Promise<{ e
       roles: string[];
     }
   >();
-  for (const r of [...(boundRes.data ?? []), ...(roleRes.data ?? [])]) byId.set(r.id, r);
+  for (const r of [...allPeople]) byId.set(r.id, r);
 
   const leaders: LeaderRow[] = [];
   for (const r of byId.values()) {
@@ -114,8 +90,8 @@ export default async function AdminLeadersPage({ params }: { params: Promise<{ e
       : downFixedOf.has(r.id)
         ? "fixed"
         : null;
-    const isDriver = upKind === "driver" || downKind === "driver";
-    const isFixed = upKind === "fixed" || downKind === "fixed";
+    const isDriver = upKind === "driver" || downKind === "driver" || r.roles.includes(ROLE_DRIVER);
+    const isFixed = upKind === "fixed" || downKind === "fixed" || r.roles.includes(ROLE_FIXED);
     const plain = (r.roles ?? []).filter((x) => x !== ROLE_DRIVER && x !== ROLE_FIXED);
     const roleBadges = [
       ...plain,
@@ -167,6 +143,8 @@ export default async function AdminLeadersPage({ params }: { params: Promise<{ e
       buses={busOpts}
       trips={tripRes.data ?? []}
       isMaster={isMaster}
+      vehicles={buses}
+      candidates={allPeople.map((person) => ({ ...person, campus_name: campusName.get(person.campus_id) ?? "—" }))}
     />
   );
 }

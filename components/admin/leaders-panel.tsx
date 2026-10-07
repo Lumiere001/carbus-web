@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TriangleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { sortRoster } from "@/lib/registrations/roster-sort";
+import { StaffCarPanel, type StaffVehicle } from "./staff-car-panel";
+import type { CandidateData } from "./buses-panel";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { tripLabel } from "@/lib/labels";
@@ -57,15 +61,29 @@ export function LeadersPanel({
   buses,
   trips,
   isMaster,
+  vehicles,
+  candidates,
 }: {
   leaders: LeaderRow[];
   buses: BusOpt[];
   trips: Pick<EventTrip, "id" | "label">[];
   isMaster: boolean;
+  readonly vehicles: readonly StaffVehicle[];
+  readonly candidates: readonly CandidateData[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const [section, setSection] = useState<"leaders" | "staff">("leaders");
+  const [query, setQuery] = useState("");
+  const [campus, setCampus] = useState("");
+  const [role, setRole] = useState("");
+  const [needsOnly, setNeedsOnly] = useState(false);
+  const search = query.replace(/\s/g, "").toLocaleLowerCase();
+  const shown = sortRoster(leaders).filter((person) => (!campus || person.campus_name === campus) && (!role || person.roleBadges.includes(role)) && (!needsOnly || person.needUp || person.needDown) && `${person.name}${person.student_id}${person.campus_name}${person.roleBadges.join("")}`.replace(/\s/g, "").toLocaleLowerCase().includes(search));
+  const campuses = [...new Set(leaders.map((person) => person.campus_name))].sort((a, b) => a.localeCompare(b, "ko"));
+  const roles = [...new Set(leaders.flatMap((person) => person.roleBadges))].sort((a, b) => a.localeCompare(b, "ko"));
 
   const needCount = leaders.filter((l) => l.needUp || l.needDown).length;
 
@@ -144,7 +162,7 @@ export function LeadersPanel({
         disabled={pending}
         onChange={(e) => assign(row, mode, cellKind, e.target.value)}
         className={
-          "text-xs border rounded-md px-2 py-1 bg-surface " +
+          "min-h-11 text-sm border rounded-md px-2 py-1 bg-surface " +
           (need ? "border-warning-border text-warning" : "border-border-2")
         }
       >
@@ -165,9 +183,8 @@ export function LeadersPanel({
       <div>
         <h2 className="text-xl font-semibold text-foreground">리더 관리</h2>
         <p className="text-sm text-muted mt-0.5">
-          역할(총단·간사·차량순장·고정탑승)이 있는 순장/순원을 모아 봅니다. 차량순장·고정탑승은
-          전체 순장/순원 화면에서 역할을 주면 현재 배정 호차에 자동으로 묶이며, 여기서{" "}
-          <span className="whitespace-nowrap">호차를 바꿀 수 있습니다.</span>
+          캠퍼스·역할로 리더를 찾고 방향별 호차를 변경합니다.
+          간사 차량은 ‘간사 차량 배정’에서 사람을 검색해 바로 지정하세요.
         </p>
       </div>
 
@@ -184,6 +201,11 @@ export function LeadersPanel({
         </div>
       )}
 
+      <nav className="flex flex-wrap gap-2" aria-label="리더 관리 업무">
+        <Button variant={section === "leaders" ? "default" : "secondary"} disabled={pending} aria-pressed={section === "leaders"} onClick={() => setSection("leaders")}>리더 찾기</Button>
+        <Button variant={section === "staff" ? "default" : "secondary"} disabled={pending} aria-pressed={section === "staff"} onClick={() => setSection("staff")}>간사 차량 배정</Button>
+      </nav>
+      {section === "staff" ? <StaffCarPanel vehicles={vehicles} people={candidates} isMaster={isMaster} /> : <>
       <div className="flex flex-wrap gap-4 text-sm">
         <span className="text-muted">
           리더 <b className="text-foreground tabular-nums">{leaders.length}</b>
@@ -203,7 +225,14 @@ export function LeadersPanel({
         </div>
       )}
 
-      <Card title="리더 목록" subtitle="차량순장·고정탑승은 호차 지정 가능">
+      <Card title="리더 목록" subtitle={`표시 ${shown.length}/${leaders.length}명 · 캠퍼스별로 모아 학번·이름순으로 표시합니다`}>
+        <div className="flex flex-wrap items-end gap-3 border-b border-border p-4">
+          <label className="flex min-w-0 flex-col gap-1 text-sm">리더 검색<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="이름·학번·캠퍼스·역할" className="min-h-11 rounded-md border border-border bg-surface px-3" /></label>
+          <label className="flex flex-col gap-1 text-sm">캠퍼스<select value={campus} onChange={(event) => setCampus(event.target.value)} className="min-h-11 rounded-md border border-border bg-surface px-3"><option value="">전체 캠퍼스</option>{campuses.map((name) => <option key={name}>{name}</option>)}</select></label>
+          <label className="flex flex-col gap-1 text-sm">역할<select value={role} onChange={(event) => setRole(event.target.value)} className="min-h-11 rounded-md border border-border bg-surface px-3"><option value="">전체 역할</option>{roles.map((name) => <option key={name}>{name}</option>)}</select></label>
+          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={needsOnly} onChange={(event) => setNeedsOnly(event.target.checked)} />호차 미지정만</label>
+          <Button variant="secondary" onClick={() => { setQuery(""); setCampus(""); setRole(""); setNeedsOnly(false); }}>조건 초기화</Button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
@@ -216,14 +245,15 @@ export function LeadersPanel({
               </tr>
             </thead>
             <tbody>
-              {leaders.length === 0 && (
+              {shown.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center text-muted-2 py-6">
-                    역할이 부여된 사람이 없습니다. (전체 순장/순원 화면에서 역할을 부여하세요)
+                    {leaders.length === 0 ? "역할이 부여된 사람이 없습니다. 전체 명단에서 역할을 부여하세요." : "검색 결과가 없습니다. 검색어나 조건을 바꿔 주세요."}
                   </td>
                 </tr>
               )}
-              {leaders.map((l) => (
+              {shown.map((l, index) => (<Fragment key={l.id}>
+                {(index === 0 || shown[index - 1]?.campus_name !== l.campus_name) && <tr className="border-t border-border bg-surface-2"><th colSpan={5} scope="rowgroup" className="px-4 py-2 text-left text-sm font-medium">{l.campus_name}</th></tr>}
                 <tr
                   key={l.id}
                   className={"border-t border-border " + (l.needUp || l.needDown ? "bg-warning-bg/40" : "")}
@@ -244,11 +274,11 @@ export function LeadersPanel({
                   <td className="px-4 py-2">{busCell(l, "up")}</td>
                   <td className="px-4 py-2">{busCell(l, "down")}</td>
                 </tr>
-              ))}
+              </Fragment>))}
             </tbody>
           </table>
         </div>
-      </Card>
+      </Card></>}
     </div>
   );
 }
