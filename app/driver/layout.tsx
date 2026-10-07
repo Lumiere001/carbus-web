@@ -39,23 +39,24 @@ export default async function DriverLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-surface">
+    <div className="min-h-[100dvh] bg-background">
+      <a href="#workspace-content" className="skip-link">본문으로 건너뛰기</a>
+      <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 md:px-6">
-          <h1 className="text-sm font-semibold text-foreground whitespace-nowrap">
+          <h1 className="text-sm font-normal text-foreground whitespace-nowrap">
             차량 순장 · {profile.display_name ?? "(이름 없음)"}
           </h1>
           <form action={signOut} className="shrink-0">
             <button
               type="submit"
-              className="text-sm text-muted transition hover:text-foreground whitespace-nowrap"
+              className="min-h-11 rounded-full px-3 text-sm text-muted transition hover:text-foreground whitespace-nowrap"
             >
               로그아웃
             </button>
           </form>
         </div>
       </header>
-      <div className="mx-auto max-w-3xl p-4 md:p-6">{children}</div>
+      <main id="workspace-content" tabIndex={-1} className="mx-auto max-w-3xl p-4 md:p-6">{children}</main>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PickupBoard, type BoardRow } from "@/components/pickup/pickup-board";
+import { DataLoadError } from "@/components/ui/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,15 @@ export default async function CampusPickupPage() {
     .single();
   if (!profile?.campus_id) redirect("/pending");
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("v_pickup_board")
     .select(
       "id, direction, pickup_at, pickup_date, pickup_time, place, note, person_name, campus_name"
     )
     .eq("campus_id", profile.campus_id)
     .order("pickup_at", { nullsFirst: true });
+
+  if (error) return <DataLoadError retryHref="/campus/pickup" />;
 
   const rows = (data ?? []) as BoardRow[];
 

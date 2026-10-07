@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
 import { TransportPanel, type LegRow } from "@/components/admin/transport-panel";
 import type { TransportMode } from "@/lib/transport/labels";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,8 @@ export const dynamic = "force-dynamic";
  * 데이터는 이미 `transport_legs` 에 다 있다(3단계). 없던 건 그걸 모아 보여주고
  * 한 번에 확정하는 자리뿐이었다.
  */
-export default async function AdminTransportPage() {
+export default async function AdminTransportPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -40,6 +43,10 @@ export default async function AdminTransportPage() {
     supabase.from("event_trips").select("id, label"),
     supabase.from("buses").select("id, name"),
   ]);
+
+  if ([legsRes, tripsRes, busesRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/transport")} />;
+  }
 
   const tripLabel = new Map((tripsRes.data ?? []).map((t) => [t.id, t.label]));
   const busLabel = new Map((busesRes.data ?? []).map((b) => [b.id, b.name]));

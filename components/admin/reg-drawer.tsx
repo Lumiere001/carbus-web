@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { X, Check, Loader2, Trash2, Plus } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { X, Check, Trash2, Plus } from "lucide-react";
+import { DateTimeField } from "@/components/ui/date-time-field";
+import { isCompleteDateTime, formatKst } from "@/lib/time/kst";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AutosaveTextField } from "@/components/admin/autosave-text-field";
+import { ParticipationRange } from "@/components/admin/participation-range";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PAYMENT_LABELS, PAYMENT_STATUSES, tripOptions, attendanceSummary } from "@/lib/labels";
@@ -38,6 +43,10 @@ export type PickupRow = {
   placeName: string | null;
   note: string | null;
 };
+
+function sameLeg(a: LegValue, b: LegValue) {
+  return a.mode === b.mode && a.viaUnitId === b.viaUnitId && a.status === b.status;
+}
 
 export function RegDrawer({
   row,
@@ -92,19 +101,17 @@ export function RegDrawer({
     { kind: "idle" } | { kind: "saved"; field: string } | { kind: "err"; text: string }
   >({ kind: "idle" });
 
-  // 텍스트 칸은 타자마다 저장하면 안 되므로 로컬 상태를 두고 blur 에서 보낸다.
-  const [name, setName] = useState(row.name);
-  const [studentId, setStudentId] = useState(row.student_id);
-  const [note, setNote] = useState(row.note ?? "");
   // 이동수단은 여러 칸이 모여야 한 값이 되므로 화면 상태를 따로 든다 (changeLeg 주석 참고).
   const [upDraft, setUpDraft] = useState<LegValue>(upLeg);
   const [downDraft, setDownDraft] = useState<LegValue>(downLeg);
+  const [legSources, setLegSources] = useState({ up: upLeg, down: downLeg });
   // 수강신청은 서버 값에서 곧바로 읽는다 — 저장이 끝나면 부모가 새로고침하므로
   // 화면 상태를 따로 들면 그 둘이 어긋난다(저장 버튼이 없는 화면이라 더 그렇다).
   const courseDays = new Set(courses.map((c) => c.dayNo));
   const courseTimes = new Map(
     courses.map((c) => [c.dayNo, (c.atTime ?? "").slice(0, 5)] as const)
   );
+  const [pickupError, setPickupError] = useState("");
   const [pickupDraft, setPickupDraft] = useState({
     direction: "up" as "up" | "down",
     at: "",
@@ -112,13 +119,52 @@ export function RegDrawer({
     note: "",
   });
 
-  // 다른 사람을 고르면 이 컴포넌트가 통째로 다시 마운트돼(부모가 key={row.id})
-  // 위 상태가 그 사람 값으로 새로 잡힌다. effect 로 되돌리면 저장 직후 새로고침에서
-  // 방금 친 글자가 서버 값으로 덮인다.
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    closeRef.current?.focus();
+  const [pendingLeg, setPendingLeg] = useState<{ dir: "up" | "down"; next: LegValue } | null>(null);
+  const changedUp = !sameLeg(legSources.up, upLeg);
+  const changedDown = !sameLeg(legSources.down, downLeg);
+  if (!busy && (changedUp || changedDown)) {
+    setLegSources({ up: upLeg, down: downLeg });
+    if (changedUp && pendingLeg?.dir !== "up" && !(upDraft.mode === "other_district" && !upDraft.viaUnitId)) setUpDraft(upLeg);
+    if (changedDown && pendingLeg?.dir !== "down" && !(downDraft.mode === "other_district" && !downDraft.viaUnitId)) setDownDraft(downLeg);
+  }
+  const [attendanceDirty, setAttendanceDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const textDirtyFields = useRef(new Set<string>());
+  const discardRequested = useRef(false);
+  const onTextDirty = useCallback((field: string, dirty: boolean) => {
+    if (dirty) {
+      textDirtyFields.current.add(field);
+      setState({ kind: "idle" });
+    } else textDirtyFields.current.delete(field);
   }, []);
+  const onNameDirty = useCallback((dirty: boolean) => onTextDirty("name", dirty), [onTextDirty]);
+  const onStudentDirty = useCallback((dirty: boolean) => onTextDirty("student_id", dirty), [onTextDirty]);
+  const onNoteDirty = useCallback((dirty: boolean) => onTextDirty("note", dirty), [onTextDirty]);
+  const onAttendanceDirty = useCallback((dirty: boolean) => {
+    setAttendanceDirty(dirty);
+    if (dirty) setState({ kind: "idle" });
+  }, []);
+  function requestClose() {
+    const incompleteLeg = (upDraft.mode === "other_district" && !upDraft.viaUnitId) || (downDraft.mode === "other_district" && !downDraft.viaUnitId);
+    if (textDirtyFields.current.size || attendanceDirty || pickupDraft.at || pickupDraft.placeId || pickupDraft.note || pickupDraft.direction !== "up" || incompleteLeg) {
+      discardRequested.current = true;
+      setDiscardOpen(true);
+    }
+    else onClose();
+  }
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const drawer = drawerRef.current;
+    const previous = document.activeElement;
+    drawer?.showModal();
+    closeRef.current?.focus();
+    return () => {
+      drawer?.close();
+      if (previous instanceof HTMLElement && previous.isConnected && previous !== document.body) previous.focus();
+      else document.querySelector<HTMLButtonElement>(`[data-registration-editor="${row.id}"]`)?.focus();
+    };
+  }, [row.id]);
 
   /** 한 칸 저장. expected 는 "내가 열었을 때 보던 값" — 충돌 감지의 기준이다. */
   function save(
@@ -171,14 +217,13 @@ export function RegDrawer({
   function saveLeg(dir: "up" | "down", next: LegValue) {
     const tripId = dir === "up" ? row.up_trip_id : row.down_trip_id;
     if (legSkipsOurBus(next.mode, next.status) && tripId != null) {
-      const ok = window.confirm(
-        `${DIRECTION_LABELS[dir]} — ${TRANSPORT_LABELS[next.mode]}(으)로 저장됩니다.\n\n` +
-          `우리 버스를 안 타므로 이 방향의 운행편과 배정 호차가 비워져\n` +
-          `좌석이 반납됩니다. 되돌리려면 편을 다시 지정하고 배차를 다시\n` +
-          `실행해야 합니다.\n\n진행할까요?`
-      );
-      if (!ok) return;
+      setPendingLeg({ dir, next });
+      return;
     }
+    commitLeg(dir, next);
+  }
+
+  function commitLeg(dir: "up" | "down", next: LegValue) {
     setState({ kind: "idle" });
     start(async () => {
       const res = await setTransportLeg(row.id, dir, {
@@ -186,7 +231,11 @@ export function RegDrawer({
         viaUnitId: next.viaUnitId,
         status: next.status,
       });
-      if (!res.ok) return setState({ kind: "err", text: res.message });
+      if (!res.ok) {
+        if (dir === "up") setUpDraft(upLeg); else setDownDraft(downLeg);
+        setState({ kind: "err", text: res.message });
+        return;
+      }
       const label = `${DIRECTION_LABELS[dir]} 이동수단`;
       setState({ kind: "saved", field: label });
       onSaved(label);
@@ -194,11 +243,15 @@ export function RegDrawer({
   }
 
   /** 참여기간 — 둘 다 비우면 "행사 전체 참석"으로 돌아간다. */
-  function saveAttend(from: string | null, to: string | null) {
+  function saveAttend(from: string | null, to: string | null, expected: { readonly attend_from: string | null; readonly attend_to: string | null }) {
     setState({ kind: "idle" });
     start(async () => {
-      const res = await setAttendRange(row.id, from, to);
-      if (!res.ok) return setState({ kind: "err", text: res.message });
+      const res = await setAttendRange(row.id, from, to, expected);
+      if (!res.ok) {
+        setState({ kind: "err", text: res.message });
+        if (res.conflict) onSaved("최신값");
+        return;
+      }
       setState({ kind: "saved", field: "참여기간" });
       onSaved("참여기간");
     });
@@ -236,6 +289,11 @@ export function RegDrawer({
   }
 
   function addPickupRow() {
+    if (pickupDraft.at && !isCompleteDateTime(pickupDraft.at)) {
+      setPickupError("픽업 날짜와 시각을 모두 입력해 주세요. 미정이면 둘 다 비우세요.");
+      return;
+    }
+    setPickupError("");
     setState({ kind: "idle" });
     start(async () => {
       const res = await addPickup(row.id, {
@@ -274,24 +332,18 @@ export function RegDrawer({
 
   const paidWarning =
     row.payment_status === "paid" ? (
-      <p className="text-[11px] text-warning-700 leading-snug">
-        ⚠ 이미 납부한 신청입니다. 편을 바꿔도 <b>청구액은 자동으로 바뀌지 않습니다</b> —
+      <p className="text-xs text-warning leading-snug">
+        이미 납부한 신청입니다. 편을 바꿔도 <b>청구액은 자동으로 바뀌지 않습니다</b> —
         정산 화면의 차액 목록에 나타납니다.
       </p>
     ) : null;
 
   return (
-    <aside
-      // 액센트 테두리로 "여기가 지금 고치는 자리"를 표시한다.
-      // 넓은 화면에서는 표 오른쪽에 나란히(표를 밀지 않는다), 좁은 화면에서는
-      // 오른쪽에서 덮는 패널로. 좁은 화면에서 나란히 두면 둘 다 못 읽는다.
-      className={
-        "bg-surface border-l-2 border-primary-300 flex flex-col " +
-        "fixed inset-y-0 right-0 z-40 w-[88%] max-w-sm shadow-2xl " +
-        "lg:static lg:z-auto lg:w-[320px] lg:max-w-none lg:shrink-0 " +
-        "lg:max-h-[560px] lg:shadow-none"
-      }
+    <dialog
+      ref={drawerRef}
       aria-label={`${row.name} 편집`}
+      onCancel={(event) => { event.preventDefault(); if (!busy) requestClose(); }}
+      className="fixed inset-y-0 left-auto right-0 m-0 flex h-dvh max-h-none w-[calc(100%-1rem)] max-w-md flex-col border-0 border-l border-border bg-surface p-0 text-foreground shadow-3 backdrop:bg-black/40"
     >
       <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-border">
         <div className="min-w-0">
@@ -304,19 +356,22 @@ export function RegDrawer({
         <button
           ref={closeRef}
           type="button"
-          onClick={onClose}
+          onPointerDown={(event) => event.preventDefault()}
+          onClick={requestClose}
           aria-label="편집 닫기"
-          className="text-muted-2 hover:text-foreground shrink-0"
+          title="편집 닫기"
+          disabled={busy}
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-foreground shrink-0"
         >
           <X size={16} />
         </button>
       </div>
 
       {/* 저장 버튼이 없으므로 "저장됐다"는 신호는 여기 한 줄이 전부다. */}
-      <div className="px-4 py-1.5 border-b border-border min-h-[28px] text-xs">
+      {(busy || state.kind !== "idle") && <div role={state.kind === "err" ? "alert" : "status"} className="px-4 py-3 border-b border-border min-h-11 text-xs">
         {busy ? (
           <span className="text-muted-2 flex items-center gap-1">
-            <Loader2 size={12} className="animate-spin" /> 저장 중…
+            저장 중…
           </span>
         ) : state.kind === "saved" ? (
           <span className="text-success flex items-center gap-1">
@@ -324,42 +379,26 @@ export function RegDrawer({
           </span>
         ) : state.kind === "err" ? (
           <span className="text-danger">{state.text}</span>
-        ) : (
-          <span className="text-muted-2">고치면 바로 저장됩니다</span>
-        )}
-      </div>
+        ) : null}
+      </div>}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {variant === "master" && (
-        <>
-        <label className={labelCls}>
-          이름
-          <input
-            className={inputCls}
-            value={name}
-            disabled={busy}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => {
-              if (name.trim() === row.name) return;
-              save("이름", { name: row.name }, { name: name.trim() });
-            }}
-          />
-        </label>
+        <nav aria-label="개인 정보 편집 항목" className="flex flex-wrap gap-1">
+          <a href={`#attend-${row.id}`} className="inline-flex min-h-11 items-center rounded-md bg-primary-50 px-3 text-xs font-medium text-primary-800">참여 기간</a>
+          <a href={`#pickup-${row.id}`} className="inline-flex min-h-11 items-center rounded-md px-3 text-xs text-primary-800 hover:bg-primary-50">수송 요청</a>
+          <a href={`#course-${row.id}`} className="inline-flex min-h-11 items-center rounded-md px-3 text-xs text-primary-800 hover:bg-primary-50">수강신청</a>
+        </nav>
+        <div id={`attend-${row.id}`} className="scroll-mt-3">
+        <ParticipationRange key={row.id} from={row.attend_from} to={row.attend_to} disabled={busy} onChange={saveAttend} onDirtyChange={onAttendanceDirty} />
 
+        </div>
+        {variant === "master" && (
+        <fieldset className="rounded-lg border border-border p-3 space-y-3">
+        <legend className="px-1 text-sm font-semibold text-foreground">기본 정보 · 자동 저장</legend>
+        <p className="text-xs text-muted">선택은 바로 저장, 글자는 칸을 벗어나면 저장됩니다.</p>
+        <AutosaveTextField key={`name:${row.name}`} label="이름" value={row.name} disabled={busy} onDirtyChange={onNameDirty} onSave={(value) => { if (!discardRequested.current) save("이름", { name: row.name }, { name: value }); }} />
         <div className="grid grid-cols-2 gap-2">
-          <label className={labelCls}>
-            학번
-            <input
-              className={inputCls}
-              value={studentId}
-              disabled={busy}
-              onChange={(e) => setStudentId(e.target.value)}
-              onBlur={() => {
-                if (studentId.trim() === row.student_id) return;
-                save("학번", { student_id: row.student_id }, { student_id: studentId.trim() });
-              }}
-            />
-          </label>
+          <AutosaveTextField key={`student:${row.student_id}`} label="학번" value={row.student_id} disabled={busy} onDirtyChange={onStudentDirty} onSave={(value) => { if (!discardRequested.current) save("학번", { student_id: row.student_id }, { student_id: value }); }} />
           <label className={labelCls}>
             캠퍼스
             <select
@@ -447,12 +486,13 @@ export function RegDrawer({
             ))}
           </select>
         </label>
-        </>
+        <AutosaveTextField key={`note:${row.note}`} label="비고 (특이사항 등 자유 기록)" value={row.note ?? ""} disabled={busy} multiline onDirtyChange={onNoteDirty} onSave={(value) => { if (!discardRequested.current) save("비고", { note: row.note }, { note: value || null }); }} />
+        </fieldset>
         )}
 
         <div className="rounded-lg border border-border bg-surface-2/40 p-3 space-y-2.5">
           <p className="text-xs text-muted-2 leading-snug">
-            <b className="text-foreground">이동수단</b> — 우리 버스가 아니면 여기서 고르세요.
+            <b className="text-foreground">이동수단 · 선택 완료 시 저장</b> — 우리 버스가 아니면 여기서 고르세요.
             비고에 적으면 “타지구”가 <b>소속</b>인지 <b>얻어 타는 차</b>인지 구분되지 않습니다.
           </p>
           <TransportPicker
@@ -471,40 +511,14 @@ export function RegDrawer({
           />
         </div>
 
-        {/* 참여기간 — 부분참이 "며칠부터 며칠까지"인지. 지금까지는 비고에 글로 적혔다. */}
-        <div className="grid grid-cols-2 gap-2">
-          <label className={labelCls}>
-            참여 시작일
-            <input
-              type="date"
-              className={inputCls}
-              defaultValue={row.attend_from ?? ""}
-              disabled={busy}
-              onChange={(e) => saveAttend(e.target.value || null, row.attend_to)}
-            />
-          </label>
-          <label className={labelCls}>
-            참여 종료일
-            <input
-              type="date"
-              className={inputCls}
-              defaultValue={row.attend_to ?? ""}
-              disabled={busy}
-              onChange={(e) => saveAttend(row.attend_from, e.target.value || null)}
-            />
-          </label>
-        </div>
-        <p className="text-[11px] text-muted-2 leading-snug">
-          비워 두면 <b>행사 전체 참석</b>입니다. 부분참만 채우세요.
-        </p>
-
+        <div id={`course-${row.id}`} className="scroll-mt-3" />
         {/* 수강신청 조사 — 캠프에서 함께 받는다.
             ⚠️ **날짜를 저장하지 않는다.** 저장하는 건 "첫째날" 뿐이다 — 행사 날짜는
             해마다 바뀌지만 "첫째날" 은 안 바뀐다(동규님 지시). */}
         <div className="rounded-lg border border-border bg-surface-2/40 p-3 space-y-2.5">
           <p className="text-xs text-muted-2 leading-snug">
-            <b className="text-foreground">수강신청</b> — 듣는 날만 고르세요.
-            <b> 해당 없으면 아무것도 안 고르면 됩니다.</b>
+            <b className="text-foreground">수강신청 · 바로 저장</b> — <span className="whitespace-nowrap">듣는 날만 고르세요.</span>
+            <b className="whitespace-nowrap"> 해당 없으면 선택하지 마세요.</b>
           </p>
 
           {Array.from({ length: dayCount }, (_, i) => i + 1).map((day) => {
@@ -515,7 +529,7 @@ export function RegDrawer({
                 className={
                   "flex items-center gap-2 rounded-md border px-2 py-1.5 " +
                   (on
-                    ? "border-primary-300 bg-primary-50/60"
+                    ? "border-border bg-primary-50/60"
                     : "border-border bg-surface")
                 }
               >
@@ -530,7 +544,7 @@ export function RegDrawer({
                   <span className="truncate">
                     {dayLabel(day)}
                     {on && !courseTimes.get(day) && (
-                      <span className="ml-1 text-[11px] text-warning">시간 미정</span>
+                      <span className="ml-1 text-xs text-warning">시간 미정</span>
                     )}
                   </span>
                 </label>
@@ -543,7 +557,7 @@ export function RegDrawer({
                   onChange={(e) => saveCourseTime(day, e.target.value)}
                   aria-label={`${dayLabel(day)} 시간`}
                   className={
-                    "rounded-md border border-border-2 bg-surface px-2 py-1 text-sm text-fg tabular-nums " +
+                    "rounded-md border border-border-2 bg-surface px-2 py-1 text-sm text-foreground tabular-nums " +
                     (on ? "" : "opacity-40")
                   }
                 />
@@ -551,19 +565,20 @@ export function RegDrawer({
             );
           })}
 
-          <p className="text-[11px] text-muted-2 leading-snug">
-            시간은 나중에 적어도 됩니다 — 비워 두면 수강신청 화면에 <b>시간 미정</b>으로
-            모입니다.
+          <p className="text-xs text-muted-2 leading-snug">
+            시간은 나중에 적어도 됩니다 — 비워 두면 수강신청 화면에{" "}
+            <span className="whitespace-nowrap"><b>시간 미정</b>으로 모입니다.</span>
           </p>
         </div>
 
+        <div id={`pickup-${row.id}`} className="scroll-mt-3" />
         {/* 수송 요청 — 개인을 데리러 가는 건. 보드(부분참 화면)에서 (날짜·시각·장소)로
             묶이면 그대로 간사 차량 배차표가 된다. */}
         <div className="rounded-lg border border-border bg-surface-2/40 p-3 space-y-2.5">
+          <p className="text-sm font-semibold text-foreground">수송 요청 <span className="text-xs font-normal text-muted">추가 버튼으로 저장</span></p>
           <p className="text-xs text-muted-2 leading-snug">
-            <b className="text-foreground">수송 요청</b> — 따로 데리러 가야 하는 경우.
-            <b> 시각·장소를 몰라도 등록하세요</b> — 미정인 채로 남아야 “물어볼 사람”으로
-            보드에 뜹니다.
+            따로 데리러 가야 할 때 입력하세요.{" "}
+            <span className="whitespace-nowrap">시각·장소는 미정으로 남길 수 있습니다.</span>
           </p>
 
           {pickups.length > 0 && (
@@ -576,26 +591,21 @@ export function RegDrawer({
                   <span className="min-w-0">
                     <b className="text-foreground">{pickupDirLabel(p.direction)}</b>{" "}
                     <span className={p.pickupAt ? "text-muted" : "text-danger"}>
-                      {p.pickupAt
-                        ? new Date(p.pickupAt).toLocaleString("ko-KR", {
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "시각 미정"}
+                      {p.pickupAt ? formatKst(p.pickupAt) : "시각 미정"}
                     </span>
                     <span className="text-muted-2">
                       {p.placeName ? ` · ${p.placeName}` : " · 장소 미정"}
-                      {p.note ? ` · ${p.note}` : ""}
+
                     </span>
+                    {p.note && <span role="note" aria-label="수송 메모" className="mt-1 block whitespace-pre-wrap break-words text-foreground"><span className="mr-2 text-muted">수송 메모</span>{p.note}</span>}
                   </span>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => removePickup(p.id)}
                     aria-label="수송 요청 삭제"
-                    className="text-muted-2 hover:text-danger shrink-0"
+                    title="수송 요청 삭제"
+                    className="flex h-11 w-11 items-center justify-center rounded-md text-muted hover:bg-danger-bg hover:text-danger shrink-0"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -604,7 +614,7 @@ export function RegDrawer({
             </ul>
           )}
 
-          <select
+          <label className={labelCls}>수송 방향<select
               className={inputCls}
               value={pickupDraft.direction}
               disabled={busy}
@@ -618,21 +628,12 @@ export function RegDrawer({
             >
               <option value="up">{pickupDirLabel("up")}</option>
               <option value="down">{pickupDirLabel("down")}</option>
-            </select>
-          {/* 날짜+시각이 한 칸에 들어가는 입력이라 좁으면 시각이 잘린다.
-              전화로 도착 시각을 받아 적는 칸이라 잘리면 확인이 안 된다. */}
-          <input
-            type="datetime-local"
-            className={inputCls}
-            value={pickupDraft.at}
-            disabled={busy}
-            onChange={(e) => setPickupDraft((d) => ({ ...d, at: e.target.value }))}
-            aria-label="픽업 시각"
-          />
+            </select></label>
+          <DateTimeField label="픽업 일시" value={pickupDraft.at} disabled={busy} error={pickupError} onChange={(value) => { setPickupError(""); setPickupDraft((draft) => ({ ...draft, at: value })); }} />
           {/* 장소는 **총단이 등록한 목록에서 고른다.** 차를 보내는 건 총단이라
               갈 수 있는 곳의 목록도 총단만 안다. 자유 입력이면 차가 가지 않는 곳을
               적을 수 있다. */}
-          <select
+          <label className={labelCls}>픽업 장소<select
             className={inputCls}
             value={pickupDraft.placeId}
             disabled={busy || places.length === 0}
@@ -645,14 +646,14 @@ export function RegDrawer({
                 {p.name}
               </option>
             ))}
-          </select>
+          </select></label>
           {places.length === 0 && (
-            <p className="text-[11px] text-warning-700 leading-snug">
-              이 행사에 등록된 픽업 장소가 없습니다. 총단 운영자가 <b>편성</b> 화면에서
+            <p className="text-xs text-warning leading-snug">
+              이 행사에 등록된 픽업 장소가 없습니다. 총단 운영자가 <b className="whitespace-nowrap">운행편·차량 편성</b> 화면에서
               먼저 장소를 등록해야 고를 수 있습니다.
             </p>
           )}
-          <input
+          <label className={labelCls}>수송 요청 메모 (선택)<input
             type="text"
             className={inputCls}
             value={pickupDraft.note}
@@ -660,28 +661,12 @@ export function RegDrawer({
             onChange={(e) => setPickupDraft((d) => ({ ...d, note: e.target.value }))}
             placeholder="메모 (선택)"
             aria-label="수송 요청 메모"
-          />
+          /></label>
           <Button size="sm" disabled={busy} onClick={addPickupRow}>
             <Plus size={14} /> 수송 요청 추가
           </Button>
         </div>
 
-        {variant === "master" && (
-        <label className={labelCls}>
-          비고 (부분참 일정·특이사항 등 자유 기록)
-          <textarea
-            className={inputCls + " min-h-[70px]"}
-            value={note}
-            disabled={busy}
-            onChange={(e) => setNote(e.target.value)}
-            onBlur={() => {
-              if (note.trim() === (row.note ?? "").trim()) return;
-              save("비고", { note: row.note }, { note: note.trim() || null });
-            }}
-            placeholder="예: 금요일 저녁 KTX 귀가"
-          />
-        </label>
-        )}
 
         {row.participation_status === "cancelled" && (
           <Badge variant="danger" dot={false}>
@@ -689,6 +674,12 @@ export function RegDrawer({
           </Badge>
         )}
       </div>
-    </aside>
+      <ConfirmDialog open={pendingLeg !== null} title="우리 버스 좌석을 반납할까요?" description={pendingLeg ? `${DIRECTION_LABELS[pendingLeg.dir]} 이동수단을 변경합니다: ${TRANSPORT_LABELS[pendingLeg.next.mode]}. 배정 호차·운행편을 비우며, 다시 타려면 편 지정과 재배차가 필요합니다.` : undefined} confirmLabel="좌석 반납하고 변경" tone="danger" onCancel={() => {
+        if (pendingLeg?.dir === "up") setUpDraft(upLeg);
+        if (pendingLeg?.dir === "down") setDownDraft(downLeg);
+        setPendingLeg(null);
+      }} onConfirm={() => { if (pendingLeg) commitLeg(pendingLeg.dir, pendingLeg.next); setPendingLeg(null); }} />
+      <ConfirmDialog open={discardOpen} title="미저장 변경을 버리고 닫을까요?" description="아직 저장하지 않은 입력이 있습니다. 계속 입력하려면 취소를 누르세요." confirmLabel="변경 버리고 닫기" tone="danger" onCancel={() => { discardRequested.current = false; setDiscardOpen(false); }} onConfirm={onClose} />
+    </dialog>
   );
 }

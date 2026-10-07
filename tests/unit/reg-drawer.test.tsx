@@ -69,10 +69,10 @@ const TRIPS = [
 
 const OUR_BUS = { mode: "our_bus", viaUnitId: null, status: "confirmed" } as const;
 
-function renderDrawer() {
-  return render(
+function drawerElement(row: AdminRegRow = ROW) {
+  return (
     <RegDrawer
-      row={ROW}
+      row={row}
       campuses={CAMPUSES}
       trips={TRIPS}
       units={[{ id: "unit-1", name: "경주지구" }]}
@@ -87,6 +87,8 @@ function renderDrawer() {
     />
   );
 }
+
+function renderDrawer(row: AdminRegRow = ROW) { return render(drawerElement(row)); }
 
 describe("RegDrawer — 필드별 즉시 저장", () => {
   beforeEach(() => {
@@ -243,13 +245,15 @@ describe("RegDrawer — 이동수단 다단계 입력", () => {
     expect(screen.getByText("확정 대기")).toBeTruthy();
   });
 
-  it("KTX 처럼 지구가 필요 없는 수단은 고르는 즉시 저장한다", async () => {
+  it("배정 좌석이 있을 때 KTX 변경은 확인한 뒤 저장한다", async () => {
     renderDrawer();
     await act(async () => {
       fireEvent.change(screen.getByLabelText("수련회장 → 지구 이동수단"), {
         target: { value: "ktx" },
       });
     });
+    expect(setTransportLeg).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "좌석 반납하고 변경" })); });
     expect(setTransportLeg).toHaveBeenCalledTimes(1);
   });
 });
@@ -287,4 +291,86 @@ describe("RegDrawer — 픽업 장소는 고르는 것", () => {
     renderDrawer();
     expect(screen.getByText(/등록된 픽업 장소가 없습니다/)).toBeTruthy();
   });
+});
+
+
+describe("RegDrawer — 입력 보존과 취소", () => {
+  beforeEach(() => { cleanup(); setTransportLeg.mockClear(); updateRegField.mockClear(); addPickup.mockClear(); });
+
+  it.each(["이름", "학번", "비고 (특이사항 등 자유 기록)"])("%s 입력 중 Escape의 취소와 버리기는 저장을 일으키지 않는다", async (label) => {
+    const onClose = vi.fn();
+    render(<RegDrawer row={ROW} campuses={CAMPUSES} trips={TRIPS} units={[]} upLeg={OUR_BUS} downLeg={OUR_BUS} pickups={[]} courses={[]} dayCount={3} places={[]} onSaved={() => {}} onClose={onClose} />);
+    const input = screen.getByLabelText(label);
+    fireEvent.change(input, { target: { value: "새 초안" } });
+    fireEvent(screen.getByRole("dialog", { name: "김순장 편집" }), new Event("cancel", { cancelable: true }));
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.blur(input); });
+    expect(updateRegField).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(input).toHaveProperty("value", "새 초안");
+    fireEvent(screen.getByRole("dialog", { name: "김순장 편집" }), new Event("cancel", { cancelable: true }));
+    fireEvent.click(screen.getByRole("button", { name: "변경 버리고 닫기" }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(updateRegField).not.toHaveBeenCalled();
+  });
+
+  it("저장하지 않은 참여기간은 닫기 확인을 취소해도 보존된다", async () => {
+    const onClose = vi.fn();
+    render(<RegDrawer row={ROW} campuses={CAMPUSES} trips={TRIPS} units={[]} upLeg={OUR_BUS} downLeg={OUR_BUS} pickups={[]} courses={[]} dayCount={3} places={[]} onSaved={() => {}} onClose={onClose} />);
+    fireEvent.change(screen.getByLabelText("참여 시작일"), { target: { value: "2026-08-14" } });
+    fireEvent.click(screen.getByRole("button", { name: "편집 닫기" }));
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(screen.getByLabelText("참여 시작일")).toHaveProperty("value", "2026-08-14");
+    fireEvent.click(screen.getByRole("button", { name: "편집 닫기" }));
+    fireEvent.click(screen.getByRole("button", { name: "변경 버리고 닫기" }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(updateRegField).not.toHaveBeenCalled();
+  });
+
+  it("좌석 반납을 취소하면 DB 호출 없이 원래 이동수단을 표시한다", async () => {
+    renderDrawer();
+    await act(async () => { fireEvent.change(screen.getByLabelText("수련회장 → 지구 이동수단"), { target: { value: "ktx" } }); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "취소" })); });
+    expect(setTransportLeg).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("수련회장 → 지구 이동수단")).toHaveProperty("value", "our_bus");
+  });
+
+  it("서버에서 최신 이름이 오면 과거 초안으로 다시 저장하지 않는다", async () => {
+    const view = renderDrawer();
+    fireEvent.change(screen.getByLabelText("이름"), { target: { value: "과거 초안" } });
+    view.rerender(drawerElement({ ...ROW, name: "다른 담당자가 저장한 이름" }));
+    expect(screen.getByLabelText("이름")).toHaveProperty("value", "다른 담당자가 저장한 이름");
+    await act(async () => { fireEvent.blur(screen.getByLabelText("이름")); });
+    expect(updateRegField).not.toHaveBeenCalled();
+  });
+
+  it("픽업 날짜만 입력하면 저장을 막고 초안을 보존한다", async () => {
+    renderDrawer();
+    fireEvent.change(screen.getByLabelText("날짜", { exact: true }), { target: { value: "2026-08-14" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "수송 요청 추가" })); });
+    expect(addPickup).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toContain("날짜와 시각");
+    expect(screen.getByLabelText("날짜", { exact: true })).toHaveProperty("value", "2026-08-14");
+  });
+});
+
+
+describe("RegDrawer — 포인터로 닫을 때 저장 범위", () => {
+ beforeEach(() => { cleanup(); updateRegField.mockClear(); });
+ it("글자를 수정하고 닫기를 눌러도 먼저 자동 저장하지 않는다", async () => {
+  const { default: userEvent } = await import("@testing-library/user-event");
+  const user = userEvent.setup();
+  renderDrawer();
+  await act(async () => {
+    await user.click(screen.getByLabelText("이름"));
+    await user.clear(screen.getByLabelText("이름"));
+    await user.type(screen.getByLabelText("이름"), "미저장 수정");
+    await user.click(screen.getByRole("button", { name: "편집 닫기" }));
+  });
+  expect(screen.getByRole("button", { name: "변경 버리고 닫기" })).toBeDefined();
+  expect(updateRegField).not.toHaveBeenCalled();
+  await act(async () => { await user.click(screen.getByRole("button", { name: "취소" })); });
+  expect(screen.getByLabelText("이름")).toHaveProperty("value", "미저장 수정");
+ });
 });

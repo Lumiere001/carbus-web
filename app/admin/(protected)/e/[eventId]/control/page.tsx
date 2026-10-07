@@ -5,6 +5,8 @@ import { ControlPanel } from "@/components/admin/control-panel";
 import { EventsPanel, type EventCounts } from "@/components/admin/events-panel";
 import { UnlockPanel } from "@/components/admin/unlock-panel";
 import type { EventRow } from "@/lib/admin/events";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,9 @@ export default async function AdminControlPage({
     // 지난 행사 건수는 RLS 범위 밖이라 집계 전용 RPC 로 받는다.
     supabase.rpc("event_summary"),
   ]);
+  if ([cfgRes, eventsRes, summaryRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/control")} />;
+  }
   const cfg = cfgRes.data;
 
   const counts: EventCounts = {};
@@ -58,9 +63,9 @@ export default async function AdminControlPage({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-foreground">시스템 설정</h2>
+        <h2 className="text-xl font-semibold text-foreground">운영 설정</h2>
         <p className="text-sm text-muted mt-0.5">
-          행사 전환, 입력·마감 단계 전환 및 배차 활성화 (master 전용)
+          행사 전환, 입력·마감 단계 전환 및 배차 활성화 (총단 전용)
         </p>
       </div>
       <EventsPanel events={(eventsRes.data ?? []) as EventRow[]} counts={counts} />

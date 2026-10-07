@@ -1,6 +1,10 @@
+import { DraftNavigationProvider } from "@/components/ui/draft-navigation";
+import { RefreshOnReturn } from "@/components/ui/refresh-on-return";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { ProfileMini } from "@/lib/supabase/types";
+import { WorkspaceNav } from "@/components/ui/workspace-nav";
+import { campusNavigation } from "@/lib/navigation";
 import { signOut } from "@/app/logout/actions";
 
 export default async function CampusLayout({
@@ -30,12 +34,13 @@ export default async function CampusLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <DraftNavigationProvider><div className="min-h-screen bg-background">
+      <a href="#workspace-content" className="skip-link">본문으로 건너뛰기</a>
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-row items-start justify-between gap-2 px-4 py-3 md:items-center md:px-6">
           <div className="flex w-full flex-col items-start gap-2 md:w-auto md:flex-row md:items-center md:gap-4 min-w-0">
             <h1 className="text-sm font-semibold text-foreground whitespace-nowrap shrink-0">
-              임역원 · {profile.display_name ?? "(이름 없음)"}
+              Carbus · 임역원 · {profile.display_name ?? "(이름 없음)"}
             </h1>
             <span
               className="shrink-0 max-w-[14rem] truncate rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted"
@@ -43,57 +48,22 @@ export default async function CampusLayout({
             >
               {event?.name ?? "진행 중 행사 없음"}
             </span>
-            <span className="hidden md:inline text-border-2">|</span>
-            <nav className="flex w-full gap-1 overflow-x-auto whitespace-nowrap pb-1 text-sm md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
-              <a
-                href="/campus"
-                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
-              >
-                순장/순원 입력
-              </a>
-              <a
-                href="/campus/import"
-                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
-              >
-                Import
-              </a>
-              <a
-                href="/campus/buses"
-                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
-              >
-                호차 조회
-              </a>
-              <a
-                href="/campus/partial"
-                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
-              >
-                부분 참석
-              </a>
-              <a
-                href="/campus/pickup"
-                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
-              >
-                수송 요청
-              </a>
-              <a
-                href="/campus/payments"
-                className="shrink-0 rounded-md px-2.5 py-1 text-muted transition hover:bg-surface-2 hover:text-foreground"
-              >
-                차량비
-              </a>
-            </nav>
+
           </div>
           <form action={signOut} className="shrink-0">
             <button
               type="submit"
-              className="text-sm text-muted transition hover:text-foreground whitespace-nowrap"
+              className="min-h-11 px-3 rounded-lg text-sm text-muted transition hover:bg-surface-2 hover:text-foreground whitespace-nowrap"
             >
               로그아웃
             </button>
           </form>
         </div>
       </header>
-      <div className="mx-auto max-w-7xl p-4 md:p-6">{children}</div>
-    </div>
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 p-4 md:flex-row md:gap-6 md:p-6">
+        <WorkspaceNav groups={campusNavigation} />
+        <main id="workspace-content" tabIndex={-1} className="min-w-0 flex-1"><RefreshOnReturn />{children}</main>
+      </div>
+    </div></DraftNavigationProvider>
   );
 }

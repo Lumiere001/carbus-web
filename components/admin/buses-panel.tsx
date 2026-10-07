@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bus, Star, Pin, ChevronDown, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +20,8 @@ export type PaxData = {
 /**
  * 차량순장·고정탑승 사전 지정 후보 (전체 명단). 방향·편으로 필터해 선택.
  *
- * ⚠️ 두 필드 다 **선택 필드로 만들지 마라.** 서버(leaders.ts)가 "신청한 편 =
- * 차량의 편"으로 판정하므로, 화면이 다른 기준으로 후보를 뽑으면 목록에는 뜨는데
+ * ⚠️ 두 필드 다 **선택 필드로 만들지 마라.** DB(set_leader_binding)가 일반 버스의
+ * "신청한 편 = 차량의 편"으로 판정하므로, 다른 기준으로 후보를 뽑으면 목록에는 뜨는데
  * 저장은 거부되는 상태가 된다. 필수로 두면 컬럼이 또 바뀔 때 tsc 가 즉시 잡는다.
  */
 export type CandidateData = PaxData & {
@@ -31,6 +32,7 @@ export type CandidateData = PaxData & {
 export type BusData = {
   id: number;
   name: string;
+  kind: "bus" | "staff_car";
   /** 이 차량의 상행 편. NULL 이면 상행을 운행하지 않는다. */
   up_trip_id: number | null;
   /** 이 차량의 하행 편. NULL 이면 하행을 운행하지 않는다. */
@@ -59,15 +61,10 @@ export function BusesPanel({
   trips: Pick<EventTrip, "id" | "label" | "active" | "display_order" | "direction">[];
   isMaster: boolean;
 }) {
-  const [buses, setBuses] = useState(initial);
+  const buses = initial;
+  const router = useRouter();
   const [view, setView] = useState<"up" | "down">("up");
   const [msg, setMsg] = useState<Msg>(null);
-
-  function patch(busId: number, fields: Partial<BusData>) {
-    setBuses((prev) =>
-      prev.map((b) => (b.id === busId ? { ...b, ...fields } : b))
-    );
-  }
 
   const tabClass = (active: boolean) =>
     "px-3.5 py-1.5 rounded-lg text-sm transition border " +
@@ -92,7 +89,7 @@ export function BusesPanel({
   return (
     <div className="space-y-6">
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -140,7 +137,7 @@ export function BusesPanel({
                   buses={buses}
                   dayText={dayText}
                   isMaster={isMaster}
-                  onPatch={(f) => patch(b.id, f)}
+                  onSaved={() => router.refresh()}
                   onMsg={setMsg}
                 />
               ))}
@@ -162,7 +159,7 @@ export function BusesPanel({
 
 /**
  * 호차 카드 — 상행·하행 공용. 동일 구조(헤더·좌석 그리드·캠퍼스 분포·명단).
- * 상행(mode="up")에서만 차량순장·고정탑승 지정 블록을 추가로 노출.
+ * 상·하행 각각 차량순장·고정탑승 지정 블록을 노출.
  */
 function BusCard({
   bus,
@@ -172,7 +169,7 @@ function BusCard({
   buses,
   dayText,
   isMaster,
-  onPatch,
+  onSaved,
   onMsg,
 }: {
   bus: BusData;
@@ -182,7 +179,7 @@ function BusCard({
   buses: BusData[];
   dayText: string;
   isMaster: boolean;
-  onPatch: (f: Partial<BusData>) => void;
+  onSaved: () => void;
   onMsg: (m: Msg) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -200,16 +197,14 @@ function BusCard({
   const fixedIds =
     mode === "up" ? bus.fixed_passenger_ids : bus.down_fixed_passenger_ids;
 
-  // 사전 지정 후보 — 서버(leaders.ts assertTripMatch)와 **같은 술어**:
-  // "그 방향으로 신청한 편 = 이 차량의 그 방향 편".
-  // 예전엔 하행만 `uses_return_bus === true` 로 봐서, 하행이 두 편이면 6시 차 승객이
-  // 3시 차 순장 후보로 떴다. 지정은 화면에서 통과하고 배차에서 조용히 탈락했다.
+  // DB와 같은 후보 기준: 일반 버스는 신청한 편이 같아야 하고,
+  // 간사 차량은 해당 방향을 운행하면 별도 이동 신청자도 직접 지정할 수 있다.
   const candidateMap = new Map(candidates.map((c) => [c.id, c]));
   const busTripId = mode === "up" ? bus.up_trip_id : bus.down_trip_id;
   const pinPool = candidates
     .filter((c) => {
       const regTrip = mode === "up" ? c.up_trip_id : c.down_trip_id;
-      return regTrip != null && busTripId != null && regTrip === busTripId;
+      return busTripId != null && (bus.kind === "staff_car" || (regTrip != null && regTrip === busTripId));
     })
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
@@ -255,14 +250,10 @@ function BusCard({
       }
     }
     setBusy(true);
-    const res = await setDriver(bus.id, regId, mode);
+    const res = await setDriver({ busId: bus.id, mode, driverId, fixedIds }, regId);
     setBusy(false);
     if (!res.ok) return onMsg({ type: "err", text: res.message });
-    onPatch(
-      mode === "up"
-        ? { driver_registration_id: regId }
-        : { down_driver_registration_id: regId }
-    );
+    onSaved();
     const who = regId ? candidateMap.get(regId)?.name : null;
     onMsg({
       type: "ok",
@@ -300,14 +291,10 @@ function BusCard({
       ? fixedIds.filter((id) => id !== regId)
       : [...fixedIds, regId];
     setBusy(true);
-    const res = await setFixedPassengers(bus.id, next, mode);
+    const res = await setFixedPassengers({ busId: bus.id, mode, driverId, fixedIds }, next);
     setBusy(false);
     if (!res.ok) return onMsg({ type: "err", text: res.message });
-    onPatch(
-      mode === "up"
-        ? { fixed_passenger_ids: next }
-        : { down_fixed_passenger_ids: next }
-    );
+    onSaved();
   }
 
   return (
@@ -352,6 +339,7 @@ function BusCard({
               </span>
               {editable ? (
                 <select
+                  aria-label={`${bus.name} ${dirText} 차량순장`}
                   value={driverId ?? ""}
                   disabled={busy}
                   onChange={(e) => handleSetDriver(e.target.value || null)}
@@ -393,6 +381,7 @@ function BusCard({
                         onClick={() => handleToggleFixed(p.id)}
                         className="ml-1 hover:text-danger"
                         aria-label="고정 해제"
+                        title={`${p.name} 고정 탑승 해제`}
                       >
                         <X size={11} />
                       </button>
@@ -402,6 +391,7 @@ function BusCard({
               </div>
               {editable && (
                 <select
+                  aria-label={`${bus.name} ${dirText} 고정 탑승자 추가`}
                   value=""
                   disabled={busy}
                   onChange={(e) =>

@@ -35,7 +35,7 @@ export async function setMasterReceived(
     );
   if (error) {
     if (error.message.includes("row-level security") || error.message.includes("policy")) {
-      return { ok: false, message: "권한이 없습니다 (master만 입금액을 등록할 수 있어요)" };
+      return { ok: false, message: "권한이 없습니다 (총단만 입금액을 등록할 수 있어요)" };
     }
     return { ok: false, message: error.message };
   }

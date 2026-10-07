@@ -1,8 +1,11 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
+import { SettlementOverview } from "./settlement-overview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { setMasterReceived, masterRemitFor } from "@/lib/admin/payments";
@@ -75,6 +78,7 @@ export function PaymentsPanel({
   waived: WaivedRow[];
   balances: BalanceRow[];
 }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<string | null>(null);
@@ -106,16 +110,14 @@ export function PaymentsPanel({
     return (r.master_received_total ?? 0) - (r.campus_remitted_total ?? 0);
   }
 
-  function remitFor(r: ThreeWayRow) {
+  async function remitFor(r: ThreeWayRow) {
     const gap = unregisteredByCampus(r);
     // 뷰가 나오는 값이라 campus_id 가 이론상 null 일 수 있다 — 그 행은 대상이 아니다.
     if (gap <= 0 || !r.campus_id) return;
     const campusId = r.campus_id;
     if (
-      !confirm(
-        `${r.campus_name}가 아직 등록하지 않은 ${won(gap)}을 총단이 대신 등록합니다.\n` +
-          `실제로 돈이 들어온 것이 맞는지 통장에서 확인하셨나요?`
-      )
+      !(await requestConfirmation({ title: "캠퍼스 송금을 대신 등록할까요?", description: `${r.campus_name}가 아직 등록하지 않은 ${won(gap)}을 총단이 대신 등록합니다.\n` +
+          `실제로 돈이 들어온 것이 맞는지 통장에서 확인하셨나요?`, confirmLabel: "송금 대리 등록", tone: "default" }))
     )
       return;
     startTransition(async () => {
@@ -147,8 +149,9 @@ export function PaymentsPanel({
 
   return (
     <div className="space-y-4">
+      {confirmationDialog}
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -160,7 +163,8 @@ export function PaymentsPanel({
         </div>
       )}
 
-      <Card>
+      <SettlementOverview paid={sum("system_paid_total")} remitted={sum("campus_remitted_total")} received={sum("master_received_total")} />
+      <Card title="캠퍼스별 정산 상세" subtitle="정확한 금액 비교와 입금 등록" >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
@@ -198,7 +202,9 @@ export function PaymentsPanel({
                   <td className="px-4 py-2.5 text-right tabular-nums">
                     {editing === r.campus_id ? (
                       <input
+                        disabled={pending}
                         type="number"
+                        aria-label={`${r.campus_name} 총단 확인 입금액`}
                         value={draft.total}
                         autoFocus
                         onChange={(e) =>
@@ -251,7 +257,7 @@ export function PaymentsPanel({
                               송금 대신 등록
                             </Button>
                           )}
-                          <Button size="sm" variant="secondary" onClick={() => startEdit(r)}>
+                          <Button size="sm" variant="secondary" disabled={pending} onClick={() => startEdit(r)}>
                             입금 등록
                           </Button>
                         </span>
@@ -296,9 +302,9 @@ export function PaymentsPanel({
       {isMaster && balances.length > 0 && (
         <Card
           title="차액 확인 필요"
-          subtitle={`${balances.length}명 · 돌려줄 돈 ${won(
+          subtitle={<>{balances.length}명 · 돌려줄 돈 {won(
             balances.reduce((s, b) => s + b.refund_due, 0)
-          )}원 — 낸 금액이 더 많거나, 납부 뒤 편성이 줄어든 사람`}
+          )}원 — 낸 금액이 더 많거나, 납부 뒤 <span className="whitespace-nowrap">편성이 줄어든 사람</span></>}
         >
           <div className="px-5 pt-4 text-xs text-muted leading-relaxed">
             왕복으로 내고 나서 하행을 타지구 차량으로 바꾸거나 참석을 취소한 경우입니다.

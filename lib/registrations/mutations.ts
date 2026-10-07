@@ -67,16 +67,18 @@ export async function updateRegistration(
   if (!data) {
     // version 불일치 = 다른 임역원이 먼저 수정. 최신 row를 가져와 호출부에 전달
     // (Realtime이 아직 도달 안 했어도 즉시 최신값으로 갱신하기 위함).
-    const { data: latest } = await supabase
+    const { data: latest, error: latestError } = await supabase
       .from("registrations")
       .select("*")
       .eq("id", id)
       .maybeSingle();
+    if (latestError || !latest) return { ok: false, conflict: true,
+      message: "저장하지 않았습니다. 최신 자료를 불러오지 못했습니다. 화면을 새로 열고 다시 확인해 주세요." };
     return {
       ok: false,
       conflict: true,
       message: "다른 임역원이 먼저 수정했습니다. 최신 값으로 갱신했어요.",
-      latest: latest ?? undefined,
+      latest,
     };
   }
   return { ok: true, row: data };
@@ -96,6 +98,8 @@ export async function updateCells(
   expected: Partial<RegistrationRow>,
   patch: Partial<RegistrationInsert>
 ): Promise<Result<RegistrationRow> & { conflictFields?: string[] }> {
+  if (patch.name !== undefined && !patch.name.trim())
+    return { ok: false, message: "이름은 필수입니다" };
   const supabase = createClient();
   const { data: current, error: fetchErr } = await supabase
     .from("registrations")
@@ -144,16 +148,18 @@ export async function updateCells(
   if (error) return { ok: false, message: humanizeError(error.message) };
   if (!data) {
     // version 불일치 — SELECT 이후 다른 사람이 먼저 커밋함
-    const { data: latest } = await supabase
+    const { data: latest, error: latestError } = await supabase
       .from("registrations")
       .select("*")
       .eq("id", id)
       .maybeSingle();
+    if (latestError || !latest) return { ok: false, conflict: true,
+      message: "저장하지 않았습니다. 최신 자료를 불러오지 못했습니다. 화면을 새로 열고 다시 확인해 주세요." };
     return {
       ok: false,
       conflict: true,
       conflictFields: Object.keys(expected),
-      latest: latest ?? current,
+      latest,
       message: "다른 임역원이 같은 항목을 먼저 수정했습니다. 최신값을 반영했어요.",
     };
   }

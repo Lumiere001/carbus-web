@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TriangleAlert, ChevronDown, ChevronRight } from "lucide-react";
+import { TriangleAlert, Check, ChevronDown, ChevronRight } from "lucide-react";
 
 export type BoardRow = {
   id: number | null;
@@ -143,7 +143,7 @@ export function PickupBoard({
     requestAnimationFrame(() => {
       document
         .getElementById(`pickup-${cssId(key)}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     });
   };
 
@@ -188,14 +188,15 @@ export function PickupBoard({
                   key={k}
                   type="button"
                   onClick={() => setGroupBy(k)}
+                  aria-pressed={groupBy === k}
                   className={
-                    "px-2.5 py-1 text-xs " +
+                    "inline-flex min-h-11 items-center gap-1 px-2.5 py-1 text-xs " +
                     (groupBy === k
                       ? "bg-primary-100 text-primary-700 font-medium"
                       : "text-muted hover:bg-surface-2")
                   }
                 >
-                  {k === "time" ? "시각별" : "장소별"}
+                  {groupBy === k && <Check size={12} aria-hidden="true" />}{k === "time" ? "시각별" : "장소별"}
                 </button>
               ))}
             </div>
@@ -205,14 +206,14 @@ export function PickupBoard({
                 type="button"
                 onClick={() => jump(s.firstKey)}
                 className={
-                  "text-xs rounded-full border px-2.5 py-1 " +
+                  "inline-flex min-h-11 items-center gap-1.5 text-xs rounded-full border px-2.5 py-1 " +
                   (s.undecided
-                    ? "border-danger-300 text-danger hover:bg-danger-bg/40"
+                    ? "border-danger-border text-danger hover:bg-danger-bg/40"
                     : "border-border text-muted hover:bg-surface-2")
                 }
                 title="눌러서 그 묶음으로 이동"
               >
-                {s.label} <b className="tabular-nums">{s.count}</b>
+                {s.label} <b className="tabular-nums">{s.count}명</b>
               </button>
             ))}
             <button
@@ -220,7 +221,7 @@ export function PickupBoard({
               onClick={() =>
                 setCollapsed(allCollapsed ? new Set() : new Set(list.map((g) => g.key)))
               }
-              className="ml-auto text-xs text-muted hover:text-foreground underline"
+              className="ml-auto min-h-11 px-2 text-xs text-muted hover:text-foreground underline"
             >
               {allCollapsed ? "모두 펼치기" : "모두 접기"}
             </button>
@@ -235,7 +236,9 @@ export function PickupBoard({
                   <button
                     type="button"
                     onClick={() => toggle(g.key)}
-                    className="flex flex-wrap items-center gap-2 w-full text-left"
+                    aria-expanded={!isCollapsed}
+                    aria-controls={`pickup-members-${cssId(g.key)}`}
+                    className="flex min-h-11 flex-wrap items-center gap-2 w-full text-left"
                   >
                     {isCollapsed ? (
                       <ChevronRight size={14} className="text-muted-2 shrink-0" />
@@ -273,6 +276,7 @@ export function PickupBoard({
                     </Badge>
                   </button>
 
+                  <div id={`pickup-members-${cssId(g.key)}`}>
                   {!isCollapsed && (
                     <>
                       {/* 장소 안내는 묶음마다 한 번만. 사람마다 반복하면 같은 문장이
@@ -286,11 +290,11 @@ export function PickupBoard({
                         className={
                           isAdmin
                             ? "mt-1.5 pl-5 space-y-1 text-sm text-muted"
-                            : "mt-1.5 pl-5 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted"
+                            : "mt-1.5 pl-5 space-y-2 text-sm text-muted"
                         }
                       >
                         {g.members.map((m) => (
-                          <li key={m.id} className={isAdmin ? "" : "whitespace-nowrap"}>
+                          <li key={m.id} className="min-w-0 max-w-full">
                             <span className="text-foreground">{m.person_name}</span>
                             {/* 임역원은 전부 자기 캠퍼스라 캠퍼스 이름이 소음이다.
                                 관리자는 그게 차를 짜는 기준이라 반드시 있어야 한다. */}
@@ -306,18 +310,21 @@ export function PickupBoard({
                               {m.direction === "down" ? "수련회장 출발" : "수련회장 도착"}
                             </span>
                             {isAdmin && (m.attend_from || m.attend_to) && (
-                              <span className="text-muted-2 text-xs ml-1">
+                              <span className="text-muted-2 text-xs ml-1 whitespace-nowrap">
                                 · 참여 {m.attend_from ?? "처음"}~{m.attend_to ?? "끝"}
                               </span>
                             )}
                             {m.note && (
-                              <span className="text-muted-2 text-xs ml-1">({m.note})</span>
+                              <p role="note" aria-label="수송 메모" className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground">
+                                <span className="mr-2 text-xs text-muted">수송 메모</span>{m.note}
+                              </p>
                             )}
                           </li>
                         ))}
                       </ul>
                     </>
                   )}
+                  </div>
                 </div>
               );
             })}

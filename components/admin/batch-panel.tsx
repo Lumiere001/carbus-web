@@ -1,5 +1,7 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Play, CircleCheck, TriangleAlert, Clock, ArrowUp, ArrowDown } from "lucide-react";
@@ -30,6 +32,8 @@ export type UnassignedRow = {
   /** 이 사람이 신청한 편. 드롭다운을 서버 판정과 같은 집합으로 좁히는 데 쓴다. */
   up_trip_id: number | null;
   down_trip_id: number | null;
+  assigned_up_bus_id: number | null;
+  assigned_down_bus_id: number | null;
 };
 /**
  * ⚠️ 편 컬럼은 **선택 필드로 만들지 마라** (커밋 ab31181 의 교훈).
@@ -94,19 +98,16 @@ export function BatchPanel({
     downStale: number;
   };
 }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<BatchActionResult | null>(null);
 
-  function run(mode: "up" | "down") {
+  async function run(mode: "up" | "down") {
     const label = mode === "up" ? "상행" : "하행";
     if (
-      !confirm(
-        `${label} 배차를 새로 계산해 덮어씁니다.\n\n` +
-          `⚠️ 수동으로 직접 옮긴 ${label} 배정은 모두 사라지고 다시 계산됩니다.\n` +
-          `특정 인원을 그대로 두려면 호차 화면에서 '고정 탑승자'로 지정한 뒤 실행하세요.\n\n` +
-          `진행할까요?`
-      )
+      !(await requestConfirmation({ title: `${label} 배차를 다시 실행할까요?`, description: `${label} 배차를 새로 계산하며 수동으로 옮긴 배정도\u00a0덮어씁니다.\n\n` +
+          `배정을 유지할 사람은 먼저 호차 화면에서 '고정\u00a0탑승자'로\u00a0지정하세요.`, confirmLabel: "배차 다시 실행", tone: "danger" }))
     )
       return;
     setResult(null);
@@ -122,6 +123,7 @@ export function BatchPanel({
 
   return (
     <div className="space-y-6">
+      {confirmationDialog}
       <div>
         <h2 className="text-xl font-semibold text-foreground">배차 실행</h2>
         <p className="text-sm text-muted mt-0.5">
@@ -159,7 +161,7 @@ export function BatchPanel({
       {currentPhase !== "phase2" && (
         <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
           아직 <b>입력 단계</b>입니다. 신청을 마감한 뒤 배차하는 게 보통이지만, 지금
-          미리 돌려봐도 됩니다. (마감 전환은 ‘Phase’ 화면)
+          미리 돌려봐도 됩니다. (마감 전환은 <span className="whitespace-nowrap">‘운영 설정’ 화면</span>)
         </div>
       )}
 
@@ -216,7 +218,7 @@ export function BatchPanel({
       {/* 실행 결과 */}
       {result && (
         <Card title="실행 결과" subtitle={result.ok ? (result.mode === "up" ? "상행" : "하행") : "실패"}>
-          <div className="p-5">
+          <div role={result.ok ? "status" : "alert"} className="p-5">
             {result.ok ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
@@ -341,12 +343,14 @@ function UnassignedList({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
-  function assign(id: string, value: string) {
+  function assign(row: UnassignedRow, value: string) {
     if (!value) return;
     const busId = Number(value);
     startTransition(async () => {
       const res = await setAssignment(
-        id,
+        row.id,
+        { up_trip_id: row.up_trip_id, down_trip_id: row.down_trip_id,
+          assigned_up_bus_id: row.assigned_up_bus_id, assigned_down_bus_id: row.assigned_down_bus_id },
         mode === "up"
           ? { assigned_up_bus_id: busId }
           : { assigned_down_bus_id: busId }
@@ -362,7 +366,7 @@ function UnassignedList({
   return (
     <Card title={title} subtitle={`${rows.length}명 — 배차 후 남은 인원`}>
       {err && (
-        <p className="px-5 pt-3 text-sm text-danger">{err}</p>
+        <p role="alert" className="px-5 pt-3 text-sm text-danger">{err}</p>
       )}
       {rows.length === 0 ? (
         <p className="px-5 py-6 text-sm text-success">미배정 없음 ✓</p>
@@ -380,14 +384,15 @@ function UnassignedList({
                   </span>
                 </span>
                 {options.length === 0 ? (
-                  <span className="text-xs text-warning-700">
+                  <span className="text-xs text-warning">
                     이 편을 운행하는 호차가 없습니다
                   </span>
                 ) : (
                   <select
+                    aria-label={`${r.name} ${mode === "up" ? "상행" : "하행"} 배정 호차`}
                     defaultValue=""
                     disabled={pending}
-                    onChange={(e) => assign(r.id, e.target.value)}
+                    onChange={(e) => assign(r, e.target.value)}
                     className="text-xs border border-border-2 rounded-md px-1.5 py-1 bg-surface"
                   >
                     <option value="">호차 배정…</option>

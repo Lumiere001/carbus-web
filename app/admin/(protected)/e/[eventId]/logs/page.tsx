@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, X } from "lucide-react";
 import type { Database } from "@/lib/supabase/database.types";
+import { DataLoadError } from "@/components/ui/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,10 @@ export default async function AdminLogsPage({
     supabase.from("campuses").select("id, name"),
   ]);
 
+  if ([auditRes, runsRes, campusRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={href(eventId, params, { page: params.page })} />;
+  }
+
   const audit = auditRes.data ?? [];
   const total = auditRes.count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -129,10 +134,11 @@ export default async function AdminLogsPage({
   ] as string[];
   const nameById = new Map<string, string>();
   if (changerIds.length > 0) {
-    const { data: profs } = await supabase
+    const { data: profs, error } = await supabase
       .from("profiles")
       .select("id, display_name, role")
       .in("id", changerIds);
+    if (error) return <DataLoadError retryHref={href(eventId, params, { page: params.page })} />;
     for (const p of profs ?? [])
       nameById.set(
         p.id,
@@ -144,7 +150,7 @@ export default async function AdminLogsPage({
   const personName = personId ? audit[0]?.person_name ?? null : null;
 
   const chip = (active: boolean) =>
-    "px-3 py-1 rounded-lg text-sm border transition " +
+    "inline-flex min-h-11 min-w-11 items-center justify-center px-3 py-1 rounded-lg text-sm border transition " +
     (active
       ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
       : "border-border text-muted hover:bg-surface-2");
@@ -179,6 +185,7 @@ export default async function AdminLogsPage({
       >
         {/* 검색·필터 */}
         <div className="px-5 py-3 border-b border-border flex flex-wrap items-center gap-2">
+          <label htmlFor="logs-search" className="text-xs font-medium text-muted">이름·학번 검색</label>
           <form method="GET" className="relative">
             {personId && <input type="hidden" name="person" value={personId} />}
             {typeFilter && <input type="hidden" name="type" value={typeFilter} />}
@@ -188,12 +195,17 @@ export default async function AdminLogsPage({
               className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-2"
             />
             <input
+              id="logs-search"
               type="search"
+              list="logs-search-candidates"
               name="q"
               defaultValue={q}
               placeholder="이름·학번 검색"
               className="w-52 pl-8 pr-3 py-1.5 text-sm border border-border-2 rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-200"
             />
+            <datalist id="logs-search-candidates">
+              {[...new Set(audit.flatMap((entry) => [entry.person_name, entry.student_id]).filter((value): value is string => Boolean(value)))].map((value) => <option key={value} value={value} />)}
+            </datalist>
             {/* Enter 로도 되지만, 버튼이 없으면 "검색이 안 된다"고 느낀다.
                 실제로 점검에서 그렇게 보고됐다. */}
             <button
@@ -204,7 +216,7 @@ export default async function AdminLogsPage({
             </button>
           </form>
 
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <Link href={href(eventId, params, { type: undefined })} className={chip(!typeFilter)}>
               전체
             </Link>
@@ -225,7 +237,7 @@ export default async function AdminLogsPage({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="bg-surface-2 text-muted text-left">
                 <th className="px-4 py-2.5">시각</th>
@@ -292,7 +304,7 @@ export default async function AdminLogsPage({
             <span className="text-muted-2">
               {page} / {lastPage} 쪽 · {total.toLocaleString()}건
             </span>
-            <span className="ml-auto flex gap-1.5">
+            <span className="ml-auto flex gap-2">
               {page > 1 && (
                 <>
                   <Link href={href(eventId, params, { page: "1" })} className={chip(false)}>
@@ -320,7 +332,7 @@ export default async function AdminLogsPage({
 
       <Card title="배차 실행 이력" subtitle="최근 20회">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="bg-surface-2 text-muted text-left">
                 <th className="px-4 py-2.5">시각</th>

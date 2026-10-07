@@ -83,7 +83,7 @@ export function CourseBoard({ rows }: { rows: CourseRow[] }) {
   return (
     <Card
       title="수강신청 현황"
-      subtitle={`${rows.length}명 · 날과 시간으로 묶음 — 그대로 강의실 명단이 됩니다`}
+      subtitle={`신청 ${rows.length}건 · 한 사람의 여러 날짜 신청을 각각 집계합니다`}
     >
       {rows.length === 0 ? (
         <p className="px-5 py-6 text-sm text-muted-2">
@@ -96,8 +96,8 @@ export function CourseBoard({ rows }: { rows: CourseRow[] }) {
             <div className="px-5 py-3 text-sm text-danger flex items-start gap-2 border-b border-border bg-danger-bg/40">
               <TriangleAlert size={16} className="mt-0.5 shrink-0" />
               <span>
-                <b>{undecidedTotal}명</b>이 시간 미정입니다. 이 사람들에게 몇 시 강의인지
-                먼저 물어봐야 강의실을 짤 수 있습니다.
+                <span className="inline-block whitespace-nowrap"><b>신청 {undecidedTotal}건</b>의 시간이 미정입니다.</span>{" "}
+                <span className="inline-block whitespace-nowrap">강의 시각을 확인해 주세요.</span>
               </span>
             </div>
           )}
@@ -137,7 +137,7 @@ export function CourseBoard({ rows }: { rows: CourseRow[] }) {
                     </span>
                     {/* 날짜는 계산된 값이다 — 행사 날짜를 고치면 저절로 따라간다. */}
                     {d.onDate && (
-                      <span className="text-xs text-muted-2 tabular-nums">
+                      <span className="text-xs text-muted tabular-nums">
                         {formatDate(d.onDate)}
                       </span>
                     )}

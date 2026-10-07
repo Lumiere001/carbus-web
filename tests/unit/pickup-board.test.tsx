@@ -60,7 +60,7 @@ describe("PickupBoard — 묶음", () => {
     // 위 요약 칩과 묶음 머리글 양쪽에 나온다 — 요약은 "스크롤 없이 어디에 몇 명인지"
     // 를 보여주는 자리라 같은 문구가 두 번 있는 게 맞다.
     expect(screen.getAllByText("2026-08-11 23:30").length).toBeGreaterThan(0);
-    expect(screen.getByText("2명")).toBeTruthy();
+    expect(screen.getAllByText("2명")).toHaveLength(2);
   });
 
   it("장소가 다르면 다른 묶음이다 (차를 따로 보내야 하므로)", () => {
@@ -141,7 +141,23 @@ describe("PickupBoard — 관리자와 임역원이 보는 것이 다르다", ()
     const { default: userEvent } = await import("@testing-library/user-event");
     render(<PickupBoard rows={rows} audience="campus" />);
     expect(screen.getByText("김순장")).toBeTruthy();
-    await userEvent.click(screen.getByText("1명"));
+    await userEvent.click(screen.getByRole("button", {name: /어딘가 역.*1명/}));
     expect(screen.queryByText("김순장")).toBeNull();
   });
+});
+
+
+describe("PickupBoard — 사용자 메모", () => {
+ beforeEach(cleanup);
+ it.each(["admin", "campus"] as const)("%s에서도 요청 메모를 안내 문구와 구분한다", (audience) => {
+  const memo = "정문으로 바로 오지 말고 1번 출구에서 짐을 챙긴 뒤 연락해 주세요.";
+  render(<PickupBoard audience={audience} rows={[row({id: 1, note: memo})]} />);
+  const note = screen.getByRole("note", { name: "수송 메모" });
+  expect(note.textContent).toContain(memo);
+  expect(screen.getByText("아무개")).toBeDefined();
+ });
+ it("메모가 없으면 빈 메모 영역을 만들지 않는다", () => {
+  render(<PickupBoard audience="campus" rows={[row({id: 1})]} />);
+  expect(screen.queryByRole("note")).toBeNull();
+ });
 });

@@ -83,7 +83,7 @@ export async function clearDriverBus(id: string): Promise<Result> {
 
 function humanize(msg: string): string {
   if (msg.includes("row-level security") || msg.includes("policy")) {
-    return "권한이 없습니다 (master만 사용자 권한을 변경할 수 있어요)";
+    return "권한이 없습니다 (총단만 사용자 권한을 변경할 수 있어요)";
   }
   return msg;
 }

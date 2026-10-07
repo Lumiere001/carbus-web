@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -37,28 +37,33 @@ export function ConfirmDialog({
 }) {
   const [reason, setReason] = useState("");
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
 
-  // 열릴 때 **취소 버튼**에 초점을 준다. 되돌리기 어려운 조작이라 엔터를 눌러
-  // 실수로 진행되면 안 된다.
   useEffect(() => {
-    if (open) cancelRef.current?.focus();
+    if (!open || !dialogRef.current) return;
+    const dialog = dialogRef.current;
+    const previous = document.activeElement;
+    dialog.showModal();
+    cancelRef.current?.focus();
+    return () => {
+      dialog.close();
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
+    };
   }, [open]);
 
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onCancel();
-      }}
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      className="m-auto w-[calc(100%-2rem)] max-w-md max-h-[85vh] overflow-y-auto rounded-xl border border-border bg-surface p-0 text-foreground shadow-3 backdrop:bg-black/40"
+      onCancel={(event) => { event.preventDefault(); setReason(""); onCancel(); }}
     >
       <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-2xl">
         <div className="px-5 pt-4 pb-3">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 id={titleId} className="text-base font-semibold text-foreground">{title}</h3>
           {description && (
             <div className="mt-1.5 text-sm text-muted leading-relaxed">{description}</div>
           )}
@@ -75,8 +80,8 @@ export function ConfirmDialog({
           )}
         </div>
         <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
-          <Button ref={cancelRef} variant="ghost" onClick={onCancel}>
-            그만두기
+          <Button ref={cancelRef} variant="ghost" onClick={() => { setReason(""); onCancel(); }}>
+            취소
           </Button>
           <Button
             variant={tone === "danger" ? "danger" : "default"}
@@ -89,6 +94,6 @@ export function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

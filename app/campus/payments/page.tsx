@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import {
   CampusPaymentsPanel,
   type PayRow,
@@ -48,6 +49,10 @@ export default async function CampusPaymentsPage() {
       .eq("campus_id", campusId)
       .maybeSingle(),
   ]);
+
+  if ([regRes, campusRes, remitRes, settleRes].some((result) => result.error)) {
+    return <DataLoadError retryHref="/campus/payments" />;
+  }
 
   return (
     <CampusPaymentsPanel

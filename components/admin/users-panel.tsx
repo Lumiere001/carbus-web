@@ -1,5 +1,7 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState } from "react";
 import {
   type ProfileRow,
@@ -27,6 +29,7 @@ export function UsersPanel({
   campuses: Campus[];
   buses: BusOpt[];
 }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const [profiles, setProfiles] = useState<ProfileRow[]>(initial);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
     null
@@ -64,12 +67,8 @@ export function UsersPanel({
   /** 접근 내리기 — 임역원 기간이 끝난 사람. 지우는 게 아니라 못 들어오게 한다. */
   async function onRevoke(p: ProfileRow) {
     if (
-      !confirm(
-        `${nameOf(p)} 의 접근을 내릴까요?\n\n` +
-          `· 로그인해도 아무 화면에 못 들어갑니다 (권한·배정이 모두 해제됩니다)\n` +
-          `· 이 사람이 남긴 기록(감사 로그·배차·장부)은 그대로 남습니다\n` +
-          `· 필요하면 아래 "내린 계정" 에서 되돌릴 수 있습니다`
-      )
+      !(await requestConfirmation({ title: "접근 권한을 해제할까요?", description: `${nameOf(p)}의 권한·배정을 해제해 모든 화면 접근을 막으며, 남긴 기록은 보존합니다.\n\n` +
+          `필요하면 아래 '내린 계정'에서 권한을 되돌릴 수 있습니다.`, confirmLabel: "접근 권한 해제", tone: "danger" }))
     )
       return;
     const res = await revokeAccess(p.id);
@@ -92,7 +91,7 @@ export function UsersPanel({
   async function onCampusChange(p: ProfileRow, value: string) {
     if (value === "") {
       if (p.role !== "campus_admin") return;
-      if (!confirm(`${nameOf(p)}의 임역원(캠퍼스) 배정을 해제할까요? (차량 배정은 유지)`))
+      if (!(await requestConfirmation({ title: "임역원 배정을 해제할까요?", description: `${nameOf(p)}의 임역원(캠퍼스) 배정을 해제할까요? (차량 배정은 유지)`, confirmLabel: "임역원 배정 해제", tone: "danger" })))
         return;
       const res = await revokeToGuest(p.id);
       if (!res.ok) return setMsg({ type: "err", text: res.message });
@@ -115,7 +114,7 @@ export function UsersPanel({
   async function onBusChange(p: ProfileRow, value: string) {
     if (value === "") {
       if (p.driver_bus_id == null) return;
-      if (!confirm(`${nameOf(p)}의 차량 순장(호차) 배정을 해제할까요?`)) return;
+      if (!(await requestConfirmation({ title: "차량 순장 배정을 해제할까요?", description: `${nameOf(p)}의 차량 순장(호차) 배정을 해제할까요?`, confirmLabel: "차량 순장 배정 해제", tone: "danger" }))) return;
       const res = await clearDriverBus(p.id);
       if (!res.ok) return setMsg({ type: "err", text: res.message });
       replace(res.row);
@@ -138,8 +137,9 @@ export function UsersPanel({
 
   return (
     <div className="space-y-4">
+      {confirmationDialog}
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -191,7 +191,7 @@ export function UsersPanel({
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap space-x-1">
                     {isAdmin && (
-                      <span className="inline-block rounded-md bg-info-bg text-info text-xs px-1.5 py-0.5">
+                      <span className="inline-block rounded-md bg-primary-50 text-primary-800 text-xs px-1.5 py-0.5">
                         임역원
                       </span>
                     )}
@@ -208,6 +208,7 @@ export function UsersPanel({
                   </td>
                   <td className="px-3 py-2">
                     <select
+                      aria-label={`${nameOf(p)} 임역원 캠퍼스`}
                       value={p.campus_id ?? ""}
                       onChange={(e) => onCampusChange(p, e.target.value)}
                       className={selectClass}
@@ -222,6 +223,7 @@ export function UsersPanel({
                   </td>
                   <td className="px-3 py-2">
                     <select
+                      aria-label={`${nameOf(p)} 차량순장 호차`}
                       value={p.driver_bus_id != null ? String(p.driver_bus_id) : ""}
                       onChange={(e) => onBusChange(p, e.target.value)}
                       className={selectClass}
@@ -274,7 +276,7 @@ export function UsersPanel({
                 <button
                   type="button"
                   onClick={() => onRestore(p)}
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-primary-800 hover:underline"
                 >
                   되돌리기
                 </button>

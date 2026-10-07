@@ -42,7 +42,7 @@ async function update(
 
 function humanize(msg: string): string {
   if (msg.includes("row-level security") || msg.includes("policy")) {
-    return "권한이 없습니다 (master만 시스템 설정을 변경할 수 있어요)";
+    return "권한이 없습니다 (총단만 시스템 설정을 변경할 수 있어요)";
   }
   return msg;
 }

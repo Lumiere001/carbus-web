@@ -1,8 +1,13 @@
+import { DraftNavigationProvider } from "@/components/ui/draft-navigation";
+import { RefreshOnReturn } from "@/components/ui/refresh-on-return";
 import { notFound } from "next/navigation";
+import { adminHref } from "@/lib/events/route";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
 import { signOut } from "@/app/logout/actions";
-import { adminHref } from "@/lib/events/route";
+import { adminNavigation } from "@/lib/navigation";
+import { WorkspaceNav } from "@/components/ui/workspace-nav";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { EventSwitcher } from "@/components/admin/event-switcher";
 
 /**
@@ -22,13 +27,15 @@ export default async function AdminEventLayout({
   const { eventId } = await params;
   const supabase = await createClient();
 
-  const [{ data: { user } }, { data: events }] = await Promise.all([
+  const [{ data: { user } }, { data: events, error: eventsError }] = await Promise.all([
     supabase.auth.getUser(),
     supabase
       .from("events")
       .select("id, name, is_active, write_mode, unlock_until, starts_on")
       .order("starts_on", { ascending: false }),
   ]);
+
+  if (eventsError) return <DataLoadError retryHref={adminHref(eventId, "")} />;
 
   const current = (events ?? []).find((e) => e.id === eventId);
   // 없는 행사를 주소창에 치면 404 — 조용히 다른 행사를 보여주면 그게 더 위험하다.
@@ -47,25 +54,25 @@ export default async function AdminEventLayout({
     current.unlock_until != null && new Date(current.unlock_until) > new Date();
   const writable = current.write_mode === "live" || unlocked;
 
-  const navLink = "text-sm text-primary-200 hover:text-white transition shrink-0";
-  const href = (sub: string) => adminHref(eventId, sub);
+  const groups = adminNavigation(eventId, isMaster);
 
   return (
-    <div className="min-h-screen bg-background">
+    <DraftNavigationProvider><div className="min-h-[100dvh] bg-background">
+      <a href="#workspace-content" className="skip-link">본문으로 건너뛰기</a>
       <header className="bg-primary-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3 w-full md:w-auto min-w-0">
-            <h1 className="font-semibold flex items-center gap-2 whitespace-nowrap shrink-0">
-              운영자
+            <h1 className="font-normal flex items-center gap-2 whitespace-nowrap shrink-0">
+              Carbus · 차량 운영
               <span
                 className={
                   "text-xs px-2 py-0.5 rounded-md " +
                   (isMaster
-                    ? "bg-danger/25 text-danger-border"
-                    : "bg-primary-700 text-primary-200")
+                    ? "bg-surface-2 text-foreground border border-border-2"
+                    : "bg-surface-2 text-muted")
                 }
               >
-                {role}
+                {isMaster ? "총단" : "조회 담당자"}
               </span>
             </h1>
 
@@ -78,38 +85,12 @@ export default async function AdminEventLayout({
               }))}
             />
 
-            <nav className="flex gap-3.5 w-full md:w-auto overflow-x-auto whitespace-nowrap pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
-              <a href={href("")} className={navLink}>대시보드</a>
-              <a href={href("/registrations")} className={navLink}>전체 순장/순원</a>
-              <a href={href("/buses")} className={navLink}>호차</a>
-              <a href={href("/attendance")} className={navLink}>출석</a>
-              {isMaster && (
-                <>
-                  <a href={href("/trips")} className={navLink}>편성</a>
-                  <a href={href("/batch")} className={navLink}>배차</a>
-                </>
-              )}
-              <a href={href("/leaders")} className={navLink}>리더</a>
-              <a href={href("/partial")} className={navLink}>부분참</a>
-              <a href={href("/transport")} className={navLink}>이동수단</a>
-              <a href={href("/courses")} className={navLink}>수강신청</a>
-              <a href={href("/payments")} className={navLink}>정산</a>
-              {isMaster && (
-                <>
-                  <a href={href("/control")} className={navLink}>Phase</a>
-                  <a href={href("/users")} className={navLink}>사용자</a>
-                  <a href={href("/roles")} className={navLink}>역할 라벨</a>
-                </>
-              )}
-              <a href={href("/changes")} className={navLink}>변동</a>
-              <a href={href("/errors")} className={navLink}>오류</a>
-              <a href={href("/logs")} className={navLink}>로그</a>
-            </nav>
+
           </div>
           <form action={signOut} className="shrink-0">
             <button
               type="submit"
-              className="text-sm text-primary-300 hover:text-white transition whitespace-nowrap"
+              className="min-h-11 px-3 rounded-lg text-sm text-primary-200 hover:bg-surface-2 hover:text-foreground transition whitespace-nowrap"
             >
               로그아웃
             </button>
@@ -122,8 +103,7 @@ export default async function AdminEventLayout({
       {!writable && (
         <div className="bg-warning-bg border-b border-warning-border">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-2 text-sm text-warning">
-            <b>지난 행사</b>를 보고 있습니다 — 읽기 전용입니다. 고쳐야 하면 Phase 화면에서
-            사유를 적고 잠금을 여세요.
+            <b>{current.name}</b>은 읽기 전용입니다. {isMaster ? "수정이 필요하면 운영 설정에서 사유를 적고 잠금을 여세요." : "수정이 필요하면 총단에 요청해 주세요."}
           </div>
         </div>
       )}
@@ -136,7 +116,10 @@ export default async function AdminEventLayout({
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto p-4 md:p-6">{children}</div>
-    </div>
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 p-4 md:flex-row md:gap-6 md:p-6">
+        <WorkspaceNav groups={groups} />
+        <main id="workspace-content" tabIndex={-1} className="min-w-0 flex-1"><RefreshOnReturn />{children}</main>
+      </div>
+    </div></DraftNavigationProvider>
   );
 }

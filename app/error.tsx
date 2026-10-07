@@ -35,7 +35,7 @@ export default function Error({
         </div>
         <button
           onClick={reset}
-          className="w-full h-10 rounded-lg bg-primary-800 hover:bg-primary-700 text-white font-medium transition"
+          className="w-full h-10 rounded-full bg-primary-800 hover:bg-primary-700 text-on-primary font-medium transition"
         >
           다시 시도
         </button>

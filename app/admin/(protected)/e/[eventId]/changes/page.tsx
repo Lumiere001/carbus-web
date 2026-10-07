@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TriangleAlert } from "lucide-react";
 import type { Json } from "@/lib/supabase/database.types";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -90,13 +92,15 @@ type Entry = {
   campusId: string | null;
 };
 
-export default async function AdminChangesPage() {
+export default async function AdminChangesPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
-  const { data: cfg } = await supabase
+  const { data: cfg, error: cfgError } = await supabase
     .from("system_config")
     .select("phase2_started_at, last_batch_at, current_phase")
     .maybeSingle();
+  if (cfgError) return <DataLoadError retryHref={adminHref(eventId, "/changes")} />;
   // 현재 마감 단계인가로 판단(과거에 이미 phase2였어도 인식).
   const isPhase2 = cfg?.current_phase === "phase2";
   // 기준점: 마감 전환 시각 → 없으면(컬럼 추가 전부터 phase2였던 경우) 마지막 배차 시각으로 대체.
@@ -120,7 +124,8 @@ export default async function AdminChangesPage() {
             )
             .order("created_at", { ascending: false })
             .limit(500))
-    : { data: [] };
+    : { data: [], error: null };
+  if (auditRes.error) return <DataLoadError retryHref={adminHref(eventId, "/changes")} />;
   const audit = auditRes.data ?? [];
 
   // 신청별 변동 요약 (내용 변경 또는 추가/제외만 — 배정 컬럼만의 변경은 제외)
@@ -166,12 +171,13 @@ export default async function AdminChangesPage() {
     }
   >();
   if (liveIds.length > 0) {
-    const { data: regs } = await supabase
+    const { data: regs, error } = await supabase
       .from("registrations")
       .select(
         "id, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, participation_status"
       )
       .in("id", liveIds);
+    if (error) return <DataLoadError retryHref={adminHref(eventId, "/changes")} />;
     // 취소한 사람은 배차가 비어 있는 게 정상이다. 그걸 "미배정"으로 세면 가짜
     // **재배차 필요** 경고가 계속 떠서, 진짜 재배차가 필요한 상황과 구분이 안 된다.
     for (const r of regs ?? []) {
@@ -189,6 +195,7 @@ export default async function AdminChangesPage() {
     supabase.from("buses").select("id, name, up_trip_id, down_trip_id"),
     supabase.from("campuses").select("id, name"),
   ]);
+  if (busRes.error || campusRes.error) return <DataLoadError retryHref={adminHref(eventId, "/changes")} />;
   const busMap = new Map((busRes.data ?? []).map((b) => [b.id, b]));
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
 
@@ -197,10 +204,11 @@ export default async function AdminChangesPage() {
   ] as string[];
   const changerName = new Map<string, string>();
   if (changerIds.length > 0) {
-    const { data: profs } = await supabase
+    const { data: profs, error } = await supabase
       .from("profiles")
       .select("id, display_name, role")
       .in("id", changerIds);
+    if (error) return <DataLoadError retryHref={adminHref(eventId, "/changes")} />;
     for (const p of profs ?? [])
       changerName.set(
         p.id,
@@ -231,7 +239,7 @@ export default async function AdminChangesPage() {
         const b = busMap.get(busId);
         const match = b != null && busTrip(b) === tripId;
         if (!match) rebatch = true;
-        return (b?.name ?? `${busId}호차`) + (match ? "" : " ⚠편 불일치");
+        return (b?.name ?? `${busId}호차`) + (match ? "" : " · 편 불일치");
       };
       up = check(cur.up_trip_id, cur.assigned_up_bus_id, (b) => b.up_trip_id);
       down = check(cur.down_trip_id, cur.assigned_down_bus_id, (b) => b.down_trip_id);
@@ -260,7 +268,7 @@ export default async function AdminChangesPage() {
       {!isPhase2 && (
         <Card className="p-5">
           <p className="text-sm text-muted">
-            아직 <b>마감 단계(phase2)</b>가 아닙니다. Phase 화면에서 마감으로
+            아직 <b>마감 단계</b>가 아닙니다. 운영 설정 화면에서 마감으로
             전환하면, 그 이후의 변동이 여기에 모입니다.
           </p>
         </Card>
@@ -346,7 +354,7 @@ export default async function AdminChangesPage() {
                           ? [...r.fields].map((f) => FIELD_LABEL[f] ?? f).join(", ") || "—"
                           : "—"}
                       </td>
-                      <td className={"px-4 py-2 " + (r.up.includes("미배정") || r.up.includes("⚠") ? "text-warning font-medium" : "text-foreground")}>
+                      <td className={"px-4 py-2 " + (r.up.includes("미배정") || r.up.includes("편 불일치") ? "text-warning font-medium" : "text-foreground")}>
                         {r.up}
                       </td>
                       <td className={"px-4 py-2 " + (r.down.includes("미배정") ? "text-warning font-medium" : "text-foreground")}>

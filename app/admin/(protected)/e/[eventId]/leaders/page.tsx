@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
 import { ROLE_DRIVER, ROLE_FIXED } from "@/lib/roles/special";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 import {
   LeadersPanel,
   type LeaderRow,
@@ -9,7 +11,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLeadersPage() {
+export default async function AdminLeadersPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,6 +38,10 @@ export default async function AdminLeadersPage() {
     // 하행도 편을 갖는다(3-C). 상행만 가져오면 하행 호차를 편으로 거를 수 없다.
     supabase.from("event_trips").select("id, label").order("display_order"),
   ]);
+  if ([busRes, campusRes, labelRes, tripRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/leaders")} />;
+  }
+
   const buses = busRes.data ?? [];
   const campusName = new Map((campusRes.data ?? []).map((c) => [c.id, c.name]));
   // 일반 역할(차량순장/고정 제외) — roles[]에 저장되는 라벨
@@ -69,15 +76,17 @@ export default async function AdminLeadersPage() {
           // 취소자는 리더 목록에서 제외 (좌석·차량순장은 DB 트리거가 이미 반납했다)
           .neq("participation_status", "cancelled")
           .in("id", [...boundIds])
-      : Promise.resolve({ data: [] as never[] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
     plainLabels.length > 0
       ? supabase
           .from("registrations")
           .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, roles")
           .neq("participation_status", "cancelled")
           .overlaps("roles", plainLabels)
-      : Promise.resolve({ data: [] as never[] }),
+      : Promise.resolve({ data: [] as never[], error: null }),
   ]);
+
+  if (boundRes.error || roleRes.error) return <DataLoadError retryHref={adminHref(eventId, "/leaders")} />;
 
   const byId = new Map<
     string,

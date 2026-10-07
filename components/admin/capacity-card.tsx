@@ -69,7 +69,7 @@ function CapRow({
 
 /**
  * 출발 정원 카드 — 상행/하행 토글.
- * 상행: 출발 슬롯별(화 오전/오후 등) 막대. 하행: 슬롯 없는 단일 풀(전 호차)이라 한 줄 막대.
+ * 상행: 운행편별 막대. 하행: 여러 운행편의 좌석을 합한 한 줄 막대.
  */
 export function CapacityCard({
   upRows,
@@ -102,8 +102,8 @@ export function CapacityCard({
       title="출발 정원"
       subtitle={
         view === "up"
-          ? "상행 출발 시간대(슬롯)별 좌석 사용"
-          : "하행 좌석 사용 (슬롯 없이 전 호차 단일 운행)"
+          ? "상행(가는 편) 운행편별 좌석 사용"
+          : "하행(오는 편) 모든 운행편의 좌석 사용 합계"
       }
       action={
         <div className="flex gap-1.5">
@@ -115,7 +115,7 @@ export function CapacityCard({
       <div className="p-5 space-y-4">
         {view === "up" ? (
           upRows.length === 0 ? (
-            <p className="text-sm text-muted">운행 중인 상행 슬롯이 없습니다.</p>
+            <p className="text-sm text-muted">운행 중인 상행 편이 없습니다.</p>
           ) : (
             upRows.map((row) => (
               <CapRow

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useDraftNavigation } from "@/components/ui/draft-navigation";
 import { adminHref } from "@/lib/events/route";
 
 type EventOpt = { id: string; name: string; isLive: boolean };
@@ -19,7 +20,7 @@ export function EventSwitcher({
   current: { id: string; name: string };
   events: EventOpt[];
 }) {
-  const router = useRouter();
+  const navigate = useDraftNavigation();
   const pathname = usePathname();
 
   // 지금 보고 있는 하위 경로를 유지한 채 행사만 바꾼다.
@@ -28,7 +29,7 @@ export function EventSwitcher({
 
   if (events.length <= 1) {
     return (
-      <span className="text-xs px-2 py-0.5 rounded-md bg-primary-700/70 text-primary-100 whitespace-nowrap shrink-0 max-w-[14rem] truncate">
+      <span className="text-xs px-2 py-0.5 rounded-md bg-surface-2 text-foreground whitespace-nowrap shrink-0 max-w-[14rem] truncate">
         {current.name}
       </span>
     );
@@ -37,9 +38,9 @@ export function EventSwitcher({
   return (
     <select
       value={current.id}
-      onChange={(e) => router.push(adminHref(e.target.value, sub))}
+      onChange={(e) => { void navigate(adminHref(e.target.value, sub)); }}
       aria-label="보는 행사 바꾸기"
-      className="text-xs px-2 py-1 rounded-md bg-primary-700 text-primary-100 border border-primary-600 max-w-[14rem] shrink-0"
+      className="text-xs px-2 py-1 rounded-md bg-surface-2 text-foreground border border-control-border max-w-[14rem] shrink-0"
     >
       {events.map((e) => (
         <option key={e.id} value={e.id}>

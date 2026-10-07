@@ -89,7 +89,7 @@ describe("CourseBoard — 날 → 시간으로 묶는다", () => {
     );
     expect(screen.getByText("시간 미정")).toBeTruthy();
     // 경고에 미정 인원이 숫자로 — 그게 곧 물어볼 사람 수다.
-    expect(screen.getByText("1명", { selector: "b" })).toBeTruthy();
+    expect(screen.getByText("신청 1건", { selector: "b" })).toBeTruthy();
     const texts = [...document.querySelectorAll("span")].map((e) => e.textContent);
     expect(texts.indexOf("시간 미정")).toBeLessThan(texts.indexOf("10:00"));
   });

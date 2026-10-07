@@ -9,10 +9,17 @@ import {
 } from "@/components/admin/registrations-panel";
 import type { PickupRow } from "@/components/admin/reg-drawer";
 import { eventDayCount } from "@/lib/courses/days";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminRegistrationsPage() {
+export default async function AdminRegistrationsPage({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -69,8 +76,11 @@ export default async function AdminRegistrationsPage() {
     // 수강신청 — 서랍에서 사람별로 켜고 끈다. 보드는 이걸 (날, 시간)으로 묶어 읽는다.
     supabase.from("course_signups").select("registration_id, day_no, at_time"),
     // 고를 수 있는 날 수를 계산하려고 행사 기간을 읽는다. **날짜를 저장하지는 않는다.**
-    supabase.from("events").select("starts_on, ends_on").eq("is_active", true).maybeSingle(),
+    supabase.from("events").select("starts_on, ends_on").eq("id", eventId).maybeSingle(),
   ]);
+  if ([regRes, campusRes, busRes, roleRes, cfgRes, slotRes, unitRes, legRes, pickupRes, placeRes, courseRes, eventRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/registrations")} />;
+  }
   const eventRow = eventRes.data;
   const trips = slotRes.data ?? [];
   // Phase 2(마감)부터는 캠퍼스 그룹 안에서 호차별로 묶어 보여줌 (그 전엔 납부 상태순).
@@ -147,6 +157,7 @@ export default async function AdminRegistrationsPage() {
         )}
       </div>
       <RegistrationsPanel
+        eventId={eventId}
         rows={(regRes.data ?? []) as AdminRegRow[]}
         campuses={campuses}
         buses={busRes.data ?? []}

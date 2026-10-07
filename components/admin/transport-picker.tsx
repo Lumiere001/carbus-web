@@ -45,7 +45,7 @@ export function TransportPicker({
 }) {
   const isOther = value.mode === "other_district";
   const sel =
-    "text-sm border border-border-2 rounded-md px-2 py-1.5 bg-surface text-fg";
+    "text-sm border border-border-2 rounded-md px-2 py-1.5 bg-surface text-foreground";
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -117,7 +117,7 @@ export function TransportPicker({
         )}
       </div>
       {isOther && value.status === "pending" && (
-        <p className="text-xs text-warning-700">
+        <p className="text-xs text-warning">
           확정될 때까지 우리 버스 좌석을 잡아둡니다. 확정으로 바꾸면 이 방향의
           운행편과 배정 호차가 <b>자동으로 비워집니다</b>.
         </p>
@@ -125,7 +125,7 @@ export function TransportPicker({
       {isOther && value.status === "confirmed" && (
         <p className="text-xs text-muted-2">
           확정 — 저장하면 이 방향의 우리 버스 자리를 놓습니다. 되돌리려면 편을 다시
-          지정하고 배차를 다시 실행해야 합니다.
+          지정하고 배차를 다시 <span className="whitespace-nowrap">실행해야 합니다.</span>
         </p>
       )}
       {/* KTX·자차·기타도 §26-B 이후로는 좌석을 놓는다. 예전엔 아무 일도 안 일어나서
@@ -133,7 +133,7 @@ export function TransportPicker({
       {!isOther && value.mode !== "our_bus" && (
         <p className="text-xs text-muted-2">
           우리 버스를 안 탑니다 — 저장하면 이 방향의 운행편과 배정 호차가 비워집니다.
-          되돌리려면 편을 다시 지정하고 배차를 다시 실행해야 합니다.
+          되돌리려면 편을 다시 지정하고 배차를 다시 <span className="whitespace-nowrap">실행해야 합니다.</span>
         </p>
       )}
     </div>

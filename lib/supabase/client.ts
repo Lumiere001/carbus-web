@@ -12,14 +12,21 @@ import type { Database } from "./database.types";
  * ⚠️ 이 헤더는 권한을 주지 않는다 — 위조해도 RLS·트리거가 막는다(§8-C).
  */
 export function createClient() {
-  const viewingEventId =
-    typeof window === "undefined" ? null : eventIdFromPath(window.location.pathname);
-
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    viewingEventId
-      ? { global: { headers: { [EVENT_HEADER]: viewingEventId } } }
-      : undefined
+    {
+      global: {
+        fetch(input, init) {
+          const headers = new Headers(input instanceof Request ? input.headers : undefined);
+          new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+          const viewingEventId =
+            typeof window === "undefined" ? null : eventIdFromPath(window.location.pathname);
+          if (viewingEventId) headers.set(EVENT_HEADER, viewingEventId);
+          else headers.delete(EVENT_HEADER);
+          return fetch(input, { ...init, headers });
+        },
+      },
+    }
   );
 }

@@ -1,4 +1,8 @@
+import { OnsiteProvider } from "@/components/onsite/onsite-provider";
+import { OnsiteAttendance } from "@/components/onsite/onsite-attendance";
+import { onsiteSnapshotSchema } from "@/lib/onsite/model";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +15,7 @@ import {
   type TransportStatus,
 } from "@/lib/transport/labels";
 import type { EventTrip } from "@/lib/supabase/types";
+import { DataLoadError } from "@/components/ui/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -57,14 +62,14 @@ export default async function CampusPartialPage() {
   if (!user) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("campus_id")
+    .select("campus_id, role")
     .eq("id", user.id)
     .single();
   if (!profile?.campus_id) redirect("/pending");
 
   // RLS 가 본인 캠퍼스로 한정한다. 명시적으로도 거른다 — 한쪽만 바뀌면 남의 캠퍼스가
   // 새는 쪽으로 조용히 틀어진다.
-  const [{ data }, { data: tripData }, { data: legData }, { data: unitData }] =
+  const [{ data, error: regError }, { data: tripData, error: tripError }, { data: legData, error: legError }, { data: unitData, error: unitError }] =
     await Promise.all([
       supabase
         .from("registrations")
@@ -88,6 +93,18 @@ export default async function CampusPartialPage() {
         .select("registration_id, direction, mode, status, via_unit_id"),
       supabase.from("org_units").select("id, name"),
     ]);
+
+  if (regError || tripError || legError || unitError) return <DataLoadError retryHref="/campus/partial" />;
+
+  const { data: eventId, error: eventIdError } = await supabase.rpc("viewing_event_id");
+  if (!eventId || eventIdError) return <DataLoadError retryHref="/campus/partial" />;
+  const [onsite, event, writable] = await Promise.all([
+    supabase.rpc("onsite_snapshot", { p_event: eventId, p_reg_ids: (data ?? []).map((r) => r.id) }),
+    supabase.from("events").select("starts_on, ends_on").eq("id", eventId).single(),
+    supabase.rpc("is_event_writable", { p_event: eventId }),
+  ]);
+  const onsiteParsed = onsiteSnapshotSchema.safeParse(onsite.data);
+  if (onsite.error || event.error || writable.error || !onsiteParsed.success) return <DataLoadError retryHref="/campus/partial" />;
 
   const regs = (data ?? []) as Reg[];
   const trips = (tripData ?? []) as Pick<EventTrip, "id" | "label">[];
@@ -141,16 +158,18 @@ export default async function CampusPartialPage() {
   ].filter((s) => s.rows.length > 0);
 
   return (
+    <OnsiteProvider key={eventId} eventId={eventId} initial={onsiteParsed.data} canEdit={profile.role === "campus_admin" && writable.data === true}>
     <div className="space-y-5 max-w-2xl mx-auto">
       <div>
         <h2 className="text-lg font-semibold text-foreground">부분 참석자</h2>
         <p className="text-sm text-muted mt-0.5">
           우리 캠퍼스에서 <b>행사 전체를 우리 버스로 왕복하지 않는</b> 사람들을 사유별로
           묶었습니다. 한 사람이 두 사유에 걸리면 양쪽에 나옵니다. 이동수단·참여기간은
-          ‘순장/순원 입력’ 화면에서 고칠 수 있어요.
+          아래 사람의 <b>정보 수정</b>을 누르면 참여 기간·이동수단·수송 요청을 입력할 수 있습니다.
         </p>
       </div>
 
+      <p className="text-sm text-muted">현장 도착·행사 출발 버튼은 실제 확인 시각을 한국 시간(KST)으로 기록합니다. 참여 예정 날짜·버스 탑승 체크와 별개입니다.</p>
       {sections.length === 0 ? (
         <Card className="p-5">
           <p className="text-sm text-muted">부분 참석자가 없습니다.</p>
@@ -176,7 +195,7 @@ export default async function CampusPartialPage() {
                             며칠만 참석이면 기간이, 편도면 어느 편인지가 답이다. */}
                         {s.key === "period" ? (
                           <Badge variant="primary" dot={false}>
-                            {r.attend_from ?? "처음"} ~ {r.attend_to ?? "끝"}
+                            {r.attend_from ?? "행사 시작"} ~ {r.attend_to ?? "행사 종료"}
                           </Badge>
                         ) : (
                           <Badge variant="mute" dot={false}>
@@ -185,16 +204,20 @@ export default async function CampusPartialPage() {
                         )}
                         {upB && (
                           <Badge variant={upB.tone} dot={false} title={upB.title}>
-                            {DIRECTION_SHORT.up.slice(0, 1)} {upB.text}
+                            {DIRECTION_SHORT.up} {upB.text}
                           </Badge>
                         )}
                         {downB && (
                           <Badge variant={downB.tone} dot={false} title={downB.title}>
-                            {DIRECTION_SHORT.down.slice(0, 1)} {downB.text}
+                            {DIRECTION_SHORT.down} {downB.text}
                           </Badge>
                         )}
                       </span>
                     </div>
+                    <Link href={`/campus?edit=${encodeURIComponent(r.id)}`} className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-medium text-primary-700 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-primary-700" aria-label={`${r.name} 정보 수정`}>
+                      정보 수정 <span aria-hidden="true">→</span>
+                    </Link>
+                    <div className="mt-3"><OnsiteAttendance registrationId={r.id} name={r.name} startsOn={event.data?.starts_on ?? null} endsOn={event.data?.ends_on ?? null} /></div>
                     {s.key === "missing" && (
                       <p className="mt-1 text-sm text-warning">
                         이동수단이 비어 있습니다 — {TRANSPORT_LABELS.other_district} ·{" "}
@@ -215,5 +238,6 @@ export default async function CampusPartialPage() {
         ))
       )}
     </div>
+    </OnsiteProvider>
   );
 }

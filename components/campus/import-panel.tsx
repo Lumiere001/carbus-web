@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Papa from "papaparse";
 import {
   parseRegistrationsCsv,
   type CsvParseResult,
@@ -29,13 +30,13 @@ function buildTemplate(trips: TripMini[]): string {
   const u0 = up[0]?.label ?? "";
   const u1 = up[1]?.label ?? u0;
   const d0 = down[0]?.label ?? "";
-  return [
-    "이름,학번,상행 출발,하행 출발,비고",
-    `홍길동,26,${u0},${d0},`,
-    `김영희,27,${u1},,상행만`,
-    `이타지,타지구,,${d0},하행만`,
-    "박이동,26,,,KTX 자가 이동",
-  ].join("\n");
+  return Papa.unparse([
+    ["이름", "학번", "상행 출발", "하행 출발", "비고"],
+    ["홍길동", "26", u0, d0, ""],
+    ["김영희", "27", u1, "", "상행만"],
+    ["이타지", "타지구", "", d0, "하행만"],
+    ["박이동", "26", "", "", "KTX 자가 이동"],
+  ], { quotes: true, escapeFormulae: /^[\s\uFEFF]*[=+\-@\t\r\n]/ });
 }
 
 /** 미리보기용 참여형태 라벨 — DB 파생 규칙과 같은 함수를 쓴다. */
@@ -52,21 +53,28 @@ export function ImportPanel({
 }) {
   const [preview, setPreview] = useState<CsvParseResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reading, setReading] = useState(false);
   const [done, setDone] = useState<{ inserted: number; failed: number } | null>(
     null
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    if (busy || reading) return;
     const file = e.target.files?.[0];
     if (!file) return;
-    const content = await file.text();
-    setDone(null);
-    setPreview(parseRegistrationsCsv(content, campusId, trips));
+    setReading(true);
+    try {
+      const content = await file.text();
+      setDone(null);
+      setPreview(parseRegistrationsCsv(content, campusId, trips));
+    } finally {
+      setReading(false);
+    }
   }
 
   async function handleRegister() {
-    if (!preview || preview.successes.length === 0) return;
+    if (busy || reading || !preview || preview.successes.length === 0) return;
     setBusy(true);
     let inserted = 0;
     let failed = 0;
@@ -104,10 +112,11 @@ export function ImportPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => fileRef.current?.click()}>
+        <Button variant={preview?.successes.length ? "secondary" : "default"} disabled={busy || reading} onClick={() => fileRef.current?.click()}>
           CSV 파일 선택
         </Button>
         <input
+          disabled={busy || reading}
           ref={fileRef}
           type="file"
           accept=".csv,text/csv,text/tab-separated-values"
@@ -121,17 +130,16 @@ export function ImportPanel({
 
       <p className="text-xs text-muted">
         CSV 파일을 선택하면 아래에 등록될 내용 미리보기가 표시됩니다. 템플릿
-        형식(이름·학번·참석 유형·상행 출발·하행 차량 이용·비고)에 맞춰 작성해
+        형식(이름·학번·상행 출발·하행 출발·비고)에 맞춰 작성해
         주세요.
       </p>
       <p className="text-xs text-muted-2 leading-snug">
-        💡 참석 유형 = <b>왕복</b> / <b>편도</b> / <b>버스 미이용</b>(KTX·자차 등 전혀 버스를 안 타는 경우만).
-        한쪽만 이용하면 「편도」 + 상행/하행 구분으로 적어주세요. 미이용은 비고에 이동 수단을 적어주세요.
+        상행(가는 편)·하행(오는 편)에 이용할 운행편 이름을 각각 적습니다. 한쪽만 이용하면 다른 쪽을 비워 두세요. 버스를 전혀 이용하지 않으면 양쪽을 비우고 비고에 이동수단(KTX·자차 등)을 적어 주세요.
       </p>
 
       {done && (
-        <div className="text-sm rounded-lg px-3 py-2 border bg-success-bg border-success-border text-success">
-          등록 완료: {done.inserted}명 성공
+        <div role={done.failed > 0 ? "alert" : "status"} className={"text-sm rounded-lg px-3 py-2 border " + (done.failed > 0 ? "bg-warning-bg border-warning-border text-warning" : "bg-success-bg border-success-border text-success")}>
+          등록 결과: {done.inserted}명 성공
           {done.failed > 0 && ` · ${done.failed}명 실패 (아래 확인)`}
         </div>
       )}
@@ -139,7 +147,7 @@ export function ImportPanel({
       {preview && (
         <div className="space-y-3">
           {preview.notice && (
-            <div className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
+            <div role="status" className="text-sm rounded-lg px-3 py-2 border bg-warning-bg border-warning-border text-warning">
               {preview.notice}
             </div>
           )}
@@ -188,7 +196,7 @@ export function ImportPanel({
                       <td className="px-3 py-2 text-muted">
                         {r.note ?? ""}
                         {noteMissing && (
-                          <span className="ml-1 text-warning text-xs">⚠ 이동 수단</span>
+                          <span className="ml-1 text-warning text-xs">이동 수단 확인</span>
                         )}
                       </td>
                     </tr>
@@ -201,6 +209,7 @@ export function ImportPanel({
 
           {preview.failures.length > 0 && (
             <div className="overflow-x-auto bg-danger-bg rounded-xl border border-danger-border">
+              <p role="alert" className="px-3 py-2 text-sm text-danger">CSV 검증에 실패한 {preview.failures.length}개 행이 있습니다. 아래 사유를 확인해주세요.</p>
               <table className="w-full min-w-[480px] text-sm">
                 <thead>
                   <tr className="text-danger text-left [&>th]:whitespace-nowrap">
@@ -225,7 +234,7 @@ export function ImportPanel({
           )}
 
           {preview.successes.length > 0 && (
-            <Button size="lg" onClick={handleRegister} disabled={busy}>
+            <Button size="lg" onClick={handleRegister} disabled={busy || reading}>
               {busy ? "등록 중…" : `${preview.successes.length}명 등록`}
             </Button>
           )}

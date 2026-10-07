@@ -12,46 +12,42 @@ type Result = { ok: true; row: BusRow } | { ok: false; message: string };
 /** 배차 방향. 상행/하행 차량순장·고정은 별개 컬럼으로 관리. */
 export type BusPinMode = "up" | "down";
 
-/** 차량순장 지정·해제 (regId null 이면 해제). master만 (RLS). 방향별 컬럼. */
-export async function setDriver(
-  busId: number,
-  regId: string | null,
-  mode: BusPinMode = "up"
-): Promise<Result> {
-  const supabase = createClient();
-  const patch =
-    mode === "up"
-      ? { driver_registration_id: regId }
-      : { down_driver_registration_id: regId };
-  const { data, error } = await supabase
-    .from("buses")
-    .update(patch)
-    .eq("id", busId)
-    .select()
-    .single();
-  if (error) return { ok: false, message: humanize(error.message) };
-  return { ok: true, row: data };
+/** The direction binding state the operator saw before editing. */
+export type BusBindingState = {
+  readonly busId: number;
+  readonly mode: BusPinMode;
+  readonly driverId: string | null;
+  readonly fixedIds: readonly string[];
+};
+
+type BusBindingIntent =
+  | { readonly kind: "driver"; readonly driver_id: string | null }
+  | { readonly kind: "fixed"; readonly fixed_ids: string[] };
+
+/** Replace the selected bus driver only if its observed bindings are still current. */
+export async function setDriver(state: BusBindingState, regId: string | null): Promise<Result> {
+  return saveBusBinding(state, { kind: "driver", driver_id: regId });
 }
 
-/** 고정 탑승자 배열 전체 교체 (client가 현재 배열 보유 → 추가/제거 후 전달). 방향별 컬럼. */
-export async function setFixedPassengers(
-  busId: number,
-  ids: string[],
-  mode: BusPinMode = "up"
-): Promise<Result> {
-  const supabase = createClient();
-  const patch =
-    mode === "up"
-      ? { fixed_passenger_ids: ids }
-      : { down_fixed_passenger_ids: ids };
-  const { data, error } = await supabase
-    .from("buses")
-    .update(patch)
-    .eq("id", busId)
-    .select()
-    .single();
-  if (error) return { ok: false, message: humanize(error.message) };
-  return { ok: true, row: data };
+/** Replace a direction's fixed riders atomically with staff-car assignment synchronization. */
+export async function setFixedPassengers(state: BusBindingState, ids: readonly string[]): Promise<Result> {
+  return saveBusBinding(state, { kind: "fixed", fixed_ids: [...ids] });
+}
+
+async function saveBusBinding(state: BusBindingState, intent: BusBindingIntent): Promise<Result> {
+  const { data, error } = await createClient().rpc("set_bus_binding", {
+    p_bus_id: state.busId,
+    p_mode: state.mode,
+    p_intent: { ...intent, expected_driver_id: state.driverId, expected_fixed_ids: [...state.fixedIds] },
+  }).single();
+  if (!error) return { ok: true, row: data };
+  if (error.code === "40001" || error.code === "40P01") {
+    return { ok: false, message: "다른 변경과 겹쳐 저장하지 않았습니다. 새로고침 후 다시 지정해 주세요." };
+  }
+  const detail = humanize(error.message);
+  return { ok: false, message: /^(22|23|40|42|P0)/.test(error.code)
+    ? `호차 리더 변경을 저장하지 않았습니다: ${detail}`
+    : `호차 리더 저장 결과를 확인하지 못했습니다: ${detail}. 명단을 새로고침해 확인해 주세요.` };
 }
 
 // ── 편성 편집 (Phase 3-B) ─────────────────────────────────────
@@ -193,7 +189,7 @@ function humanize(msg: string): string {
   if (msg.includes("운행편을 지정할 수 없습니다")) return msg;
   if (msg.includes("buses_name_key")) return "같은 이름의 호차가 이미 있습니다.";
   if (msg.includes("row-level security") || msg.includes("policy")) {
-    return "권한이 없습니다 (master만 호차 정보를 변경할 수 있어요)";
+    return "권한이 없습니다 (총단만 호차 정보를 변경할 수 있어요)";
   }
   return msg;
 }

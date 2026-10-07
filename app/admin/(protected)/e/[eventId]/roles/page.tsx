@@ -3,10 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
 import { RolesPanel } from "@/components/admin/roles-panel";
 import type { RoleLabelRow } from "@/lib/admin/role-labels";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminRolesPage() {
+export default async function AdminRolesPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -19,10 +22,12 @@ export default async function AdminRolesPage() {
     .single<{ role: UserRole }>();
   if (profile?.role !== "master") redirect("/admin");
 
-  const { data: labels } = await supabase
+  const { data: labels, error } = await supabase
     .from("role_labels")
     .select("*")
     .order("display_order");
+
+  if (error) return <DataLoadError retryHref={adminHref(eventId, "/roles")} />;
 
   return (
     <div className="space-y-5">

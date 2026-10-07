@@ -11,7 +11,7 @@ export function Card({
   action,
   children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> & {
+}: Omit<React.HTMLAttributes<HTMLDivElement>, "title"> & {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   action?: React.ReactNode;
@@ -19,16 +19,16 @@ export function Card({
   return (
     <div
       className={cn(
-        "bg-surface border border-border rounded-xl shadow-1",
+        "bg-surface border border-border rounded-lg",
         className
       )}
       {...props}
     >
       {(title || action) && (
-        <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-border">
+        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border">
           <div>
             {title && (
-              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+              <h3 className="text-xl font-normal tracking-tight text-foreground">{title}</h3>
             )}
             {subtitle && (
               <p className="text-xs text-muted mt-0.5">{subtitle}</p>

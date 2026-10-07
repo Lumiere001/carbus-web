@@ -70,6 +70,18 @@ function nineBuses(): Bus[] {
 // ── 시나리오 (reference §9) ─────────────────────────────────────────
 
 describe("runBatch (reference/batch_algorithm.md §3·§9)", () => {
+  it("빈 좌석은 보고 방향을 운행하는 호차만 센다", () => {
+    const buses = [
+      bus({ id: 1, down_trip_id: null }),
+      bus({ id: 2, up_trip_id: null }),
+      bus({ id: 3 }),
+    ];
+    expect(runBatch([], buses, "up").empty_seats).toBe(88);
+    expect(runBatch([], buses, "down").empty_seats).toBe(88);
+    expect(runBatch([], [buses[1]], "up").empty_seats).toBe(0);
+    expect(runBatch([], [buses[0]], "down").empty_seats).toBe(0);
+  });
+
   it("10) 빈 입력 → 빈 결과, 무에러", () => {
     const r = runBatch([], nineBuses());
     expect(r.errors).toEqual([]);

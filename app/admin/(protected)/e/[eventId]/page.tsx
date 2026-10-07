@@ -3,9 +3,13 @@ import {
   Bus,
   CircleCheck,
   Wallet,
-  TriangleAlert,
   Activity,
 } from "lucide-react";
+import { adminHref } from "@/lib/events/route";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { SettlementOverview } from "@/components/admin/settlement-overview";
+import { DashboardWorkflows } from "@/components/admin/dashboard-workflows";
+import { Kpi, ProgressBar } from "@/components/admin/dashboard-metrics";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,59 +20,6 @@ import { AttendanceRate } from "@/components/admin/attendance-rate";
 export const dynamic = "force-dynamic";
 
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
-
-/** 채워진 비율 막대. tone 으로 임계 색 전환. */
-function ProgressBar({
-  value,
-  max,
-  tone = "primary",
-}: {
-  value: number;
-  max: number;
-  tone?: "primary" | "success" | "warning" | "danger";
-}) {
-  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  const fill = {
-    primary: "bg-primary-600",
-    success: "bg-success",
-    warning: "bg-warning",
-    danger: "bg-danger",
-  }[tone];
-  return (
-    <div className="h-2 w-full rounded-full bg-surface-2 overflow-hidden">
-      <div className={`h-full ${fill}`} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
-
-function Kpi({
-  icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-  sub?: React.ReactNode;
-}) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-primary-50 text-primary-800 p-2">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-muted">{label}</p>
-          <p className="text-2xl font-semibold text-foreground tabular-nums leading-tight mt-0.5">
-            {value}
-          </p>
-          {sub && <p className="text-xs text-muted-2 mt-0.5">{sub}</p>}
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 function since24hIso(): string {
   return new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -85,7 +36,8 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hr / 24)}일 전`;
 }
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
   const since = since24hIso();
 
@@ -111,6 +63,8 @@ export default async function AdminDashboardPage() {
         .not("down_trip_id", "is", null),
     ]);
 
+  if ([campusRes, dayRes, busRes, payRes, threeWayRes, cfgRes, auditRes, slotRes, downCountRes].some((result) => result.error)) return <DataLoadError retryHref={adminHref(eventId, "")} />;
+
   const campuses = campusRes.data ?? [];
   const days = dayRes.data ?? [];
   const buses = busRes.data ?? [];
@@ -121,7 +75,7 @@ export default async function AdminDashboardPage() {
   const audit24h = auditRes.count ?? 0;
   // 하행: 슬롯 없는 단일 풀 — 전 호차 정원 합 vs 하행 이용 신청 인원.
   const downPassengers = downCountRes.count ?? 0;
-  const downCapacity = buses.reduce((s, b) => s + (b.capacity ?? 0), 0);
+  const downCapacity = buses.filter((bus) => bus.down_trip_id != null).reduce((s, b) => s + (b.capacity ?? 0), 0);
 
   // ── KPI 집계 ────────────────────────────────────────────
   const totalPeople = campuses.reduce((s, c) => s + (c.total ?? 0), 0);
@@ -164,12 +118,14 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          운영자 대시보드
+          운영 현황
         </h2>
         <p className="text-sm text-muted mt-0.5">
           전체 신청·정원·호차·정산 현황 한눈에 보기
         </p>
       </div>
+
+      <DashboardWorkflows eventId={eventId} />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -202,7 +158,7 @@ export default async function AdminDashboardPage() {
       {/* 출석 현황 — 출발 시간대별 도착 + 하행 귀가 (master·viewer 공통) */}
       <Card
         title="출석 현황"
-        subtitle="출발 버스 탑승 · 하행 귀가 진행률 — 분모는 배차된 인원(간사 차량·불참 제외)"
+        subtitle={<>출발 버스 탑승 · 하행 귀가 진행률 — 분모는 배차된 인원<span className="whitespace-nowrap">(간사 차량·불참 제외)</span></>}
       >
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
           {days.map((d) => (
@@ -279,18 +235,18 @@ export default async function AdminDashboardPage() {
           )}
           {campuses.map((c) => (
             <div key={c.campus_id} className="flex items-center gap-3">
-              <span className="w-28 shrink-0 text-sm text-foreground truncate">
+              <span className="w-20 sm:w-28 shrink-0 text-sm text-foreground truncate">
                 {c.campus_name}
               </span>
               <div className="flex-1">
                 <ProgressBar value={c.total ?? 0} max={maxCampus} />
               </div>
-              <span className="w-44 shrink-0 text-right text-xs tabular-nums text-muted">
-                왕복 {c.roundtrip_count ?? 0} · 편도 {c.oneway_count ?? 0}
+              <span className="w-24 sm:w-44 shrink-0 text-right text-xs tabular-nums text-muted">
+                <span className="inline-block whitespace-nowrap">왕복 {c.roundtrip_count ?? 0}</span> · <span className="inline-block whitespace-nowrap">편도 {c.oneway_count ?? 0}</span>
                 {(c.self_count ?? 0) > 0 && (
-                  <span className="ml-1 text-warning">· 미이용 {c.self_count}</span>
+                  <span className="ml-1 inline-block whitespace-nowrap text-warning">· 미이용 {c.self_count}</span>
                 )}
-                <span className="ml-1.5 font-medium text-foreground">
+                <span className="ml-1.5 inline-block whitespace-nowrap font-medium text-foreground">
                   계 {c.total ?? 0}
                 </span>
               </span>
@@ -300,46 +256,13 @@ export default async function AdminDashboardPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* E. 통장 대조 요약 */}
-        <Card title="통장 대조" subtitle="시스템 · 캠퍼스 송금 · 총단 입금">
-          <div className="p-5 space-y-2.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted">시스템 합계</span>
-              <span className="tabular-nums text-foreground">{won(sysTotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">캠퍼스 송금</span>
-              <span className="tabular-nums text-foreground">
-                {won(campusRemitted)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">총단 입금</span>
-              <span className="tabular-nums text-foreground">
-                {won(masterReceived)}
-              </span>
-            </div>
-            <div className="pt-3 mt-1 border-t border-border flex items-center justify-between">
-              <span className="font-medium text-foreground">
-                시스템 − 총단
-              </span>
-              {sysTotal - masterReceived === 0 ? (
-                <Badge variant="success">일치</Badge>
-              ) : (
-                <Badge variant="danger">
-                  <TriangleAlert size={12} />
-                  {won(sysTotal - masterReceived)}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </Card>
+        <SettlementOverview paid={sysTotal} remitted={campusRemitted} received={masterReceived} />
 
         {/* F. 헬스 */}
-        <Card title="시스템 헬스" subtitle="배차·활동·연결 상태">
+        <Card title="운영 상태" subtitle="배차·활동·연결 상태">
           <div className="p-5 space-y-2.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted">현재 Phase</span>
+              <span className="text-muted">현재 운영 단계</span>
               <Badge variant={cfg?.current_phase === "phase2" ? "primary" : "mute"}>
                 {cfg?.current_phase === "phase2" ? "배차/마감" : "입력"}
               </Badge>
@@ -349,7 +272,7 @@ export default async function AdminDashboardPage() {
               <span className="text-foreground">{timeAgo(cfg?.last_batch_at ?? null)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted">최근 24h 변경</span>
+              <span className="text-muted">최근 24시간 변경</span>
               <span className="tabular-nums text-foreground">{audit24h}건</span>
             </div>
             <div className="flex justify-between items-center">

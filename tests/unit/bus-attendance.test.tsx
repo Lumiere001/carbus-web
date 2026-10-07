@@ -29,6 +29,7 @@ const member = (id: string, name: string, on = false) => ({
   student_id: "26",
   checked_in: on,
   checked_out: on,
+  version: 1,
 });
 
 const BUSES = [

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { signInWithGoogle } from "./actions";
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   return (
     <main className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="max-w-md w-full bg-surface rounded-xl shadow-2 border border-border p-8 space-y-6">
@@ -18,6 +19,11 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {error && (
+          <p role="alert" className="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 text-sm text-danger">
+            로그인을 완료하지 못했어요. 아래 버튼으로 다시 시도해 주세요. 계속되면 운영자에게 문의해 주세요.
+          </p>
+        )}
         <form action={signInWithGoogle}>
           <button
             type="submit"
@@ -28,7 +34,7 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center text-sm text-muted pt-2 border-t border-border">
-          <Link href="/admin/login" className="hover:text-foreground underline">
+          <Link href="/admin/login" className="inline-flex min-h-11 items-center justify-center hover:text-foreground underline">
             운영자 로그인은 여기로
           </Link>
         </div>

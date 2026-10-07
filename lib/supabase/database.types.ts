@@ -562,6 +562,7 @@ export type Database = {
       }
       events: {
         Row: {
+          batch_revision: number
           created_at: string
           destination: string | null
           ends_on: string | null
@@ -578,6 +579,7 @@ export type Database = {
           write_mode: Database["public"]["Enums"]["event_write_mode"]
         }
         Insert: {
+          batch_revision?: number
           created_at?: string
           destination?: string | null
           ends_on?: string | null
@@ -594,6 +596,7 @@ export type Database = {
           write_mode?: Database["public"]["Enums"]["event_write_mode"]
         }
         Update: {
+          batch_revision?: number
           created_at?: string
           destination?: string | null
           ends_on?: string | null
@@ -610,6 +613,259 @@ export type Database = {
           write_mode?: Database["public"]["Enums"]["event_write_mode"]
         }
         Relationships: []
+      }
+      onsite_corrections: {
+        Row: {
+          after_value: Json
+          before_value: Json
+          changed_by: string
+          created_at: string
+          event_id: string
+          id: string
+          reason: string
+          registration_id: string
+          request_id: string
+          visit_id: string
+        }
+        Insert: {
+          after_value: Json
+          before_value: Json
+          changed_by: string
+          created_at?: string
+          event_id: string
+          id?: string
+          reason: string
+          registration_id: string
+          request_id: string
+          visit_id: string
+        }
+        Update: {
+          after_value?: Json
+          before_value?: Json
+          changed_by?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          reason?: string
+          registration_id?: string
+          request_id?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onsite_corrections_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onsite_corrections_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "onsite_corrections_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+          {
+            foreignKeyName: "onsite_corrections_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+          {
+            foreignKeyName: "onsite_corrections_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "onsite_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onsite_corrections_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "onsite_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onsite_requests: {
+        Row: {
+          actor_id: string
+          created_at: string
+          event_id: string
+          id: string
+          payload: Json
+          registration_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          event_id: string
+          id: string
+          payload: Json
+          registration_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          payload?: Json
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onsite_requests_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onsite_requests_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "onsite_requests_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+          {
+            foreignKeyName: "onsite_requests_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+        ]
+      }
+      onsite_states: {
+        Row: {
+          event_id: string
+          registration_id: string
+          revision: number
+        }
+        Insert: {
+          event_id: string
+          registration_id: string
+          revision?: number
+        }
+        Update: {
+          event_id?: string
+          registration_id?: string
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onsite_states_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "onsite_states_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+          {
+            foreignKeyName: "onsite_states_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+        ]
+      }
+      onsite_visits: {
+        Row: {
+          arrived_at: string | null
+          arrived_by: string | null
+          departed_at: string | null
+          departed_by: string | null
+          event_id: string
+          id: string
+          registration_id: string
+          updated_at: string
+          version: number
+          visit_number: number
+        }
+        Insert: {
+          arrived_at?: string | null
+          arrived_by?: string | null
+          departed_at?: string | null
+          departed_by?: string | null
+          event_id: string
+          id?: string
+          registration_id: string
+          updated_at?: string
+          version?: number
+          visit_number: number
+        }
+        Update: {
+          arrived_at?: string | null
+          arrived_by?: string | null
+          departed_at?: string | null
+          departed_by?: string | null
+          event_id?: string
+          id?: string
+          registration_id?: string
+          updated_at?: string
+          version?: number
+          visit_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onsite_visits_arrived_by_fkey"
+            columns: ["arrived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onsite_visits_departed_by_fkey"
+            columns: ["departed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onsite_visits_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "onsite_visits_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_payment_balance"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+          {
+            foreignKeyName: "onsite_visits_event_id_registration_id_fkey"
+            columns: ["event_id", "registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_transport_summary"
+            referencedColumns: ["event_id", "registration_id"]
+          },
+        ]
       }
       org_units: {
         Row: {
@@ -1482,13 +1738,6 @@ export type Database = {
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["departure_slot_id"]
-            isOneToOne: false
-            referencedRelation: "departure_slots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "departure_slots"
@@ -1498,7 +1747,7 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
-            referencedRelation: "event_trips"
+            referencedRelation: "departure_slots"
             referencedColumns: ["id"]
           },
           {
@@ -1512,8 +1761,8 @@ export type Database = {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
             isOneToOne: false
-            referencedRelation: "v_day_capacity"
-            referencedColumns: ["slot_id"]
+            referencedRelation: "event_trips"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
@@ -1525,13 +1774,20 @@ export type Database = {
           {
             foreignKeyName: "buses_up_trip_id_fkey"
             columns: ["departure_slot_id"]
+            isOneToOne: false
+            referencedRelation: "v_day_capacity"
+            referencedColumns: ["slot_id"]
+          },
+          {
+            foreignKeyName: "buses_up_trip_id_fkey"
+            columns: ["up_trip_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
           },
           {
             foreignKeyName: "buses_up_trip_id_fkey"
-            columns: ["up_trip_id"]
+            columns: ["departure_slot_id"]
             isOneToOne: false
             referencedRelation: "v_down_capacity"
             referencedColumns: ["trip_id"]
@@ -2043,6 +2299,19 @@ export type Database = {
         Returns: undefined
       }
       campus_remit_delete: { Args: { p_id: string }; Returns: undefined }
+      can_read_onsite: {
+        Args: { p_event: string; p_reg: string }
+        Returns: boolean
+      }
+      correct_onsite_visit: {
+        Args: {
+          p_event: string
+          p_input: Json
+          p_reg: string
+          p_request: string
+        }
+        Returns: boolean
+      }
       create_event: {
         Args: {
           p_copy_buses?: boolean
@@ -2056,6 +2325,10 @@ export type Database = {
           p_starts_on?: string
           p_subtitle?: string
         }
+        Returns: string
+      }
+      create_registration_complete: {
+        Args: { p_event_id: string; p_input: Json }
         Returns: string
       }
       current_campus: { Args: never; Returns: string }
@@ -2076,6 +2349,7 @@ export type Database = {
           reg_count: number
         }[]
       }
+      get_batch_snapshot: { Args: { p_event_id: string }; Returns: Json }
       is_event_writable: { Args: { p_event: string }; Returns: boolean }
       leg_skips_our_bus: {
         Args: {
@@ -2089,9 +2363,78 @@ export type Database = {
         Args: { p_amount: number; p_campus_id: string; p_note?: string }
         Returns: undefined
       }
+      onsite_snapshot: {
+        Args: { p_event: string; p_reg_ids: string[] }
+        Returns: Json
+      }
+      record_onsite: {
+        Args: {
+          p_event: string
+          p_input: Json
+          p_reg: string
+          p_request: string
+        }
+        Returns: Json
+      }
       request_event_header: { Args: never; Returns: string }
+      save_batch: {
+        Args: {
+          p_assignments: Json
+          p_bus_order: number[]
+          p_elapsed_ms: number
+          p_errors: string[]
+          p_event_id: string
+          p_expected_revision: string
+          p_mode: string
+        }
+        Returns: undefined
+      }
       set_attendance: {
         Args: { p_field: string; p_reg_id: string; p_value: boolean }
+        Returns: undefined
+      }
+      set_bus_binding: {
+        Args: { p_bus_id: number; p_intent: Json; p_mode: string }
+        Returns: {
+          capacity: number
+          display_order: number
+          down_driver_registration_id: string | null
+          down_fixed_passenger_ids: string[]
+          down_trip_id: number | null
+          driver_registration_id: string | null
+          event_id: string
+          fill_priority: number
+          fixed_passenger_ids: string[]
+          hard_cap: number
+          id: number
+          is_cohesion_exempt: boolean
+          kind: Database["public"]["Enums"]["bus_kind"]
+          name: string
+          up_trip_id: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "buses"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      set_leader_binding: {
+        Args: {
+          p_bus_id?: number
+          p_kind: string
+          p_mode?: string
+          p_operation: string
+          p_registration_id: string
+        }
+        Returns: undefined
+      }
+      set_manual_assignment: {
+        Args: {
+          p_assignments: Json
+          p_expected: Json
+          p_registration_id: string
+        }
         Returns: undefined
       }
       unlock_event_writes: {

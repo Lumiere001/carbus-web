@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RegistrationGrid } from "@/components/campus/registration-grid";
 import type { PickupRow } from "@/components/admin/reg-drawer";
 import { eventDayCount } from "@/lib/courses/days";
+import { DataLoadError } from "@/components/ui/data-load-error";
 
 export default async function CampusPage() {
   const supabase = await createClient();
@@ -25,8 +26,7 @@ export default async function CampusPage() {
     supabase
       .from("registrations")
       .select("*")
-      // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
-      .neq("participation_status", "cancelled")
+      // 취소 표시와 복원을 새로고침 뒤에도 제공한다. 정상 집계에서는 grid가 제외한다.
       .eq("campus_id", campusId)
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("name").eq("id", campusId).single(),
@@ -55,8 +55,10 @@ export default async function CampusPage() {
     // 수강신청 — 임역원도 자기 캠퍼스 사람 것을 서랍에서 켜고 끈다(RLS 가 범위를 좁힌다).
     supabase.from("course_signups").select("registration_id, day_no, at_time"),
     // 고를 수 있는 날 수 계산용. **날짜를 저장하지는 않는다.**
-    supabase.from("events").select("starts_on, ends_on").eq("is_active", true).maybeSingle(),
+    supabase.from("events").select("id, starts_on, ends_on").eq("is_active", true).maybeSingle(),
   ]);
+
+  if ([regRes, campusRes, busRes, slotRes, legRes, unitRes, pickupRes, placeRes, courseRes, eventRes].some((result) => result.error)) return <DataLoadError retryHref="/campus" />;
 
   const allUnits = unitRes.data ?? [];
   const unitName = new Map(allUnits.map((u) => [u.id, u.name]));
@@ -91,6 +93,8 @@ export default async function CampusPage() {
 
   return (
     <RegistrationGrid
+      key={`${eventRes.data?.id ?? "no-active-event"}:${campusId}`}
+      eventId={eventRes.data?.id ?? null}
       campusId={campusId}
       campusName={campusRes.data?.name ?? "내"}
       initialRows={regRes.data ?? []}

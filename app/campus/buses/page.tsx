@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import type { AttendanceType, DepartureSlot } from "@/lib/supabase/types";
 import { sortRoster } from "@/lib/registrations/roster-sort";
 import { BusAttendance } from "@/components/campus/bus-attendance";
+import { DataLoadError } from "@/components/ui/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ type Reg = {
   assigned_down_bus_id: number | null;
   checked_in: boolean;
   checked_out: boolean;
+  readonly version: number;
 };
 
 /** 호차별 그룹핑 (busId → 명단). */
@@ -58,7 +60,7 @@ export default async function CampusBusesPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
+        "id, name, student_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out, version"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
@@ -68,8 +70,12 @@ export default async function CampusBusesPage() {
     supabase.from("event_trips").select("id, label").eq("direction", "up").order("display_order"),
   ]);
 
+  if ([regRes, busRes, slotRes].some((result) => result.error)) {
+    return <DataLoadError retryHref="/campus/buses" />;
+  }
+
   const buses = (busRes.data ?? []) as BusInfo[];
-  const regs = (regRes.data ?? []) as Reg[];
+  const regs: Reg[] = regRes.data ?? [];
   const slots = (slotRes.data ?? []) as SlotMini[];
 
   const upGroups = groupBy(regs, (r) => r.assigned_up_bus_id);
@@ -92,7 +98,7 @@ export default async function CampusBusesPage() {
       <div>
         <h2 className="text-lg font-semibold text-foreground">호차 조회</h2>
         <p className="text-sm text-muted mt-0.5">
-          우리 캠퍼스 순장/순원의 상행·하행 배차 결과 · 현장에서 이름 탭으로 출발 버스/귀가 체크
+          우리 캠퍼스 순장/순원의 상행(가는 편)·하행(오는 편) 배차 결과입니다. 이 화면은 조회 전용이며, 탑승 확인은 차량 순장·총단 운영자가 합니다.
         </p>
       </div>
 

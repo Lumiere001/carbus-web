@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 import {
   BatchPanel,
   type BatchRunRow,
@@ -10,7 +12,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBatchPage() {
+export default async function AdminBatchPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -36,7 +39,7 @@ export default async function AdminBatchPage() {
     notCancelled(
       supabase
         .from("registrations")
-        .select("id, name, student_id, campus_id, up_trip_id, down_trip_id")
+        .select("id, name, student_id, campus_id, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id")
     );
 
   const [
@@ -83,6 +86,10 @@ export default async function AdminBatchPage() {
       .neq("participation_status", "cancelled"),
   ]);
 
+  if ([upPartRes, upAssignedRes, downPartRes, downAssignedRes, upUnRes, downUnRes, busRes, campusRes, runsRes, cfgRes, tripRes, assignedRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/batch")} />;
+  }
+
   const usedUp = new Map<number, number>();
   const usedDown = new Map<number, number>();
   for (const r of assignedRes.data ?? []) {
@@ -107,10 +114,11 @@ export default async function AdminBatchPage() {
   let upStale = 0;
   let downStale = 0;
   if (pinnedIds.length > 0) {
-    const { data: pinned } = await supabase
+    const { data: pinned, error } = await supabase
       .from("registrations")
       .select("id, assigned_up_bus_id, assigned_down_bus_id")
       .in("id", pinnedIds);
+    if (error) return <DataLoadError retryHref={adminHref(eventId, "/batch")} />;
     for (const r of pinned ?? []) {
       if (upExpect.has(r.id) && r.assigned_up_bus_id !== upExpect.get(r.id))
         upStale += 1;
@@ -134,6 +142,8 @@ export default async function AdminBatchPage() {
       campus_id: string;
       up_trip_id: number | null;
       down_trip_id: number | null;
+      assigned_up_bus_id: number | null;
+      assigned_down_bus_id: number | null;
     }[]
   ): UnassignedRow[] =>
     rows.map((r) => ({
@@ -144,6 +154,8 @@ export default async function AdminBatchPage() {
       // 신청한 편 — 드롭다운을 서버 판정과 같은 집합으로 좁히는 데 쓴다.
       up_trip_id: r.up_trip_id,
       down_trip_id: r.down_trip_id,
+      assigned_up_bus_id: r.assigned_up_bus_id,
+      assigned_down_bus_id: r.assigned_down_bus_id,
     }));
 
   return (

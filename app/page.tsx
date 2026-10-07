@@ -10,9 +10,9 @@ const logoutBtnClass =
 export const dynamic = "force-dynamic";
 
 const primaryBtn =
-  "inline-flex items-center justify-center h-11 px-6 rounded-lg bg-primary-800 hover:bg-primary-700 text-white font-medium transition shadow-sm";
+  "inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary-800 hover:bg-primary-700 text-on-primary font-medium transition";
 const secondaryBtn =
-  "inline-flex items-center justify-center h-11 px-6 rounded-lg border border-border bg-surface hover:bg-surface-2 text-foreground font-medium transition shadow-sm";
+  "inline-flex items-center justify-center h-11 px-6 rounded-full border border-border bg-surface hover:bg-surface-2 text-foreground font-medium transition";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -33,23 +33,23 @@ export default async function HomePage() {
   }
 
   // 진입 가능한 화면 (둘 이상이면 여기서 선택 — 임역원이면서 차량순장인 경우 구분)
-  const entries: { href: string; label: string; primary?: boolean }[] = [];
+  const entries: { href: string; label: string }[] = [];
   if (role === "campus_admin")
     entries.push({ href: "/campus", label: "임역원 화면" });
   if (role === "viewer" || role === "master")
-    entries.push({ href: "/admin", label: "운영자 화면", primary: true });
+    entries.push({ href: "/admin", label: "운영자 화면" });
   if (isDriver)
-    entries.push({ href: "/driver", label: "차량 순장 출석체크", primary: true });
+    entries.push({ href: "/driver", label: "차량 순장 출석체크" });
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-background px-4">
+    <main className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
       <div className="max-w-xl w-full text-center space-y-8 py-12">
         <div className="space-y-4">
           <div className="w-12 h-12 rounded-xl bg-primary-800 flex items-center justify-center mx-auto">
-            <Bus className="w-6 h-6 text-white" />
+            <Bus className="w-6 h-6 text-on-primary" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-normal text-foreground tracking-tight">
               광주지구 차량 관리
             </h1>
             <p className="text-muted text-base">
@@ -80,11 +80,11 @@ export default async function HomePage() {
           <div className="space-y-4">
             <p className="text-sm text-muted">들어갈 화면을 선택하세요</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {entries.map((e) => (
+              {entries.map((e, index) => (
                 <Link
                   key={e.href}
                   href={e.href}
-                  className={e.primary ? primaryBtn : secondaryBtn}
+                  className={index === 0 ? primaryBtn : secondaryBtn}
                 >
                   {e.label}
                 </Link>
@@ -101,7 +101,7 @@ export default async function HomePage() {
             <div className="text-sm text-muted bg-surface rounded-xl p-4 border border-border shadow-1">
               <p className="font-medium text-foreground mb-1">승인 대기 중</p>
               <p>
-                로그인되었지만 아직 권한이 없습니다. 총단(master)이 캠퍼스 또는
+                로그인되었지만 아직 권한이 없습니다. 총단이 캠퍼스 또는
                 담당 호차를 배정하면 화면이 열립니다.
               </p>
             </div>

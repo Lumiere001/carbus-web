@@ -8,6 +8,8 @@ import type {
 import { sortRoster } from "@/lib/registrations/roster-sort";
 import { BusAttendance } from "@/components/campus/bus-attendance";
 import { Card } from "@/components/ui/card";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,7 @@ type Reg = {
   assigned_down_bus_id: number | null;
   checked_in: boolean;
   checked_out: boolean;
+  readonly version: number;
 };
 type Member = {
   id: string;
@@ -32,6 +35,7 @@ type Member = {
   student_id: string;
   checked_in: boolean;
   checked_out: boolean;
+  readonly version: number;
   campus?: string;
 };
 
@@ -55,19 +59,21 @@ function groupByBus(
       ([busId, list]) =>
         [
           busId,
-          sortRoster(list).map((r) => ({
+          sortRoster(list.map((r) => ({ ...r, campus_name: campusName.get(r.campus_id) }))).map((r) => ({
             id: r.id,
             name: r.name,
             student_id: r.student_id,
             checked_in: r.checked_in,
             checked_out: r.checked_out,
-            campus: campusName.get(r.campus_id),
+            version: r.version,
+            campus: r.campus_name,
           })),
         ] as [number, Member[]]
     );
 }
 
-export default async function AdminAttendancePage() {
+export default async function AdminAttendancePage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -89,7 +95,7 @@ export default async function AdminAttendancePage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
+        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out, version"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
@@ -99,8 +105,12 @@ export default async function AdminAttendancePage() {
     supabase.from("campuses").select("id, name"),
   ]);
 
+  if ([regRes, busRes, slotRes, campusRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/attendance")} />;
+  }
+
   const buses = (busRes.data ?? []) as BusInfo[];
-  const regs = (regRes.data ?? []) as Reg[];
+  const regs: Reg[] = regRes.data ?? [];
   const slots = (slotRes.data ?? []) as SlotMini[];
   const campusName = new Map(
     ((campusRes.data ?? []) as { id: string; name: string }[]).map((c) => [
@@ -139,7 +149,7 @@ export default async function AdminAttendancePage() {
           전 캠퍼스 호차별 출발 버스·귀가{" "}
           {isMaster
             ? "· 이름을 탭해 직접 체크 가능"
-            : "(보기 전용 — 체크는 임역원·총단)"}
+            : "(조회 전용 — 탑승 확인은 차량 순장·총단 운영자)"}
         </p>
       </div>
 

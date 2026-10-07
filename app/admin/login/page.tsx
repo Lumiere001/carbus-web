@@ -16,8 +16,7 @@ export default async function AdminLoginPage({
             운영자 로그인
           </h1>
           <p className="text-sm text-muted">
-            운영자 비밀번호를 입력하세요. 권한(viewer / master)은 비밀번호로
-            자동 결정됩니다.
+            운영자 비밀번호로 로그인하세요. 등록된 비밀번호에 따라 총단 또는 조회 담당자 화면이 열립니다.
           </p>
         </div>
 
@@ -41,21 +40,21 @@ export default async function AdminLoginPage({
           </div>
 
           {error ? (
-            <div className="text-sm text-danger bg-danger-bg border border-danger-border rounded-lg px-3 py-2">
-              {decodeURIComponent(error)}
+            <div role="alert" className="text-sm text-danger bg-danger-bg border border-danger-border rounded-lg px-3 py-2">
+              {error}
             </div>
           ) : null}
 
           <button
             type="submit"
-            className="w-full h-11 px-4 rounded-lg bg-primary-800 hover:bg-primary-700 text-white font-medium transition shadow-sm"
+            className="w-full h-11 px-4 rounded-full bg-primary-800 hover:bg-primary-700 text-on-primary font-medium transition shadow-sm"
           >
             로그인
           </button>
         </form>
 
         <div className="text-center text-sm text-muted pt-2 border-t border-border">
-          <Link href="/login" className="hover:text-foreground underline">
+          <Link href="/login" className="inline-flex min-h-11 items-center justify-center hover:text-foreground underline">
             임역원 Google 로그인은 여기로
           </Link>
         </div>

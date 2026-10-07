@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * 납부상태·배차상태·학번 특수값 등 모든 상태 표현을 이 컴포넌트로 통일.
  */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ring-1 ring-inset",
+  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-0.5 rounded-md text-xs font-medium ring-1 ring-inset",
   {
     variants: {
       variant: {

@@ -1,5 +1,7 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -59,6 +61,7 @@ export function CampusPaymentsPanel({
   masterReceived: number;
   masterReceivedAt: string | null;
 }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const router = useRouter();
   const [rows, setRows] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -157,8 +160,8 @@ export function CampusPaymentsPanel({
     });
   }
 
-  function handleDelete(id: string) {
-    if (!confirm("이 송금 항목을 삭제할까요?")) return;
+  async function handleDelete(id: string) {
+    if (!(await requestConfirmation({ title: "송금 내역을 삭제할까요?", description: "이 송금 항목을 삭제할까요?", confirmLabel: "송금 삭제", tone: "danger" }))) return;
     startTransition(async () => {
       const res = await deleteRemittance(id);
       if (!res.ok) return setMsg({ type: "err", text: res.message });
@@ -168,6 +171,7 @@ export function CampusPaymentsPanel({
 
   return (
     <div className="space-y-5">
+      {confirmationDialog}
       <div>
         <h2 className="text-xl font-semibold text-foreground">
           {campusName} 차량비 정산
@@ -178,7 +182,7 @@ export function CampusPaymentsPanel({
       </div>
 
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -259,6 +263,7 @@ export function CampusPaymentsPanel({
                           {PAYMENT_LABELS[r.payment_status]}
                         </Badge>
                         <select
+                          aria-label={`${r.name} 납부 상태`}
                           value={r.payment_status}
                           disabled={pending}
                           onChange={(e) =>
@@ -384,7 +389,7 @@ export function CampusPaymentsPanel({
                   setDraft({ amount: "", note: "" });
                   document
                     .getElementById("remit-amount")
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
                 }}
               >
                 금액이 달라요
@@ -420,7 +425,7 @@ export function CampusPaymentsPanel({
                 // 시스템이 알 수 없다(현금·계좌이체가 섞인다).
                 document
                   .getElementById("remit-amount")
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
               }}
             >
               {won(balance)}원 등록하기
@@ -436,6 +441,7 @@ export function CampusPaymentsPanel({
             <label className="block text-sm">
               <span className="text-muted">보낸 금액</span>
               <input
+                disabled={pending}
                 id="remit-amount"
                 type="number"
                 value={draft.amount}
@@ -449,6 +455,7 @@ export function CampusPaymentsPanel({
             <label className="block text-sm">
               <span className="text-muted">메모 (선택)</span>
               <input
+                disabled={pending}
                 type="text"
                 value={draft.note}
                 onChange={(e) =>
@@ -499,6 +506,7 @@ export function CampusPaymentsPanel({
                   onClick={() => handleDelete(r.id)}
                   className="text-muted-2 hover:text-danger shrink-0"
                   aria-label="송금 항목 삭제"
+                  title="송금 항목 삭제"
                 >
                   <Trash2 size={14} />
                 </button>

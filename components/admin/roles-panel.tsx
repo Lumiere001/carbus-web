@@ -1,6 +1,9 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState } from "react";
+import { isSpecialRole } from "@/lib/roles/special";
 import { Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,7 @@ function Swatch({ color }: { color: string | null }) {
 }
 
 export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const [labels, setLabels] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
@@ -68,6 +72,7 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
     row: RoleLabelRow,
     fields: Partial<Pick<RoleLabelRow, "label" | "color" | "display_order">>
   ) {
+    if (isSpecialRole(row.label) && fields.label !== undefined) return;
     setBusy(true);
     const res = await updateRoleLabel(row.id, fields);
     setBusy(false);
@@ -76,10 +81,9 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
   }
 
   async function handleDelete(row: RoleLabelRow) {
+    if (isSpecialRole(row.label)) return;
     if (
-      !confirm(
-        `'${row.label}' 라벨을 삭제할까요? 순장/순원들의 역할 목록에서도 함께 제거됩니다.`
-      )
+      !(await requestConfirmation({ title: "역할 라벨을 삭제할까요?", description: `'${row.label}' 라벨을 삭제할까요? 순장/순원들의 역할 목록에서도 함께 제거됩니다.`, confirmLabel: "역할 라벨 삭제", tone: "danger" }))
     )
       return;
     setBusy(true);
@@ -92,8 +96,10 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {confirmationDialog}
+      <p className="text-sm text-muted">차량 순장·고정 탑승자는 배차와 연결된 역할입니다. 이름과 삭제는 잠겨 있으며 색과 순서는 바꿀 수 있습니다.</p>
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -129,7 +135,9 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
                   <td className="px-4 py-2">
                     <input
                       defaultValue={l.label}
-                      disabled={busy}
+                      aria-label={`${l.label} 역할 이름`}
+                      title={isSpecialRole(l.label) ? "배차에 연결된 역할이라 이름을 유지합니다" : undefined}
+                      disabled={busy || isSpecialRole(l.label)}
                       onBlur={(e) => {
                         const v = e.target.value.trim();
                         if (v && v !== l.label) handleUpdate(l, { label: v });
@@ -141,11 +149,15 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
                     <span className="flex items-center gap-2">
                       <Swatch color={l.color} />
                       <select
+                        aria-label={`${l.label} 역할 색`}
                         value={l.color ?? "gray"}
                         disabled={busy}
                         onChange={(e) => handleUpdate(l, { color: e.target.value })}
                         className="border border-border-2 rounded-md px-1.5 py-1 bg-surface text-xs"
                       >
+                        {l.color && !COLORS.some((c) => c.key === l.color) && (
+                          <option value={l.color}>현재 색 유지</option>
+                        )}
                         {COLORS.map((c) => (
                           <option key={c.key} value={c.key}>
                             {c.name}
@@ -157,6 +169,7 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
                   <td className="px-4 py-2">
                     <input
                       type="number"
+                      aria-label={`${l.label} 역할 순서`}
                       defaultValue={l.display_order}
                       disabled={busy}
                       onBlur={(e) => {
@@ -171,7 +184,9 @@ export function RolesPanel({ initial }: { initial: RoleLabelRow[] }) {
                     <Button
                       variant="danger"
                       size="sm"
-                      disabled={busy}
+                      disabled={busy || isSpecialRole(l.label)}
+                      aria-label={`${l.label} 역할 삭제`}
+                      title={`${l.label} 역할 삭제`}
                       onClick={() => handleDelete(l)}
                     >
                       <Trash2 size={13} />

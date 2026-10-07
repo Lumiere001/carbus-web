@@ -51,7 +51,7 @@ function humanize(msg: string): string {
     return "이미 존재하는 라벨입니다";
   }
   if (msg.includes("row-level security") || msg.includes("policy")) {
-    return "권한이 없습니다 (master만 역할 라벨을 관리할 수 있어요)";
+    return "권한이 없습니다 (총단만 역할 라벨을 관리할 수 있어요)";
   }
   return msg;
 }

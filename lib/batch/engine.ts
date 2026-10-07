@@ -491,7 +491,10 @@ export function runBatch(
 
   // 리포팅 방향 기준 빈 좌석 (보조석으로 정원 초과 시 음수가 되지 않게 0 클램프)
   const emptySeats = buses.reduce(
-    (sum, b) => sum + Math.max(0, b.capacity - (byBus[b.id] ?? 0)),
+    (sum, b) =>
+      (reportDown ? b.down_trip_id : b.up_trip_id) === null
+        ? sum
+        : sum + Math.max(0, b.capacity - (byBus[b.id] ?? 0)),
     0
   );
 

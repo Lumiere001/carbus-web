@@ -139,6 +139,7 @@ export function LeadersPanel({
     }
     return (
       <select
+        aria-label={`${row.name} ${mode === "up" ? "상행" : "하행"} ${cellKind === "driver" ? "차량순장" : "고정 탑승"} 호차`}
         value={cur ?? ""}
         disabled={pending}
         onChange={(e) => assign(row, mode, cellKind, e.target.value)}
@@ -165,13 +166,13 @@ export function LeadersPanel({
         <h2 className="text-xl font-semibold text-foreground">리더 관리</h2>
         <p className="text-sm text-muted mt-0.5">
           역할(총단·간사·차량순장·고정탑승)이 있는 순장/순원을 모아 봅니다. 차량순장·고정탑승은
-          전체 순장/순원 화면에서 역할을 주면 현재 배정 호차에 자동으로 묶이며, 여기서 호차를
-          바꿀 수 있습니다.
+          전체 순장/순원 화면에서 역할을 주면 현재 배정 호차에 자동으로 묶이며, 여기서{" "}
+          <span className="whitespace-nowrap">호차를 바꿀 수 있습니다.</span>
         </p>
       </div>
 
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -204,7 +205,7 @@ export function LeadersPanel({
 
       <Card title="리더 목록" subtitle="차량순장·고정탑승은 호차 지정 가능">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="bg-surface-2 text-muted text-left">
                 <th className="px-4 py-2.5">이름</th>

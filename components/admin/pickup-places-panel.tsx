@@ -1,5 +1,7 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
@@ -24,6 +26,7 @@ import {
  * 다음 행사에서는 다른 곳이 된다.
  */
 export function PickupPlacesPanel({ places }: { places: PlaceRow[] }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const router = useRouter();
   const [busy, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -45,11 +48,12 @@ export function PickupPlacesPanel({ places }: { places: PlaceRow[] }) {
   return (
     <Card
       title="픽업 장소"
-      subtitle="따로 데리러 갈 곳. 임역원·순장/순원은 여기 등록된 것에서 고르기만 합니다"
+      subtitle={"따로 데리러 갈 장소입니다. 임역원·순장/순원은 등록된 목록에서\u00a0선택합니다."}
     >
+      {confirmationDialog}
       <div className="p-5 space-y-3">
         {err && (
-          <p className="text-sm text-danger">{err}</p>
+          <p role="alert" className="text-sm text-danger">{err}</p>
         )}
 
         <p className="text-xs text-muted-2 leading-snug">
@@ -99,12 +103,13 @@ export function PickupPlacesPanel({ places }: { places: PlaceRow[] }) {
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => {
-                      if (!confirm(`‘${p.name}’ 을 지울까요?\n이 장소로 잡힌 수송 요청이 있으면 지워지지 않습니다.`))
+                    onClick={async () => {
+                      if (!(await requestConfirmation({ title: "픽업 장소를 삭제할까요?", description: `‘${p.name}’ 을 지울까요?\n이 장소로 잡힌 수송 요청이 있으면 지워지지 않습니다.`, confirmLabel: "픽업 장소 삭제", tone: "danger" })))
                         return;
                       run(() => deletePickupPlace(p.id));
                     }}
                     aria-label="픽업 장소 삭제"
+                    title="픽업 장소 삭제"
                     className="text-muted-2 hover:text-danger"
                   >
                     <Trash2 size={14} />

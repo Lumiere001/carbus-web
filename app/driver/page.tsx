@@ -1,8 +1,10 @@
+import { RefreshOnReturn } from "@/components/ui/refresh-on-return";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { sortRoster } from "@/lib/registrations/roster-sort";
 import { BusAttendance } from "@/components/campus/bus-attendance";
 import { Card } from "@/components/ui/card";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import type { DepartureSlot } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +20,7 @@ type Reg = {
   assigned_down_bus_id: number | null;
   checked_in: boolean;
   checked_out: boolean;
+  readonly version: number;
 };
 type Member = {
   id: string;
@@ -25,6 +28,7 @@ type Member = {
   student_id: string;
   checked_in: boolean;
   checked_out: boolean;
+  readonly version: number;
   campus?: string;
 };
 
@@ -47,7 +51,7 @@ export default async function DriverPage() {
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out"
+        "id, name, student_id, campus_id, assigned_up_bus_id, assigned_down_bus_id, checked_in, checked_out, version"
       )
       // 취소자는 명단·집계에서 제외한다(좌석 반납은 DB 트리거가 처리).
       .neq("participation_status", "cancelled")
@@ -58,7 +62,8 @@ export default async function DriverPage() {
     supabase.from("campuses").select("id, name"),
   ]);
 
-  const regs = (regRes.data ?? []) as Reg[];
+  if ([regRes, busRes, slotRes, campusRes].some((result) => result.error)) return <DataLoadError retryHref="/driver" />;
+  const regs: Reg[] = regRes.data ?? [];
   const buses = (busRes.data ?? []) as BusInfo[];
   const slots = (slotRes.data ?? []) as SlotMini[];
   const campusName = new Map(
@@ -70,13 +75,14 @@ export default async function DriverPage() {
   const myBus = buses.find((b) => b.id === busId);
 
   const toMembers = (list: Reg[]): Member[] =>
-    sortRoster(list).map((r) => ({
+    sortRoster(list.map((r) => ({ ...r, campus_name: campusName.get(r.campus_id) }))).map((r) => ({
       id: r.id,
       name: r.name,
       student_id: r.student_id,
       checked_in: r.checked_in,
       checked_out: r.checked_out,
-      campus: campusName.get(r.campus_id),
+      version: r.version,
+      campus: r.campus_name,
     }));
 
   const upMembers = toMembers(regs.filter((r) => r.assigned_up_bus_id === busId));
@@ -101,11 +107,11 @@ export default async function DriverPage() {
           {myBus?.name ?? `${busId}호차`} 출석체크
         </h2>
         <p className="text-sm text-muted mt-0.5">
-          이름을 탭하면 출발 버스(상행)·귀가(하행) 체크가 됩니다. 본인 호차 명단만
-          보입니다.
+          이름을 탭하면 출발 버스(상행)·귀가(하행) 체크가 됩니다. <span className="whitespace-nowrap">본인 호차 명단만 보입니다.</span>
         </p>
       </div>
 
+      <RefreshOnReturn />
       {upGroups.length === 0 && downGroups.length === 0 ? (
         <Card className="p-5">
           <p className="text-sm text-muted">

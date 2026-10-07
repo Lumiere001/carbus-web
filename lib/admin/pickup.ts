@@ -3,6 +3,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
+import { updateCells } from "@/lib/registrations/mutations";
+import { toKst } from "@/lib/time/kst";
+
+export { toKst } from "@/lib/time/kst";
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -72,28 +76,10 @@ export async function deletePickup(id: number): Promise<Result> {
 export async function setAttendRange(
   registrationId: string,
   from: string | null,
-  to: string | null
-): Promise<Result> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("registrations")
-    .update({ attend_from: from || null, attend_to: to || null })
-    .eq("id", registrationId);
-  if (error) return { ok: false, message: humanize(error.message) };
-  return { ok: true };
-}
-
-/**
- * `datetime-local` 의 "2026-08-11T23:30" 에 KST 오프셋을 붙인다.
- *
- * 이걸 안 하면 Postgres 가 서버 시간대로 해석한다. 이 서비스는 밤 늦은 픽업이
- * 흔해서(막차·야간 도착) **날짜가 하루 밀리는 게 곧 다른 날 배차표**가 된다.
- */
-export function toKst(v: string | null | undefined): string | null {
-  if (!v) return null;
-  // 이미 오프셋이 붙어 있으면 그대로 둔다.
-  if (/[+-]\d{2}:?\d{2}$|Z$/.test(v)) return v;
-  return `${v.length === 16 ? `${v}:00` : v}+09:00`;
+  to: string | null,
+  expected: { readonly attend_from: string | null; readonly attend_to: string | null }
+): ReturnType<typeof updateCells> {
+  return updateCells(registrationId, expected, { attend_from: from || null, attend_to: to || null });
 }
 
 function humanize(msg: string): string {

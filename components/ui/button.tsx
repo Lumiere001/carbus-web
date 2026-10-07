@@ -7,24 +7,24 @@ import { cn } from "@/lib/utils";
  * variant: default(primary)·secondary·ghost·danger·outline·link
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200",
+  "inline-flex items-center justify-center gap-1.5 font-normal rounded-full transition disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "bg-primary-800 text-white shadow-sm hover:bg-primary-700",
+        default: "bg-primary-800 text-on-primary border border-primary-800 hover:bg-primary-700",
         secondary:
-          "bg-surface border border-border text-foreground hover:bg-surface-2 shadow-sm",
+          "bg-transparent border border-outline text-foreground hover:bg-surface-2",
         ghost: "text-muted hover:bg-surface-2 hover:text-foreground",
         danger:
           "bg-surface border border-danger-border text-danger hover:bg-danger-bg",
-        outline: "border border-border-2 bg-transparent hover:bg-surface-2",
+        outline: "border border-outline bg-transparent hover:bg-surface-2",
         link: "text-primary-800 underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-3.5 text-sm",
-        sm: "h-7 px-2.5 text-xs gap-1",
-        lg: "h-10 px-4 text-sm",
-        icon: "h-9 w-9",
+        default: "h-11 px-3.5 text-sm",
+        sm: "h-9 px-2.5 text-xs gap-1",
+        lg: "h-12 px-4 text-sm",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

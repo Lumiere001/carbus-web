@@ -114,7 +114,7 @@ export async function unlockEventWrites(
 }
 
 function humanize(msg: string): string {
-  if (msg.includes("master")) return "행사 전환은 총단(master)만 할 수 있습니다.";
+  if (msg.includes("master")) return "행사 전환은 총단만 할 수 있습니다.";
   if (msg.includes("사유를 적어")) return "무엇을 고치려고 여는지 사유를 적어 주세요.";
   if (msg.includes("1분~8시간")) return "잠금 해제 시간은 1분~8시간 사이로 정해 주세요.";
   if (msg.includes("이름은 비울 수 없습니다")) return "행사 이름을 입력해 주세요.";

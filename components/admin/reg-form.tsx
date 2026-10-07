@@ -1,180 +1,114 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  PAYMENT_LABELS,
-  PAYMENT_STATUSES,
-  tripOptions,
-  attendanceSummary,
-} from "@/lib/labels";
-import { createRegistration, type RegFormFields } from "@/lib/admin/registrations";
-import type { EventTrip, PaymentStatus } from "@/lib/supabase/types";
+import { X } from "lucide-react";
+import { useConfirmation } from "@/components/ui/use-confirmation";
+import { RegistrationCreateBasics } from "@/components/registrations/create/basics";
+import { RegistrationCreateJourney } from "@/components/registrations/create/journey";
+import { RegistrationCreateExtras } from "@/components/registrations/create/extras";
+import { createCompleteRegistration } from "@/lib/registrations/create";
+import type { CreateRegistrationInput } from "@/lib/registrations/create-schema";
+import { isCompleteDateTime, toKst } from "@/lib/time/kst";
+import type { EventTrip } from "@/lib/supabase/types";
 
-/**
- * master 전용 순장/순원 **추가** 폼.
- *
- * 수정은 오른쪽 편집 서랍(`reg-drawer.tsx`)이 맡는다 — 칸마다 즉시 저장이고,
- * 통째 저장인 이 폼과는 저장 방식 자체가 다르다. 두 경로를 다 남겨두면
- * "어느 화면에서 고쳤나"에 따라 동시 편집 결과가 달라진다.
- *
- * 이동수단(`transport_legs`)은 여기서 받지 않는다. 별도 테이블이라 신청 행이
- * 만들어진 뒤에야 저장할 수 있고, 추가 직후 서랍에서 고르면 된다.
- */
-export function RegForm({
-  campuses,
-  trips,
-  onClose,
-}: {
-  campuses: { id: string; name: string }[];
-  trips: EventTrip[];
-  onClose: () => void;
+export function RegForm({ eventId, campuses, trips, units, places, dayCount, lockedCampusId, onClose }: {
+  readonly eventId: string | null;
+  readonly campuses: { id: string; name: string }[];
+  readonly trips: EventTrip[];
+  readonly units: { id: string; name: string }[];
+  readonly places: { id: number; name: string }[];
+  readonly dayCount: number;
+  readonly lockedCampusId?: string;
+  readonly onClose: () => void;
 }) {
   const router = useRouter();
+  const [draftEventId] = useState(eventId);
   const [pending, start] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [campusId, setCampusId] = useState(campuses[0]?.id ?? "");
-  // 상·하행을 각각 고른다. 참여 형태(attendance_type)는 DB 가 두 편에서 파생하므로
-  // 화면이 보내지 않는다 — 조합 셀 시절의 "폴백이 신청을 덮어쓰는" 사고가 구조적으로 사라진다.
-  const [upTripId, setUpTripId] = useState<number | null>(null);
-  const [downTripId, setDownTripId] = useState<number | null>(null);
-  const [payment, setPayment] = useState<PaymentStatus>("unpaid");
-  const [note, setNote] = useState("");
-
-  function submit() {
-    setErr(null);
-    const fields: RegFormFields = {
-      name: name.trim(),
-      student_id: studentId.trim(),
-      campus_id: campusId,
-      up_trip_id: upTripId,
-      down_trip_id: downTripId,
-      payment_status: payment,
-      note: note.trim() || null,
+  const [error, setError] = useState("");
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const previous = document.activeElement;
+    if (!dialog) return;
+    dialog.showModal();
+    formRef.current?.querySelector<HTMLInputElement>("input[required]")?.focus();
+    function revealInput() {
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && formRef.current?.contains(focused)) focused.scrollIntoView({ block: "nearest" });
+    }
+    window.addEventListener("resize", revealInput);
+    return () => {
+      window.removeEventListener("resize", revealInput);
+      dialog.close();
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
     };
-    if (!fields.name || !fields.student_id || !fields.campus_id)
-      return setErr("이름·학번·캠퍼스는 필수입니다");
-
+  }, []);
+  function goToSection(legend: string) {
+    const target = Array.from(formRef.current?.querySelectorAll("legend") ?? []).find((item) => item.textContent === legend)?.parentElement;
+    target?.scrollIntoView({ block: "start" });
+    target?.querySelector<HTMLElement>("input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)")?.focus({ preventScroll: true });
+  }
+  useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
+  const [uncertain, setUncertain] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
+  const [value, setValue] = useState<CreateRegistrationInput>({
+    name: "", student_id: "", campus_id: lockedCampusId ?? campuses[0]?.id ?? "",
+    up_trip_id: null, down_trip_id: null, payment_status: "unpaid", note: null,
+    attend_from: null, attend_to: null, pickups: [], courses: [],
+    legs: [{ direction: "up", mode: "our_bus", via_unit_id: null, status: "confirmed" },
+      { direction: "down", mode: "our_bus", via_unit_id: null, status: "confirmed" }],
+  });
+  function change(patch: Partial<CreateRegistrationInput>) {
+    setError(""); setDirty(true); setValue((current) => ({ ...current, ...patch }));
+  }
+  function submit() {
+    const incomplete = value.pickups.some((p) => p.pickup_at && !isCompleteDateTime(p.pickup_at));
+    if (incomplete) { setError("픽업 날짜와 시각을 모두 입력하거나 둘 다 비워 주세요."); return; }
+    setError("");
     start(async () => {
-      const res = await createRegistration(fields);
-      if (!res.ok) return setErr(res.message);
-      onClose();
-      router.refresh();
+      const result = await createCompleteRegistration({ ...value,
+        campus_id: lockedCampusId ?? value.campus_id,
+        pickups: value.pickups.map((p) => ({ ...p, pickup_at: toKst(p.pickup_at) })),
+      }, draftEventId);
+      if (!result.ok) { setError(result.message); setUncertain(Boolean(result.uncertain)); return; }
+      onClose(); router.refresh();
     });
   }
-
-  const inputCls =
-    "w-full text-sm border border-border-2 rounded-md px-2.5 py-1.5 bg-surface";
-
-  return (
-    <Card title="순장/순원 추가" subtitle="master 전용">
-      <div className="p-5 space-y-3">
-        {err && <p className="text-sm text-danger">{err}</p>}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="text-xs text-muted space-y-1 block">
-            이름
-            <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="text-xs text-muted space-y-1 block">
-            학번 (두 자리 숫자 또는 외국인/타지구)
-            <input
-              className={inputCls}
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              placeholder="예: 23"
-            />
-          </label>
-          <label className="text-xs text-muted space-y-1 block">
-            캠퍼스
-            <select className={inputCls} value={campusId} onChange={(e) => setCampusId(e.target.value)}>
-              {campuses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="text-xs text-muted space-y-1 block">
-              상행 (가는 편)
-              <select
-                className={inputCls}
-                value={upTripId === null ? "" : String(upTripId)}
-                onChange={(e) =>
-                  setUpTripId(e.target.value === "" ? null : Number(e.target.value))
-                }
-              >
-                {tripOptions(trips, "up", null).map((o) => (
-                  <option key={o.id ?? "none"} value={o.id === null ? "" : String(o.id)}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-xs text-muted space-y-1 block">
-              하행 (오는 편)
-              <select
-                className={inputCls}
-                value={downTripId === null ? "" : String(downTripId)}
-                onChange={(e) =>
-                  setDownTripId(e.target.value === "" ? null : Number(e.target.value))
-                }
-              >
-                {tripOptions(trips, "down", null).map((o) => (
-                  <option key={o.id ?? "none"} value={o.id === null ? "" : String(o.id)}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className="text-[11px] text-muted-2 leading-snug">
-            {attendanceSummary(upTripId, downTripId, trips)}
-            {upTripId === null && downTripId === null &&
-              " — KTX·자차 등 버스를 전혀 이용하지 않는 분입니다."}
-          </p>
-          <label className="text-xs text-muted space-y-1 block">
-            납부
-            <select
-              className={inputCls}
-              value={payment}
-              onChange={(e) => setPayment(e.target.value as PaymentStatus)}
-            >
-              {PAYMENT_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {PAYMENT_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted space-y-1 block sm:col-span-2">
-            비고 (부분참 일정·특이사항 등 자유 기록)
-            <textarea
-              className={inputCls + " min-h-[60px]"}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="예: 금요일 저녁 KTX 귀가"
-            />
-            {upTripId === null && downTripId === null && !note.trim() && (
-              <span className="block text-[11px] text-warning leading-snug">
-                ⚠ 버스를 안 타는 분입니다. 추가한 뒤 <b>이동수단</b>을 편집 서랍에서 골라 주세요.
-              </span>
-            )}
-          </label>
-        </div>
-        <div className="flex gap-2 pt-1">
-          <Button onClick={submit} disabled={pending}>
-            {pending ? "저장 중…" : "추가"}
-          </Button>
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
-            취소
-          </Button>
-        </div>
+  async function close() {
+    if (dirty && !await requestConfirmation({ title: "입력한 신청을 닫을까요?", description: uncertain ? "저장이 완료되었을 수 있습니다. 입력을 닫아도 저장된 신청은 취소되지 않으니 명단을 확인해 주세요." : <span className="whitespace-nowrap">작성 중인 신청 정보가 사라집니다.</span>, confirmLabel: "입력 취소", tone: "danger" })) return;
+    onClose();
+  }
+  async function confirmRetry() {
+    router.refresh();
+    if (await requestConfirmation({ title: "명단에 같은 신청이 없나요?", description: "먼저 명단을 확인해 주세요. 이미 추가되어 있다면 입력을 취소하고 그 신청을 편집하세요.", confirmLabel: "없는 것을 확인했어요" })) setUncertain(false);
+  }
+  return <>
+    <dialog ref={dialogRef} aria-label="순장/순원 추가" aria-modal="true" onCancel={(event) => { event.preventDefault(); if (!pending) void close(); }}
+      className="fixed inset-y-0 left-auto right-0 z-40 m-0 flex h-dvh max-h-none w-[calc(100%-1rem)] max-w-2xl flex-col border-0 border-l border-border bg-surface p-0 text-foreground backdrop:bg-black/40">
+      <div className="shrink-0 border-b border-border p-4">
+        <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="text-xl font-normal">순장/순원 추가</h2><p className="mt-1 text-sm text-muted">모든 입력은 함께 저장됩니다.</p></div><Button type="button" variant="ghost" size="icon" aria-label="신청 입력 닫기" title="신청 입력 닫기" disabled={pending} onClick={() => void close()}><X size={18} /></Button></div>
+        <nav aria-label="신청 입력 항목" className="mt-3 flex flex-wrap gap-2">
+          {[{ label: "기본 정보", legend: "기본 정보" }, { label: "참여 기간", legend: "부분 참석 · 참여 기간" }, { label: "이동수단", legend: "이동수단" }, { label: `수송 요청 ${value.pickups.length}`, legend: "수송 요청" }, { label: `수강신청 ${value.courses.length}`, legend: "수강신청" }].map((section) => <Button key={section.legend} type="button" size="sm" variant="secondary" disabled={pending} aria-label={`${section.legend} 입력으로 이동`} onClick={() => goToSection(section.legend)}>{section.label}</Button>)}
+        </nav>
       </div>
-    </Card>
-  );
+      <form ref={formRef} data-saving={pending} data-unsaved={dirty} className="flex min-h-0 flex-1 flex-col" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
+          {error && <p ref={errorRef} tabIndex={-1} role="alert" className="rounded-md bg-danger-bg p-3 text-sm text-danger">{error}</p>}
+          {uncertain && <div className="flex flex-wrap items-center gap-3"><Button type="button" variant="secondary" onClick={() => router.refresh()}>명단 새로고침</Button><Button type="button" variant="ghost" onClick={() => void confirmRetry()}>명단 확인 후 다시 저장</Button></div>}
+          <fieldset disabled={pending} className="min-w-0 space-y-4">
+            <RegistrationCreateBasics value={value} onChange={change} campuses={campuses} trips={trips} lockedCampusId={lockedCampusId} />
+            <RegistrationCreateJourney value={value} onChange={change} units={units} />
+            <RegistrationCreateExtras value={value} onChange={change} places={places} dayCount={dayCount} />
+          </fieldset>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border bg-surface p-4"><Button type="submit" disabled={pending || uncertain}>{pending ? "저장 중…" : "신청 추가"}</Button><Button type="button" variant="ghost" disabled={pending} onClick={() => void close()}>취소</Button><span className="ml-auto text-xs text-muted-2">{pending ? "저장 확인 중…" : uncertain ? "저장 여부를 확인하세요." : "이름·학번은 필수입니다."}</span></div>
+      </form>
+    </dialog>
+    {confirmationDialog}
+  </>;
 }

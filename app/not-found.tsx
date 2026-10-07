@@ -18,7 +18,7 @@ export default function NotFound() {
         </div>
         <Link
           href="/"
-          className="inline-flex items-center justify-center w-full h-10 rounded-lg border border-border bg-surface hover:bg-surface-2 text-foreground font-medium transition"
+          className="inline-flex items-center justify-center w-full h-11 rounded-full border border-border bg-surface hover:bg-surface-2 text-foreground font-medium transition"
         >
           홈으로
         </Link>

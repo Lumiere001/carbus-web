@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 test("홈 페이지 렌더 + 로그인 버튼 2개", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /71기 광주지구 여름수련회/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /광주지구 차량 관리/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Google로 로그인/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /운영자 로그인/ })).toBeVisible();
 });

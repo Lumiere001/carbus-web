@@ -1,5 +1,7 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, RotateCcw } from "lucide-react";
@@ -25,6 +27,7 @@ export function EventsPanel({
   events: EventRow[];
   counts: EventCounts;
 }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -93,8 +96,8 @@ export function EventsPanel({
     });
   }
 
-  function switchTo(e: EventRow) {
-    if (!confirm(`'${e.name}'(으)로 전환할까요? 현재 행사 자료는 삭제되지 않습니다.`)) return;
+  async function switchTo(e: EventRow) {
+    if (!(await requestConfirmation({ title: "전체 사용자 행사를 활성화할까요?", description: `'${e.name}'(으)로 전환할까요? 현재 행사 자료는 삭제되지 않습니다.`, confirmLabel: "행사 활성화", tone: "default" }))) return;
     startTransition(async () => {
       const res = await activateEvent(e.id);
       if (!res.ok) return setMsg({ type: "err", text: res.message });
@@ -108,8 +111,9 @@ export function EventsPanel({
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {confirmationDialog}
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -158,7 +162,7 @@ export function EventsPanel({
                       setCurOw(String(active.fee_oneway));
                       setFareEdit(true);
                     }}
-                    className="ml-auto text-xs text-primary hover:underline disabled:opacity-50"
+                    className="ml-auto text-xs text-primary-800 hover:underline disabled:opacity-50"
                   >
                     금액 바꾸기
                   </button>
@@ -168,6 +172,7 @@ export function EventsPanel({
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="왕복">
                       <input
+                        disabled={pending}
                         type="number" min="0" step="1000" autoFocus
                         value={curRt}
                         onChange={(e) => setCurRt(e.target.value)}
@@ -176,6 +181,7 @@ export function EventsPanel({
                     </Field>
                     <Field label="편도">
                       <input
+                        disabled={pending}
                         type="number" min="0" step="1000"
                         value={curOw}
                         onChange={(e) => setCurOw(e.target.value)}
@@ -217,10 +223,10 @@ export function EventsPanel({
                     type="button"
                     disabled={pending}
                     onClick={() => switchTo(e)}
-                    className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                    className="ml-auto inline-flex items-center gap-1 text-xs text-primary-800 hover:underline disabled:opacity-50"
                   >
                     <RotateCcw size={13} />
-                    이 행사로 전환
+                    전체 사용자 활성 행사로 지정
                   </button>
                 </div>
               ))}
@@ -235,6 +241,7 @@ export function EventsPanel({
             <div className="space-y-3 rounded-lg border border-border-2 p-4">
               <Field label="행사 이름">
                 <input
+                  disabled={pending}
                   autoFocus
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -244,6 +251,7 @@ export function EventsPanel({
               </Field>
               <Field label="부제 (선택)">
                 <input
+                  disabled={pending}
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   placeholder="예: CCC 71기"
@@ -252,24 +260,25 @@ export function EventsPanel({
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="시작일">
-                  <input type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} className={inputCls} />
+                  <input disabled={pending} type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} className={inputCls} />
                 </Field>
                 <Field label="종료일">
-                  <input type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className={inputCls} />
+                  <input disabled={pending} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className={inputCls} />
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="출발지">
-                  <input value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="예: 광주" className={inputCls} />
+                  <input disabled={pending} value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="예: 광주" className={inputCls} />
                 </Field>
                 <Field label="도착지">
-                  <input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="예: 무주" className={inputCls} />
+                  <input disabled={pending} value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="예: 무주" className={inputCls} />
                 </Field>
               </div>
 
               <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
                 <Field label="왕복 차량비">
                   <input
+                    disabled={pending}
                     type="number" min="0" step="1000"
                     value={feeRt} onChange={(e) => setFeeRt(e.target.value)}
                     className={inputCls}
@@ -277,6 +286,7 @@ export function EventsPanel({
                 </Field>
                 <Field label="편도 차량비">
                   <input
+                    disabled={pending}
                     type="number" min="0" step="1000"
                     value={feeOw} onChange={(e) => setFeeOw(e.target.value)}
                     className={inputCls}
@@ -289,11 +299,11 @@ export function EventsPanel({
 
               <div className="space-y-1.5 border-t border-border pt-3">
                 <label className="flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" checked={copyTrips} onChange={(e) => setCopyTrips(e.target.checked)} />
+                  <input disabled={pending} type="checkbox" checked={copyTrips} onChange={(e) => setCopyTrips(e.target.checked)} />
                   출발 시간대 이어받기
                 </label>
                 <label className="flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" checked={copyBuses} onChange={(e) => setCopyBuses(e.target.checked)} />
+                  <input disabled={pending} type="checkbox" checked={copyBuses} onChange={(e) => setCopyBuses(e.target.checked)} />
                   차량(호차) 이어받기 — 차량순장·고정 탑승은 비워집니다
                 </label>
               </div>

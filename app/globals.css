@@ -1,51 +1,83 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css');
 @import "tailwindcss";
 
-@theme {
-  /* Brand · slate-blue — 사역 톤의 차분한 신뢰감 */
-  --color-primary-50: #f3f6fa;
-  --color-primary-100: #e3eaf3;
-  --color-primary-200: #c4d2e3;
-  --color-primary-300: #9bb1cc;
-  --color-primary-400: #6c89af;
-  --color-primary-500: #4d6c93;
-  --color-primary-600: #3a5578;
-  --color-primary-700: #2e4361;
-  --color-primary-800: #1f3a5f; /* 메인 액센트 — 버튼·링크·focus */
-  --color-primary-900: #16263f; /* 운영자 사이드바·헤더 */
+.skip-link { position: absolute; left: 16px; top: -80px; z-index: 100; padding: 12px 16px; background: var(--color-surface); color: var(--color-primary-800); border: 2px solid var(--color-primary-800); border-radius: 8px; }
+.skip-link:focus { top: 12px; }
+:where(a, button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }
+:where(button:not(:disabled), a[href], summary):hover { filter: brightness(0.96); }
+:where(button:not(:disabled), a[href], summary):active { filter: brightness(0.9); }
+:where(input, select, textarea):not(:disabled):not([aria-invalid="true"]):is(.border-border, .border-border-2) { border-color: var(--color-control-border); }
+input::placeholder, textarea::placeholder { color: var(--color-muted); opacity: 1; }
+@media (pointer: coarse) { :where(button, input, select, summary) { min-height: 44px; } button { min-width: 44px; } }
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px; }
+  button, input, select, summary { min-height: 44px; }
+  button { min-width: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 
-  /* Neutral · warm stone */
-  --color-background: #fafaf9;
-  --color-surface: #ffffff;
-  --color-surface-2: #f5f5f4;
-  --color-border: #e7e5e4;
-  --color-border-2: #d6d3d1;
-  --color-foreground: #1c1917;
-  --color-muted: #57534e;
-  --color-muted-2: #78716c;
+@theme {
+  /* x.ai-inspired monochrome; DESIGN.md is the visual contract. */
+  --color-primary-50: #202124;
+  --color-primary-100: #292b30;
+  --color-primary-200: #b0b3b8;
+  --color-primary-300: #7d8187;
+  --color-primary-400: #aeb1b5;
+  --color-primary-500: #dadbdf;
+  --color-primary-600: #e7e7e7;
+  --color-primary-700: #fafaf7;
+  --color-primary-800: #ffffff; /* 메인 액센트 — 버튼·링크·focus */
+  --color-primary-900: #0a0a0a; /* 운영자 사이드바·헤더 */
+
+  /* Canvas / hairline surfaces */
+  --color-background: #0a0a0a;
+  --color-surface: #191919;
+  --color-surface-2: #1a1c20;
+  --color-border: #363a3f;
+  --color-border-2: #50545b;
+  --color-control-border: #7d8187;
+  --color-foreground: #ffffff;
+  --color-muted: #dadbdf;
+  --color-muted-2: #a0a3a8;
 
   /* Status */
-  --color-success: #047857;
-  --color-success-bg: #ecfdf5;
-  --color-success-border: #a7f3d0;
-  --color-warning: #b45309;
-  --color-warning-bg: #fffbeb;
-  --color-warning-border: #fcd34d;
-  --color-danger: #b91c1c;
-  --color-danger-bg: #fef2f2;
-  --color-danger-border: #fecaca;
+  --color-success: #8ee0b8;
+  --color-success-bg: #142b22;
+  --color-success-border: #315d48;
+  --color-warning: #ffc285;
+  --color-warning-bg: #2b2115;
+  --color-warning-border: #776039;
+  --color-danger: #ffb4b4;
+  --color-danger-bg: #311a1d;
+  --color-danger-border: #805158;
 
   /* Radius */
-  --radius-sm: 6px;
+  --radius-sm: 8px;
   --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
 
-  /* Shadow — 종이 같은 미묘함 */
-  --shadow-1: 0 1px 2px 0 rgb(28 25 23 / 0.04);
-  --shadow-2: 0 1px 3px 0 rgb(28 25 23 / 0.06), 0 1px 2px -1px rgb(28 25 23 / 0.04);
-  --shadow-3: 0 4px 12px -2px rgb(28 25 23 / 0.08), 0 2px 4px -2px rgb(28 25 23 / 0.04);
+  /* Flat / hairline elevation */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
 
+  --color-on-primary: #0a0a0a;
+  --color-outline: #7d8187;
+  --color-sunset: #ff7a17;
+  --color-sunset-soft: #ffc285;
+  --color-dusk: #7c3aed;
+  --color-twilight: #c4b5fd;
+  --color-breeze: #a0c3ec;
+  --color-midnight: #0d1726;
+  --radius-pill: 9999px;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   /* Typography */
   --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, sans-serif;
@@ -60,8 +92,29 @@
   body {
     background: var(--color-background);
     color: var(--color-foreground);
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Common form, table and heading grammar across all roles. */
+html { color-scheme: dark; }
+:where(main) h1 { font-weight: 400; letter-spacing: -0.02em; }
+:where(main) h2 { font-size: 32px; line-height: 1.125; font-weight: 400; letter-spacing: -0.02em; }
+:where(main) h3 { font-weight: 400; }
+:where(button, summary, a[role="button"]) { border-radius: var(--radius-pill); font-weight: 400; }
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  background-color: var(--color-surface-2); color: var(--color-foreground); border-radius: var(--radius-md);
+}
+:where(label):has(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 14px; line-height: 1.5; color: var(--color-muted); }
+:where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--color-foreground); }
+thead th { font-family: var(--font-mono), var(--font-sans); font-weight: 400; letter-spacing: 0.02em; }
+.tabular-nums { font-family: var(--font-mono), var(--font-sans); }
+@media (max-width: 767px) { :where(main) h2 { font-size: 24px; line-height: 1.333; } }
+
+/* Table cell text rules must never leak into a modal. */
+dialog { white-space: normal; }
+dialog h3 { font-size: 20px; line-height: 28px; font-weight: 400; letter-spacing: -0.01em; }

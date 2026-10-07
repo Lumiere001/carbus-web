@@ -1,6 +1,8 @@
 import { TriangleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -8,16 +10,18 @@ function fmt(iso: string): string {
   return new Date(iso).toLocaleString("ko-KR");
 }
 
-export default async function AdminErrorsPage() {
+export default async function AdminErrorsPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
-  const { data: runs } = await supabase
+  const { data: runs, error } = await supabase
     .from("batch_runs")
     .select("id, run_at, error_message, trigger_reason, total_assigned, elapsed_ms")
     .eq("success", false)
     .order("run_at", { ascending: false })
     .limit(50);
 
+  if (error) return <DataLoadError retryHref={adminHref(eventId, "/errors")} />;
   const rows = runs ?? [];
 
   return (

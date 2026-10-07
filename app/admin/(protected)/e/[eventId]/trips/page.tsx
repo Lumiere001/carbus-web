@@ -6,6 +6,8 @@ import type { TripRow } from "@/lib/admin/trips";
 import type { BusRow } from "@/lib/admin/buses";
 import { PickupPlacesPanel } from "@/components/admin/pickup-places-panel";
 import type { PlaceRow } from "@/lib/admin/pickup";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +21,8 @@ export const dynamic = "force-dynamic";
  * 아예 없었다. create_event 가 지난 행사 편성을 그대로 복제할 뿐이라,
  * 다음 행사에서 대수나 출발 시각을 바꾸려면 DB 를 직접 만져야 했다.
  */
-export default async function AdminTripsPage() {
+export default async function AdminTripsPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -53,6 +56,10 @@ export default async function AdminTripsPage() {
       .order("display_order")
       .order("name"),
   ]);
+
+  if ([tripsRes, busesRes, regsRes, placesRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/trips")} />;
+  }
 
   const trips = (tripsRes.data ?? []) as TripRow[];
   const buses = (busesRes.data ?? []) as BusRow[];

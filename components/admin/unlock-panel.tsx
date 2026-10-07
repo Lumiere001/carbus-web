@@ -80,7 +80,7 @@ export function UnlockPanel({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="예: 정산 마감 후 환불 1건 반영"
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg"
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted-2">
@@ -88,7 +88,7 @@ export function UnlockPanel({
             <select
               value={minutes}
               onChange={(e) => setMinutes(Number(e.target.value))}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg"
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
             >
               {[15, 30, 60, 120, 240, 480].map((m) => (
                 <option key={m} value={m}>
@@ -109,7 +109,7 @@ export function UnlockPanel({
         </div>
 
         {msg && (
-          <p
+          <p role={msg.type === "err" ? "alert" : "status"}
             className={
               "text-sm " + (msg.type === "err" ? "text-danger" : "text-foreground")
             }

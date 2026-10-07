@@ -1,5 +1,7 @@
 "use client";
 
+import { useConfirmation } from "@/components/ui/use-confirmation";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
@@ -62,6 +64,7 @@ export function TransportPanel({
   otherRows: LegRow[];
   canConfirm: boolean;
 }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const router = useRouter();
   const [busy, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -69,16 +72,13 @@ export function TransportPanel({
   const heldSeats = (rows: LegRow[]) =>
     rows.filter((r) => r.heldTripLabel != null || r.heldBusLabel != null).length;
 
-  function run(rows: LegRow[], what: string) {
+  async function run(rows: LegRow[], what: string) {
     const seats = heldSeats(rows);
     const msg =
-      `${what} ${rows.length}건을 확정합니다.\n\n` +
       (seats > 0
-        ? `우리 버스 좌석 ${seats}석이 그 자리에서 반납됩니다 (편·배정 호차가 함께 비워집니다).\n` +
-          `되돌리려면 편을 다시 지정하고 배차를 다시 실행해야 합니다.\n\n`
-        : `지금 잡고 있는 좌석은 없어 반납되는 자리는 없습니다.\n\n`) +
-      `진행할까요?`;
-    if (!window.confirm(msg)) return;
+        ? `${what} ${rows.length}건을 확정하면 우리 버스 ${seats}석을 반납하고 편·배정 호차를 비웁니다.\n\n되돌리려면 편을 지정하고 배차를 다시 실행하세요.`
+        : `${what} ${rows.length}건을 확정합니다.\n\n현재 잡힌 좌석이 없어 반납되는 자리는 없습니다.`);
+    if (!(await requestConfirmation({ title: "이동수단을 확정할까요?", description: msg, confirmLabel: "이동수단 확정", tone: seats > 0 ? "danger" : "default" }))) return;
 
     setErr(null);
     startTransition(async () => {
@@ -104,15 +104,23 @@ export function TransportPanel({
   );
 
   const totalHeld = heldSeats(pending);
+  const upCount = [...pending, ...confirmedHolding, ...otherRows].filter((row) => row.direction === "up").length;
+  const downCount = pending.length + confirmedHolding.length + otherRows.length - upCount;
 
   return (
     <div className="space-y-6">
+      {confirmationDialog}
       {err && (
-        <div className="text-sm rounded-lg px-3 py-2 border bg-danger-bg border-danger-border text-danger">
+        <div role="alert" className="text-sm rounded-lg px-3 py-2 border bg-danger-bg border-danger-border text-danger">
           {err}
         </div>
       )}
 
+      <Card title="확인할 이동" subtitle="확정 대기·좌석 점검·개별 이동 목록의 집계 · 한 방향은 1건">
+        <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4 sm:p-5">
+          {[{ label: "상행 확인 대상", value: upCount, unit: "건" }, { label: "하행 확인 대상", value: downCount, unit: "건" }, { label: "확정 대기", value: pending.length, unit: "건" }, { label: "대기 중 점유 좌석", value: totalHeld, unit: "석" }].map((item) => <div key={item.label} className="min-w-0"><p className="text-sm text-muted">{item.label}</p><p className="mt-2 font-mono text-2xl tabular-nums text-foreground">{item.value}<span className="ml-1 font-sans text-sm text-muted">{item.unit}</span></p></div>)}
+        </div>
+      </Card>
       <div className="flex flex-wrap gap-4 text-sm">
         <span className="text-muted">
           확정 대기 <b className="text-foreground tabular-nums">{pending.length}</b>건
@@ -138,7 +146,7 @@ export function TransportPanel({
               버스를 탄다면 이동수단을 고쳐 주세요.
             </span>
           </div>
-          <LegTable rows={confirmedHolding} showWait={false} />
+          <LegList rows={confirmedHolding} showWait={false} />
         </Card>
       )}
 
@@ -177,7 +185,7 @@ export function TransportPanel({
               )
             }
           >
-            <LegTable
+            <LegList
               rows={rows}
               showWait
               onConfirm={canConfirm ? (r) => run([r], r.personName) : undefined}
@@ -226,10 +234,10 @@ export function TransportPanel({
                     {TRANSPORT_LABELS[mode]}
                   </h4>
                   <Badge variant="mute" dot={false}>
-                    {rows.length}명
+                    {rows.length}건
                   </Badge>
                 </div>
-                <LegTable rows={rows} showWait={false} />
+                <LegList rows={rows} showWait={false} />
               </section>
             );
           })}
@@ -239,7 +247,7 @@ export function TransportPanel({
   );
 }
 
-function LegTable({
+function LegList({
   rows,
   showWait,
   onConfirm,
@@ -250,63 +258,19 @@ function LegTable({
   onConfirm?: (r: LegRow) => void;
   busy?: boolean;
 }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-surface-2 text-muted text-left [&>th]:whitespace-nowrap">
-            <th className="px-4 py-2.5">이름</th>
-            <th className="px-4 py-2.5">방향</th>
-            <th className="px-4 py-2.5">잡고 있는 자리</th>
-            {showWait && <th className="px-4 py-2.5">기다린 날</th>}
-            <th className="px-4 py-2.5">메모</th>
-            {onConfirm && <th className="px-4 py-2.5" />}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => {
-            const held = [r.heldTripLabel, r.heldBusLabel]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <tr key={r.id} className="border-t border-border">
-                <td className="px-4 py-2 text-foreground whitespace-nowrap">
-                  {r.personName}
-                  <span className="ml-1.5 text-xs text-muted-2">{r.campusName}</span>
-                </td>
-                <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {DIR_LABEL[r.direction]}
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  {held ? (
-                    <span className="text-warning font-medium">{held}</span>
-                  ) : (
-                    <span className="text-muted-2">—</span>
-                  )}
-                </td>
-                {showWait && (
-                  <td className="px-4 py-2 text-muted-2 tabular-nums whitespace-nowrap">
-                    {r.daysWaiting}일
-                  </td>
-                )}
-                <td className="px-4 py-2 text-muted-2">{r.note ?? "—"}</td>
-                {onConfirm && (
-                  <td className="px-4 py-2 text-right">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={busy}
-                      onClick={() => onConfirm(r)}
-                    >
-                      확정
-                    </Button>
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <ul className="divide-y divide-border">{rows.map((row) => {
+    const held = [row.heldTripLabel, row.heldBusLabel].filter(Boolean).join(" · ");
+    return <li key={row.id} className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start sm:px-5">
+      <div className="min-w-0">
+        <p className="break-words text-base font-medium text-foreground">{row.personName}<span className="ml-2 text-sm font-normal text-muted">{row.campusName}</span></p>
+        <p className="mt-1 text-sm text-muted">{DIR_LABEL[row.direction]}</p>
+        {showWait && <p className="mt-2 text-sm text-warning">확정 대기 {row.daysWaiting}일</p>}
+      </div>
+      <div className="min-w-0 space-y-2">
+        <p className={`break-words text-sm ${held ? "text-warning" : "text-muted-2"}`}>우리 버스 자리 · {held || "점유 없음"}</p>
+        <p className="break-words whitespace-pre-wrap text-sm text-muted"><span className="text-muted-2">메모 · </span>{row.note ?? "—"}</p>
+      </div>
+      {onConfirm && <Button size="sm" variant="secondary" disabled={busy} aria-label={`${row.personName} ${row.direction === "up" ? "상행" : "하행"} 이동수단 확정`} onClick={() => onConfirm(row)}>확정</Button>}
+    </li>;
+  })}</ul>;
 }

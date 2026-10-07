@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { slotLabel } from "@/lib/labels";
 import type { DepartureSlot } from "@/lib/supabase/types";
@@ -49,14 +50,15 @@ export function BusOccupancy({
     <button
       type="button"
       onClick={() => setView(v)}
+      aria-pressed={view === v}
       className={
-        "px-2.5 py-1 rounded-md text-xs transition border " +
+        "inline-flex min-h-11 items-center gap-1 shrink-0 whitespace-nowrap px-2.5 py-1 rounded-md text-xs transition border " +
         (view === v
-          ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+          ? "bg-primary-50 border-border text-primary-800 font-medium"
           : "border-border text-muted hover:bg-surface-2")
       }
     >
-      {label}
+      {view === v && <Check size={13} aria-hidden="true" />}{label}
     </button>
   );
 
@@ -64,14 +66,12 @@ export function BusOccupancy({
     <Card
       title="호차별 탑승 현황"
       subtitle={`${buses.length}대 · 상행(올라갈 때)·하행(내려올 때) 좌석 사용`}
-      action={
-        <div className="flex gap-1.5">
-          {btn("both", "둘 다")}
-          {btn("up", "상행")}
-          {btn("down", "하행")}
-        </div>
-      }
     >
+      <div className="flex flex-wrap gap-1.5 px-5 pt-3">
+        {btn("both", "둘 다")}
+        {btn("up", "상행")}
+        {btn("down", "하행")}
+      </div>
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
         {buses.length === 0 && (
           <p className="text-sm text-muted col-span-full">

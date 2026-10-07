@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useDeferredValue, useMemo, useState, useTransition } from "react";
+import { useRegistrationEditor } from "@/components/registrations/use-registration-editor";
 import { useRouter } from "next/navigation";
 import { Trash2, X, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -122,6 +123,7 @@ const ALL = "__all__";
 type Msg = { type: "ok" | "err"; text: string } | null;
 
 export function RegistrationsPanel({
+  eventId,
   rows,
   campuses,
   buses,
@@ -138,6 +140,7 @@ export function RegistrationsPanel({
   courses,
   dayCount,
 }: {
+  eventId: string;
   rows: AdminRegRow[];
   campuses: CampusInfo[];
   buses: BusInfo[];
@@ -168,9 +171,8 @@ export function RegistrationsPanel({
   const [msg, setMsg] = useState<Msg>(null);
   // 편집 대상은 **id 로만** 들고 있는다. 행 스냅샷을 들고 있으면 저장 후
   // 새로고침된 값이 서랍에 안 비쳐서, 방금 고친 칸이 옛 값으로 보인다.
-  const [form, setForm] = useState<
-    { mode: "new" } | { mode: "edit"; id: string } | null
-  >(null);
+  const [form, setForm] = useState<{ mode: "new" } | null>(null);
+  const { drawerId, openRegistration, closeRegistration } = useRegistrationEditor(rows);
 
   const busName = useMemo(
     () => new Map(buses.map((b) => [b.id, b.name])),
@@ -227,7 +229,7 @@ export function RegistrationsPanel({
   };
 
   const renderRow = (r: AdminRegRow) => {
-    const editing = isMaster && form?.mode === "edit" && form.id === r.id;
+    const editing = isMaster && drawerId === r.id;
     return (
         <Row
           key={r.id}
@@ -239,14 +241,7 @@ export function RegistrationsPanel({
           roleLabels={roleLabels}
           isMaster={isMaster}
           onMsg={setMsg}
-          onEdit={(row) =>
-            // 같은 사람의 "수정"을 다시 누르면 접는다 (토글).
-            setForm((cur) =>
-              cur?.mode === "edit" && cur.id === row.id
-                ? null
-                : { mode: "edit", id: row.id }
-            )
-          }
+          onEdit={(row) => { if (drawerId === row.id) closeRegistration(); else openRegistration(row.id); }}
           editing={!!editing}
           driverIds={driverIds}
           fixedIds={fixedIds}
@@ -259,10 +254,7 @@ export function RegistrationsPanel({
 
   // 서랍이 보고 있는 사람. rows 에서 매번 다시 찾으므로 저장 후 새로고침된 값이
   // 그대로 서랍에 반영된다.
-  const editRow =
-    isMaster && form?.mode === "edit"
-      ? rows.find((r) => r.id === form.id) ?? null
-      : null;
+  const editRow = isMaster && drawerId ? rows.find((row) => row.id === drawerId) : null;
 
   // 검색 중이면 캠퍼스 탭 무시하고 이름·학번으로 전체에서 찾음.
   //
@@ -304,7 +296,7 @@ export function RegistrationsPanel({
   return (
     <div className="space-y-4">
       {msg && (
-        <div
+        <div role={msg.type === "err" ? "alert" : "status"}
           className={
             "text-sm rounded-lg px-3 py-2 border " +
             (msg.type === "err"
@@ -317,6 +309,7 @@ export function RegistrationsPanel({
       )}
 
       {/* 이름 검색 + (master) 추가 */}
+      <label htmlFor="registration-search" className="block text-xs font-medium text-muted">이름·학번 검색</label>
       <div className="flex items-center gap-2">
         <div className="relative max-w-xs flex-1">
           <Search
@@ -324,12 +317,17 @@ export function RegistrationsPanel({
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-2"
           />
           <input
+            id="registration-search"
             type="search"
+            list="registration-search-candidates"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="이름·학번 검색"
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-2 rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-200"
           />
+          <datalist id="registration-search-candidates">
+            {[...new Set(rows.flatMap((row) => [row.name, row.student_id]).filter(Boolean))].map((value) => <option key={value} value={value} />)}
+          </datalist>
         </div>
         {isMaster && (
           <Button size="sm" onClick={() => setForm({ mode: "new" })}>
@@ -345,8 +343,10 @@ export function RegistrationsPanel({
           곧 명단 길이였다. */}
       {isMaster && form?.mode === "new" && (
         <RegForm
+          eventId={eventId}
           campuses={campuses}
           trips={trips}
+          units={units} places={places} dayCount={dayCount}
           onClose={() => setForm(null)}
         />
       )}
@@ -443,7 +443,7 @@ export function RegistrationsPanel({
             places={places}
             // 서랍이 리마운트돼도 새로고침이 살아 있게 부모가 받는다.
             onSaved={() => panelRouter.refresh()}
-            onClose={() => setForm(null)}
+            onClose={closeRegistration}
           />
         )}
         </div>
@@ -543,8 +543,11 @@ function Row({
     const has = plainRoles.includes(label);
     const next = has ? r.roles.filter((x) => x !== label) : [...r.roles, label];
     startTransition(async () => {
-      const res = await setRoles(r.id, next);
-      if (!res.ok) return onMsg({ type: "err", text: res.message });
+      const res = await setRoles(r.id, r.roles, next);
+      if (!res.ok) {
+        if (res.conflict) router.refresh();
+        return onMsg({ type: "err", text: res.message });
+      }
       router.refresh();
     });
   }
@@ -552,7 +555,8 @@ function Row({
   function changeBus(which: "up" | "down", value: string) {
     const busId = value === "" ? null : Number(value);
     startTransition(async () => {
-      const res = await setAssignment(r.id, {
+      const res = await setAssignment(r.id, { up_trip_id: r.up_trip_id, down_trip_id: r.down_trip_id,
+        assigned_up_bus_id: r.assigned_up_bus_id, assigned_down_bus_id: r.assigned_down_bus_id }, {
         [which === "up" ? "assigned_up_bus_id" : "assigned_down_bus_id"]: busId,
       });
       if (!res.ok) return onMsg({ type: "err", text: res.message });
@@ -593,8 +597,9 @@ function Row({
     );
     return (
       <select
+        aria-label={`${r.name} ${which === "up" ? "상행" : "하행"} 배정 호차`}
         value={current ?? ""}
-        disabled={pending}
+        disabled={pending || cancelled}
         onChange={(e) => changeBus(which, e.target.value)}
         className="text-xs border border-border-2 rounded-md px-1.5 py-1 bg-surface"
       >
@@ -630,14 +635,14 @@ function Row({
             )}
           </span>
           {cancelled && r.cancel_reason && (
-            <span className="text-[11px] text-muted-2">{r.cancel_reason}</span>
+            <span className="text-xs text-muted-2">{r.cancel_reason}</span>
           )}
           {(displayRoles.length > 0 || isMaster) && (
             <span className="flex flex-wrap items-center gap-1">
               {displayRoles.map((role) => (
                 <span
                   key={role}
-                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-white"
+                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white"
                   style={{ background: roleColor(role) }}
                 >
                   {role}
@@ -647,6 +652,7 @@ function Row({
                       disabled={pending}
                       onClick={() => toggleRole(role)}
                       aria-label="역할 해제"
+                      title="역할 해제"
                       className="hover:opacity-70"
                     >
                       <X size={9} />
@@ -656,10 +662,11 @@ function Row({
               ))}
               {isMaster && roleLabels.length > 0 && (
                 <select
+                  aria-label={`${r.name} 역할 추가`}
                   value=""
                   disabled={pending}
                   onChange={(e) => e.target.value && toggleRole(e.target.value)}
-                  className="text-[11px] border border-border-2 rounded px-1 py-0.5 bg-surface text-muted"
+                  className="text-xs border border-border-2 rounded px-1 py-0.5 bg-surface text-muted"
                 >
                   <option value="">+ 역할</option>
                   {roleLabels
@@ -715,12 +722,14 @@ function Row({
               type="button"
               disabled={pending}
               onClick={() => onEdit(r)}
+              data-registration-editor={r.id}
               className={
                 editing
                   ? "text-primary-700"
                   : "text-muted-2 hover:text-primary-700"
               }
               aria-label={editing ? "수정 닫기" : "수정"}
+              title={editing ? "수정 닫기" : "정보 수정"}
               aria-expanded={editing}
             >
               <Pencil size={14} />
@@ -730,7 +739,7 @@ function Row({
                 type="button"
                 disabled={pending}
                 onClick={() => setAsk("restore")}
-                className="text-xs text-primary hover:underline whitespace-nowrap"
+                className="text-xs text-primary-800 hover:underline whitespace-nowrap"
               >
                 되돌리기
               </button>
@@ -741,6 +750,7 @@ function Row({
                 onClick={() => setAsk("exclude")}
                 className="text-muted-2 hover:text-danger"
                 aria-label="신청 취소"
+                title="신청 취소"
               >
                 <Trash2 size={14} />
               </button>

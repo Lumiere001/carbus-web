@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 import {
   PaymentsPanel,
   type ThreeWayRow,
@@ -9,7 +11,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPaymentsPage() {
+export default async function AdminPaymentsPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -48,6 +51,10 @@ export default async function AdminPaymentsPage() {
       .or("refund_due.gt.0,refund_reason.not.is.null")
       .order("refund_due", { ascending: false }),
   ]);
+
+  if ([rowsRes, campusRes, summaryRes, waivedRes, balanceRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/payments")} />;
+  }
 
   const orderOf = new Map(
     (campusRes.data ?? []).map((c) => [c.id, c.display_order])

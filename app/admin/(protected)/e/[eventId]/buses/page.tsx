@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 import {
   BusesPanel,
   type BusData,
@@ -9,7 +11,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBusesPage() {
+export default async function AdminBusesPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -26,7 +29,7 @@ export default async function AdminBusesPage() {
     supabase
       .from("buses")
       .select(
-        "id, name, up_trip_id, down_trip_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
+        "id, name, kind, up_trip_id, down_trip_id, capacity, hard_cap, driver_registration_id, fixed_passenger_ids, down_driver_registration_id, down_fixed_passenger_ids"
       )
       .order("id"),
     supabase
@@ -45,6 +48,10 @@ export default async function AdminBusesPage() {
       .select("id, label, active, display_order, direction")
       .order("display_order"),
   ]);
+
+  if ([busRes, regRes, campusRes, tripRes].some((result) => result.error)) {
+    return <DataLoadError retryHref={adminHref(eventId, "/buses")} />;
+  }
 
   const campusName = new Map(
     (campusRes.data ?? []).map((c) => [c.id, c.name])

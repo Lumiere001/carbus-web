@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bus, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { slotLabel } from "@/lib/labels";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AttendanceRate } from "@/components/admin/attendance-rate";
+import { attendanceSnapshotSchema, mergeAttendance } from "@/lib/attendance/state";
 import type { DepartureSlot } from "@/lib/supabase/types";
 
 type Member = {
@@ -16,18 +17,18 @@ type Member = {
   student_id: string;
   checked_in: boolean;
   checked_out: boolean;
+  readonly version: number;
   campus?: string; // 관리자(전 캠퍼스) 뷰에서 소속 표시용
 };
 type BusInfo = { id: number; name: string; up_trip_id: number | null };
 type Group = [number, Member[]];
 type SlotMini = Pick<DepartureSlot, "id" | "label">;
 type CheckField = "checked_in" | "checked_out";
-type CheckState = Record<string, { checked_in: boolean; checked_out: boolean }>;
 
 /**
  * 호차별 출석 체크 (현장용). 임역원(/campus/buses)·운영자(/admin/attendance) 공용.
- * 상행 명단 탭 → 도착(checked_in), 하행 명단 탭 → 귀가(checked_out). 탭하면 즉시 초록.
- * editable=false 면 읽기 전용(viewer). 낙관적 업데이트 + Realtime 동기화.
+ * 상행은 출발 버스 탑승(checked_in), 하행은 귀가(checked_out).
+ * 저장 응답 또는 Realtime으로 확인된 값만 완료 표시한다. editable=false는 읽기 전용.
  * campusId 있으면 그 캠퍼스만, 없으면(관리자) 전 캠퍼스 변경을 구독.
  */
 export function BusAttendance({
@@ -55,16 +56,16 @@ export function BusAttendance({
     [buses]
   );
 
-  const [state, setState] = useState<CheckState>(() => {
-    const s: CheckState = {};
-    for (const [, members] of [...upGroups, ...downGroups]) {
-      for (const m of members) {
-        s[m.id] = { checked_in: m.checked_in, checked_out: m.checked_out };
-      }
-    }
-    return s;
-  });
-  const [err, setErr] = useState<string | null>(null);
+  const membersById = useMemo(() => new Map([...upGroups, ...downGroups].flatMap(([, members]) => members.map((m) => [m.id, m] as const))), [upGroups, downGroups]);
+  const [checks, setChecks] = useState(() => ({ source: membersById, values: mergeAttendance({}, [...membersById.values()]) }));
+  if (checks.source !== membersById) {
+    setChecks({ source: membersById, values: mergeAttendance(checks.values, [...membersById.values()]) });
+  }
+  const state = checks.values;
+  const requests = useRef(new Set<string>());
+  const unreadSaved = useRef(new Set<string>());
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
   /** 선택한 호차. null = 전체 (지금까지의 동작). */
   const [selBus, setSelBus] = useState<number | null>(null);
   /** 지금 보는 방향. 현장에서는 한 번에 한 방향만 체크한다. */
@@ -83,51 +84,57 @@ export function BusAttendance({
     const channel = supabase
       .channel(`bus-attendance:${campusId ?? "all"}`)
       .on("postgres_changes", sub, (payload) => {
-          const r = payload.new as {
-            id: string;
-            checked_in: boolean;
-            checked_out: boolean;
-          };
-          setState((s) =>
-            s[r.id]
-              ? {
-                  ...s,
-                  [r.id]: { checked_in: r.checked_in, checked_out: r.checked_out },
-                }
-              : s
-          );
+          const parsed = attendanceSnapshotSchema.safeParse(payload.new);
+          if (!parsed.success || !membersById.has(parsed.data.id)) return;
+          setChecks((s) => ({ ...s, values: mergeAttendance(s.values, [parsed.data]) }));
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [campusId]);
+  }, [campusId, membersById]);
 
-  async function toggle(id: string, field: CheckField) {
-    if (!editable) return;
-    const cur = state[id];
+  const toggle = useCallback(async (id: string, field: CheckField) => {
+    const key = `${id}:${field}`;
+    if (!editable || requests.current.has(key)) return;
+    const cur = state[id] ?? membersById.get(id);
     if (!cur) return;
+    setSaving((s) => ({ ...s, [key]: true }));
+    setErrors((s) => ({ ...s, [key]: "" }));
     const next = !cur[field];
-    // computed-key 객체는 Supabase Update 타입과 안 맞아 명시 분기.
-    const optimistic =
-      field === "checked_in"
-        ? { checked_in: next, checked_out: cur.checked_out }
-        : { checked_in: cur.checked_in, checked_out: next };
-    setState((s) => ({ ...s, [id]: optimistic })); // 낙관적
-    const supabase = createClient();
-    // 출석 쓰기는 set_attendance RPC 경유 — master + 해당 호차 차량순장만 허용(서버 강제).
-    const { error } = await supabase.rpc("set_attendance", {
-      p_reg_id: id,
-      p_field: field,
-      p_value: next,
-    });
-    if (error) {
-      setState((s) => ({ ...s, [id]: cur })); // 롤백
-      setErr("저장 실패 — 권한이 없거나 네트워크 오류");
-      setTimeout(() => setErr(null), 2500);
+    requests.current.add(key);
+    const failed = () => {
+      const member = membersById.get(id);
+      setErrors((s) => ({ ...s, [key]: `${member?.name ?? "이 사람"} ${field === "checked_in" ? "상행 출발" : "하행 귀가"} 체크 요청을 완료하지 못했습니다. 현재 체크 상태와 연결을 확인한 뒤 다시 눌러 주세요.` }));
+    };
+    const unread = () => {
+      unreadSaved.current.add(key);
+      const member = membersById.get(id);
+      setErrors((s) => ({ ...s, [key]: `${member?.name ?? "이 사람"} 체크는 저장되었습니다. 최신 상태를 불러오지 못했습니다. 연결을 확인한 뒤 이름을 다시 눌러 최신 상태를 확인해 주세요.` }));
+    };
+    try {
+      if (!unreadSaved.current.has(key)) {
+        const { error } = await createClient().rpc("set_attendance", {
+          p_reg_id: id, p_field: field, p_value: next,
+        });
+        if (error) { failed(); return; }
+        unreadSaved.current.add(key);
+      }
+      // The RPC returns void. Read the actual committed revision rather than inventing base + 1.
+      const { data, error } = await createClient().from("registrations")
+        .select("id, checked_in, checked_out, version").eq("id", id).single();
+      const parsed = attendanceSnapshotSchema.safeParse(data);
+      if (error || !parsed.success) { unread(); return; }
+      setChecks((s) => ({ ...s, values: mergeAttendance(s.values, [parsed.data]) }));
+      unreadSaved.current.delete(key);
+    } catch {
+      if (unreadSaved.current.has(key)) unread(); else failed();
+    } finally {
+      requests.current.delete(key);
+      setSaving((s) => ({ ...s, [key]: false }));
     }
-  }
+  }, [editable, membersById, state]);
 
   function renderSection(
     groups: Group[],
@@ -149,7 +156,7 @@ export function BusAttendance({
         </h3>
         {groups.map(([busId, members]) => {
           const info = busName.get(busId);
-          const done = members.filter((m) => state[m.id]?.[field]).length;
+          const done = members.filter((m) => (state[m.id]?.[field] ?? m[field])).length;
           return (
             <Card key={busId}>
               <div className="flex items-center justify-between px-5 py-3 border-b border-border">
@@ -176,7 +183,8 @@ export function BusAttendance({
               </div>
               <ul className="divide-y divide-border">
                 {members.map((m) => {
-                  const on = state[m.id]?.[field] ?? false;
+                  const on = state[m.id]?.[field] ?? m[field];
+                  const key = `${m.id}:${field}`;
                   const inner = (
                     <>
                       <span
@@ -206,6 +214,8 @@ export function BusAttendance({
                         <button
                           type="button"
                           onClick={() => toggle(m.id, field)}
+                          disabled={saving[key]}
+                          aria-busy={saving[key] || undefined}
                           aria-pressed={on}
                           className={cn(
                             "flex w-full items-center justify-between px-5 py-3 text-left transition select-none",
@@ -213,6 +223,7 @@ export function BusAttendance({
                           )}
                         >
                           {inner}
+                          {saving[key] && <span role="status" className="text-xs text-muted">저장 중…</span>}
                         </button>
                       ) : (
                         <div
@@ -224,6 +235,7 @@ export function BusAttendance({
                           {inner}
                         </div>
                       )}
+                      {errors[key] && <p role="alert" className="mx-5 mb-3 rounded-md border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">{errors[key]}</p>}
                     </li>
                   );
                 })}
@@ -268,7 +280,7 @@ export function BusAttendance({
     for (const [id, members] of groupsOf(dir))
       if (id === busId) {
         total += members.length;
-        done += members.filter((m) => state[m.id]?.[field]).length;
+        done += members.filter((m) => (state[m.id]?.[field] ?? m[field])).length;
       }
     return { done, total };
   };
@@ -278,9 +290,9 @@ export function BusAttendance({
 
   const dirTab = (active: boolean) =>
     cn(
-      "px-3 py-1.5 rounded-lg text-sm border transition whitespace-nowrap",
+      "min-h-11 px-3 py-1.5 rounded-lg text-sm border transition whitespace-nowrap",
       active
-        ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+        ? "bg-primary-50 border-border text-primary-800 font-medium"
         : "border-border text-muted hover:bg-surface-2"
     );
 
@@ -290,12 +302,12 @@ export function BusAttendance({
     const slotId = busName.get(busId)?.up_trip_id;
     if (slotId == null) continue;
     let c = 0;
-    for (const m of members) if (state[m.id]?.checked_in) c += 1;
+    for (const m of members) if ((state[m.id]?.checked_in ?? m.checked_in)) c += 1;
     slotArrived.set(slotId, (slotArrived.get(slotId) ?? 0) + c);
   }
   const returnedLive = downGroups.reduce(
     (acc, [, members]) =>
-      acc + members.filter((m) => state[m.id]?.checked_out).length,
+      acc + members.filter((m) => (state[m.id]?.checked_out ?? m.checked_out)).length,
     0
   );
 
@@ -304,7 +316,7 @@ export function BusAttendance({
       {summary && (
         <Card
           title="출석률"
-          subtitle="출발 버스 탑승 · 하행 귀가 — 분모는 배차된 인원(간사 차량·불참 제외)"
+          subtitle={<>출발 버스 탑승 · 하행 귀가 — 분모는 배차된 인원<span className="whitespace-nowrap">(간사 차량·불참 제외)</span></>}
         >
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
             {summary.slots.map((s) => (
@@ -325,11 +337,6 @@ export function BusAttendance({
           </div>
         </Card>
       )}
-      {err && (
-        <div className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
-          {err}
-        </div>
-      )}
       <div className="sticky top-0 z-20 -mx-1 px-1 py-2 bg-surface/95 backdrop-blur border-b border-border space-y-2">
         {/* 방향 먼저 — 상·하행은 배차가 독립이라 같은 호차라도 멤버가 다르다. */}
         <div className="flex gap-1.5">
@@ -339,10 +346,11 @@ export function BusAttendance({
               setDir("up");
               setSelBus(null);
             }}
+            aria-pressed={dir === "up"}
             className={dirTab(dir === "up")}
           >
             <ArrowUp size={13} className="inline mr-1" />
-            상행 (올라갈 때)
+            {dir === "up" && <Check size={13} className="inline mr-1" aria-hidden="true" />}상행 (올라갈 때)
           </button>
           <button
             type="button"
@@ -350,10 +358,11 @@ export function BusAttendance({
               setDir("down");
               setSelBus(null);
             }}
+            aria-pressed={dir === "down"}
             className={dirTab(dir === "down")}
           >
             <ArrowDown size={13} className="inline mr-1" />
-            하행 (내려올 때)
+            {dir === "down" && <Check size={13} className="inline mr-1" aria-hidden="true" />}하행 (내려올 때)
           </button>
         </div>
       {busIds.length > 1 && (
@@ -361,14 +370,15 @@ export function BusAttendance({
             <button
               type="button"
               onClick={() => setSelBus(null)}
+              aria-pressed={selBus == null}
               className={cn(
-                "shrink-0 px-3 py-1.5 rounded-lg text-sm border transition",
+                "shrink-0 min-h-11 px-3 py-1.5 rounded-lg text-sm border transition",
                 selBus == null
-                  ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+                  ? "bg-primary-50 border-border text-primary-800 font-medium"
                   : "border-border text-muted hover:bg-surface-2"
               )}
             >
-              전체
+              {selBus == null && <Check size={13} className="inline mr-1" aria-hidden="true" />}전체
             </button>
             {busIds.map((id) => {
               const { done, total } = progressOf(id);
@@ -378,16 +388,17 @@ export function BusAttendance({
                   key={id}
                   type="button"
                   onClick={() => setSelBus(id)}
+                  aria-pressed={selBus === id}
                   className={cn(
-                    "shrink-0 px-3 py-1.5 rounded-lg text-sm border transition whitespace-nowrap",
+                    "shrink-0 min-h-11 px-3 py-1.5 rounded-lg text-sm border transition whitespace-nowrap",
                     selBus === id
-                      ? "bg-primary-50 border-primary-200 text-primary-800 font-medium"
+                      ? "bg-primary-50 border-border text-primary-800 font-medium"
                       : complete
-                        ? "border-success-border bg-success-bg text-success"
+                        ? "border-border bg-success-bg text-success"
                         : "border-border text-muted hover:bg-surface-2"
                   )}
                 >
-                  {busName.get(id)?.name ?? `${id}호차`}{" "}
+                  {selBus === id && <Check size={13} className="inline mr-1" aria-hidden="true" />}{busName.get(id)?.name ?? `${id}호차`}{" "}
                   <span className="tabular-nums text-xs">
                     {done}/{total}
                   </span>

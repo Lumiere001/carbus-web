@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
 import { CourseBoard, type CourseRow } from "@/components/admin/course-board";
+import { DataLoadError } from "@/components/ui/data-load-error";
+import { adminHref } from "@/lib/events/route";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +16,8 @@ export const dynamic = "force-dynamic";
  * 뷰(`v_course_board`)가 취소자를 이미 걸러 준다. 취소한 사람이 명단에 남으면
  * 강의실 인원이 틀린다.
  */
-export default async function AdminCoursesPage() {
+export default async function AdminCoursesPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   const supabase = await createClient();
 
   const {
@@ -30,11 +33,13 @@ export default async function AdminCoursesPage() {
 
   // RLS 의 event_scope 가 "지금 보는 행사" 로 이미 좁힌다 — 여기서 또 거르지 않는다.
   // 두 곳에서 거르면 한쪽만 고쳤을 때 조용히 어긋난다.
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("v_course_board")
     .select("*")
     .order("day_no")
     .order("at_time", { nullsFirst: true });
+
+  if (error) return <DataLoadError retryHref={adminHref(eventId, "/courses")} />;
 
   const rows: CourseRow[] = (data ?? []).map((r) => ({
     id: r.id ?? 0,
@@ -54,8 +59,8 @@ export default async function AdminCoursesPage() {
         <h2 className="text-xl font-semibold text-foreground">수강신청</h2>
         <p className="text-sm text-muted mt-0.5">
           누가 어느 날 몇 시 강의를 듣는지 모아 봅니다. 입력은{" "}
-          <b>전체 순장/순원</b> 화면에서 사람을 열고 <b>수강신청</b>에서 합니다 —
-          해당 없는 사람은 아무것도 안 고르면 됩니다.
+          <b className="whitespace-nowrap">전체 명단</b> 화면에서 사람을 열고 <b>수강신청</b>에서 합니다 —
+          <span className="whitespace-nowrap">해당 없는 사람은 아무것도 안 고르면 됩니다.</span>
         </p>
       </div>
 
