@@ -69,7 +69,7 @@ export function OnsiteCorrection({ visit, name, busy, onSave, onClose }: {
     const arrivedAt = storedTime(arrival, visit.arrived_at);
     const departedAt = storedTime(departure, visit.departed_at);
     if (arrivedAt && departedAt && new Date(arrivedAt) > new Date(departedAt)) {
-      setError("행사장 떠남은 행사장 도착 이후 시각이어야 합니다."); return;
+      setError("집회장 떠남은 집회장 도착 이후 시각이어야 합니다."); return;
     }
     if (!reason.trim()) { setError("정정 사유를 입력하세요."); return; }
     setError("");
@@ -83,8 +83,8 @@ export function OnsiteCorrection({ visit, name, busy, onSave, onClose }: {
     <form onSubmit={(event) => { void submit(event); }}><fieldset disabled={busy} className="min-w-0 space-y-4">
       <div><h3 id={titleId} className="font-semibold">{name} <span className="inline-block whitespace-nowrap">· {visit.visit_number}번째 방문 정정</span></h3>
         <p className="mt-1 text-sm text-muted">실제 현장 시각을 정정합니다. 미확인으로 바꾼 시각도 이전 기록과 사유가 이력에 남습니다.</p></div>
-      <DateTimeFields label="행사장 도착" value={arrival} onChange={setArrival} />
-      <DateTimeFields label="행사장 떠남" value={departure} onChange={setDeparture} />
+      <DateTimeFields label="집회장 도착" value={arrival} onChange={setArrival} />
+      <DateTimeFields label="집회장 떠남" value={departure} onChange={setDeparture} />
       <label className="block space-y-1 text-sm">정정 사유<textarea value={reason} maxLength={500} required
         className="block w-full rounded-md border border-border-2 bg-surface p-2 text-base"
         onChange={(event) => setReason(event.target.value)} /></label>

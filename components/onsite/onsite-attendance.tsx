@@ -33,7 +33,7 @@ export function OnsiteAttendance({ registrationId, name, startsOn, endsOn }: {
     return result.ok;
   }
   return <div className="space-y-2" aria-label={`${name} 현장 기록`}>
-    <Badge variant={atSite ? "primary" : "mute"} dot={false}>{atSite ? "행사장에 있음" : departed ? "행사장 떠남 확인" : "미확인"}</Badge>
+    <Badge variant={atSite ? "primary" : "mute"} dot={false}>{atSite ? "집회장에 있음" : departed ? "집회장 떠남 확인" : "미확인"}</Badge>
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" aria-live="polite">
       <p>도착 확인 {latest?.arrived_at ? formatKst(latest.arrived_at) : "미확인"}</p>
       <p>떠남 확인 {latest?.departed_at ? formatKst(latest.departed_at) : "미확인"}</p>
@@ -41,10 +41,10 @@ export function OnsiteAttendance({ registrationId, name, startsOn, endsOn }: {
     </div>
     {context.canEdit && <div className="flex flex-wrap gap-2">
       <Button type="button" variant="secondary" disabled={locked || atSite}
-        aria-label={`${name} ${departed ? "행사장 다시 도착" : "행사장 도착"} 체크`}
-        onClick={() => { void save(state, { action: "arrive" }); }}>{departed ? "행사장 다시 도착" : "행사장 도착"}</Button>
+        aria-label={`${name} ${departed ? "집회장 다시 도착" : "집회장 도착"} 체크`}
+        onClick={() => { void save(state, { action: "arrive" }); }}>{departed ? "집회장 다시 도착" : "집회장 도착"}</Button>
       <Button type="button" variant="secondary" disabled={locked || departed}
-        aria-label={`${name} 행사장 떠남 체크`} onClick={() => { void save(state, { action: "depart" }); }}>행사장 떠남</Button>
+        aria-label={`${name} 집회장 떠남 체크`} onClick={() => { void save(state, { action: "depart" }); }}>집회장 떠남</Button>
     </div>}
     {busy && <p role="status" className="text-sm text-muted">저장 중…</p>}
     {message && <p role="alert" className="max-w-sm whitespace-normal text-sm text-danger">{message}</p>}

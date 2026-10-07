@@ -26,7 +26,7 @@ export function AttendancePlanFields({ value, required, disabled, error, onChang
         attend_to: event.target.checked ? value.attend_to_at?.split("T")[0] ?? "" : null,
       })} />행사의 일부 기간만 참석합니다
     </label>
-    <p className="text-sm text-muted">{showTimes ? "참여 시작·종료 날짜와 시각을 모두 확정해서 입력하세요. 실제 행사장 도착·떠남 체크와 별도로 저장합니다." : "행사 전체에 참석하며 우리 버스를 왕복 이용합니다. 일부 기간만 참석한다면 위 항목을 선택하세요."}</p>
+    <p className="text-sm text-muted">{showTimes ? "참여 시작·종료 날짜와 시각을 모두 확정해서 입력하세요. 실제 집회장 도착·떠남 체크와 별도로 저장합니다." : "행사 전체에 참석하며 우리 버스를 왕복 이용합니다. 일부 기간만 참석한다면 위 항목을 선택하세요."}</p>
     {showTimes && <div className="grid min-w-0 gap-3 sm:grid-cols-2">
       <DateTimeField label="참여 시작" value={value.attend_from_at ?? ""} error={error} onChange={(next) => onChange({ ...value,
         attend_from_at: next || null, attend_from: partial ? next.split("T")[0] : null })} />

@@ -36,19 +36,19 @@ export default async function AdminPartialPage({ searchParams, params }: {
   return <OnsiteProvider key={eventId} eventId={eventId} initial={parsed.data} canEdit={canEdit}>
     <div className="space-y-4">
       <div><h2 className="text-xl font-semibold text-foreground">부분 참석 · 개인 이동</h2>
-        <p className="mt-1 text-sm text-muted">예정 일정과 이동수단을 사람별로 확인하세요. {canEdit ? "정보 수정은 이 목록에서 열고 닫습니다." : "조회 전용입니다."}</p></div>
+        <p className="mt-1 text-sm text-muted">예정 일정과 이동수단을 사람별로 확인하세요. {canEdit ? "정보 수정은 이 목록에서 열고 닫습니다." : "조회 전용입니다."}</p><a href="#pickup-board" className="mt-2 inline-flex min-h-11 items-center rounded-full border border-border px-3 text-sm hover:bg-surface-2">수송 시간표 보기 · {board.data?.length ?? 0}건</a></div>
       {(counts.missing > 0 || counts.pending > 0 || counts.schedule > 0) && <div className="flex flex-wrap gap-2 text-sm text-warning">
         {counts.missing > 0 && <p className="rounded-lg border border-border bg-warning-bg px-3 py-2">이동수단 확인 필요 {counts.missing}명</p>}
         {counts.schedule > 0 && <p className="rounded-lg border border-border bg-warning-bg px-3 py-2">예정 시각 확인 필요 {counts.schedule}명</p>}
         {counts.pending > 0 && <p className="rounded-lg border border-border bg-warning-bg px-3 py-2">타지구 차량 확정 대기 {counts.pending}명 · <Link href={adminHref(eventId,"/transport")} className="underline underline-offset-2">이동수단 확인</Link><span className="block">확정되면 해당 방향의 우리 버스 좌석을 반납합니다.</span></p>}
       </div>}
-      <p className="text-sm text-muted">‘행사장 도착’은 행사장에 들어온 것을, ‘행사장 떠남’은 행사장을 나간 것을 확인한 실제 시각입니다. 버튼을 누른 한국 시각(KST)을 기록하며 버스 탑승 체크와 별개입니다.</p>
+      <p className="text-sm text-muted">‘집회장 도착’은 집회장에 들어온 것을, ‘집회장 떠남’은 집회장을 나간 것을 확인한 실제 시각입니다. 버튼을 누른 한국 시각(KST)을 기록하며 버스 탑승 체크와 별개입니다.</p>
       <nav aria-label="부분 참석 조건" className="flex flex-wrap gap-2">{filters.map((item) => <Link key={item.key}
         href={item.key === "all" ? "?" : `?f=${item.key}`} aria-current={filter === item.key ? "page" : undefined}
         className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 text-sm ${filter === item.key ? "border-border-2 bg-surface-2 text-foreground" : "border-border text-muted hover:bg-surface-2"}`}>
         {item.label}<span className="tabular-nums">{counts[item.key]}</span></Link>)}</nav>
       <PartialParticipants data={data} rows={shown} title={filters.find((item) => item.key === filter)?.label ?? "전체"} canEdit={canEdit} />
-      <PickupBoard rows={(board.data ?? []) as BoardRow[]} audience="admin" />
+      <section id="pickup-board" className="scroll-mt-4"><PickupBoard rows={(board.data ?? []) as BoardRow[]} audience="admin" /></section>
     </div>
   </OnsiteProvider>;
 }
