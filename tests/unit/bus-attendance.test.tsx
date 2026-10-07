@@ -11,7 +11,7 @@
  *    호차별 버튼이 있어서 거기로 바로바로 화면이 바뀌어서 볼 수 있었으면."
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { BusAttendance } from "@/components/campus/bus-attendance";
 
 // Realtime 구독은 렌더만 볼 것이므로 최소 구현으로 막는다.
@@ -149,5 +149,48 @@ describe("BusAttendance 호차 바로가기", () => {
       .find((b) => /^2호차/.test(b.textContent ?? ""))!;
     await userEvent.click(chip);
     expect(screen.queryByText("다라")).not.toBeNull();
+  });
+});
+
+describe("BusAttendance의 공간과 정보", () => {
+  it("배차된 편을 먼저 보여 주고 빈 편은 개수와 펼칠 수 있는 정확한 값을 유지한다", () => {
+    // Given
+    render(
+      <BusAttendance upGroups={UP} downGroups={DOWN} buses={BUSES} slots={SLOTS}
+        summary={{ slots: [
+          { id: 30, label: "수 오전", total: 0 },
+          { id: 10, label: "화 오전", total: 3 },
+          { id: 40, label: "수 오후", total: 0 },
+        ], returnTotal: 1 }} />
+    );
+    const summary = screen.getByText("배차 없는 출발편 2개");
+    const details = summary.closest("details");
+    expect(details).not.toBeNull();
+    expect(details?.open).toBe(false);
+    expect(screen.getByText("화 오전 출발 버스")).toBeDefined();
+    // When
+    fireEvent.click(summary);
+    // Then
+    expect(details?.open).toBe(true);
+    if (details) {
+      expect(within(details).getAllByRole("term").map((term) => term.textContent)).toEqual([
+        "수 오전 출발 버스", "수 오후 출발 버스",
+      ]);
+      expect(within(details).getAllByText("0 / 0")).toHaveLength(2);
+    }
+  });
+
+  it("호차와 사람의 입력 순서를 유지하고 전체 이름·캠퍼스·학번을 같은 항목에 남긴다", () => {
+    // Given
+    const fullName = "매우 긴 참석자 이름을 모두 유지합니다";
+    const first = { ...member("long", fullName), campus: "매우 긴 캠퍼스 이름", student_id: "20260001" };
+    // When
+    render(<BusAttendance upGroups={[[3, [first, member("next", "다음 참석자")]], [1, [member("last", "마지막 참석자")]]]} downGroups={[]} buses={BUSES} slots={SLOTS} />);
+    // Then
+    const lists = screen.getAllByRole("list");
+    expect(lists.map((list) => within(list).getAllByRole("listitem").map((item) => item.textContent))).toEqual([
+      [fullName + "매우 긴 캠퍼스 이름20260001", "다음 참석자26"],
+      ["마지막 참석자26"],
+    ]);
   });
 });

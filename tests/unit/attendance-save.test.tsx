@@ -3,14 +3,14 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BusAttendance } from "@/components/campus/bus-attendance";
 
-const { rpc, readLatest, realtime } = vi.hoisted(() => ({ rpc: vi.fn(), readLatest: vi.fn(), realtime: { receive: null as null | ((payload: { new: { id: string; checked_in: boolean; checked_out: boolean; version: number } }) => void) } }));
+const { rpc, readLatest, realtime, subscribed, channelName } = vi.hoisted(() => ({ rpc: vi.fn(), readLatest: vi.fn(), subscribed: vi.fn(), channelName: vi.fn(), realtime: { receive: null as null | ((payload: { new: { id: string; checked_in: boolean; checked_out: boolean; version: number } }) => void) } }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({
-  channel: () => ({ on: (_event: string, _filter: object, receive: NonNullable<typeof realtime.receive>) => { realtime.receive = receive; return { subscribe: () => ({}) }; } }),
+  channel: (name: string) => { channelName(name); return { on: (event: string, filter: object, receive: NonNullable<typeof realtime.receive>) => { subscribed(event, filter); realtime.receive = receive; return { subscribe: () => ({}) }; } }; },
   removeChannel: vi.fn(), rpc, from: () => ({ select: () => ({ eq: () => ({ single: readLatest }) }) }),
 }) }));
 const MEMBER = { id: "m1", name: "테스트 참석자", student_id: "26", checked_in: false, checked_out: false, version: 1 };
 function mount() { render(<BusAttendance upGroups={[[1, [MEMBER]]]} downGroups={[[1, [MEMBER]]]} buses={[{ id: 1, name: "1호차", up_trip_id: 1 }]} slots={[{ id: 1, label: "오전 출발" }]} />); }
-beforeEach(() => { rpc.mockReset(); readLatest.mockReset().mockResolvedValue({ data: {...MEMBER, checked_in: true, version: 2}, error: null }); realtime.receive = null; });
+beforeEach(() => { rpc.mockReset(); subscribed.mockReset(); channelName.mockReset(); readLatest.mockReset().mockResolvedValue({ data: {...MEMBER, checked_in: true, version: 2}, error: null }); realtime.receive = null; });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe("출석 저장 실패와 겹치는 입력", () => {
@@ -45,6 +45,47 @@ describe("출석 저장 실패와 겹치는 입력", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /테스트 참석자/ })); });
     await act(async () => { failUp({ error: { message: "blocked" } }); });
     expect(screen.getByRole("button", { name: /테스트 참석자/ }).getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("출석 읽기 권한과 실시간 범위", () => {
+  it("캠퍼스 조회 화면에서 사람을 눌러도 출석을 쓰지 않는다", () => {
+    // Given
+    render(<BusAttendance campusId="campus-a" editable={false} upGroups={[[1, [MEMBER]]]} downGroups={[]} buses={[]} slots={[]} />);
+    // When
+    fireEvent.click(screen.getByText(MEMBER.name));
+    // Then
+    expect(rpc).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /테스트 참석자/ })).toBeNull();
+  });
+
+  it("캠퍼스 조회 화면은 같은 캠퍼스 구독의 확인된 값을 갱신한다", () => {
+    // Given
+    render(<BusAttendance campusId="campus-a" editable={false} upGroups={[[1, [MEMBER]]]} downGroups={[]} buses={[]} slots={[]} />);
+    // When
+    act(() => { realtime.receive?.({ new: { ...MEMBER, checked_in: true, version: 2 } }); });
+    // Then
+    expect(screen.getByText("출발 버스 1/1")).toBeDefined();
+    expect(channelName).toHaveBeenCalledWith("bus-attendance:campus-a");
+    expect(subscribed).toHaveBeenCalledWith("postgres_changes", {
+      event: "UPDATE", schema: "public", table: "registrations", filter: "campus_id=eq.campus-a",
+    });
+  });
+
+  it("전체 캠퍼스 구독에서 명단 밖 값은 나중에 합류한 사람의 서버 값을 덮지 않는다", () => {
+    // Given
+    const view = render(<BusAttendance upGroups={[[1, [MEMBER]]]} downGroups={[]} buses={[]} slots={[]} />);
+    const newcomer = { ...MEMBER, id: "outside-roster", name: "새 참석자" };
+    act(() => { realtime.receive?.({ new: { ...newcomer, checked_in: true, version: 2 } }); });
+    // When
+    view.rerender(<BusAttendance upGroups={[[1, [MEMBER, newcomer]]]} downGroups={[]} buses={[]} slots={[]} />);
+    // Then
+    expect(screen.getByRole("button", { name: /새 참석자/ }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByText("출발 버스 0/2")).toBeDefined();
+    expect(channelName).toHaveBeenCalledWith("bus-attendance:all");
+    expect(subscribed).toHaveBeenCalledWith("postgres_changes", {
+      event: "UPDATE", schema: "public", table: "registrations",
+    });
   });
 });
 

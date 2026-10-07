@@ -94,7 +94,7 @@ export default async function CampusBusesPage() {
     upGroups.length === 0 && downGroups.length === 0 && waiting.length === 0;
 
   return (
-    <div className="space-y-6 max-w-xl mx-auto">
+    <div className="space-y-6 w-full">
       <div>
         <h2 className="text-lg font-semibold text-foreground">호차 조회</h2>
         <p className="text-sm text-muted mt-0.5">
