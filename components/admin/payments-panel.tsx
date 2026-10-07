@@ -9,6 +9,8 @@ import { SettlementOverview } from "./settlement-overview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { setMasterReceived, masterRemitFor } from "@/lib/admin/payments";
+import { BalanceHistoryDetails } from "./balance-history";
+import type { BalanceHistory } from "@/lib/payments/balance-history";
 
 export type ThreeWayRow = {
   campus_id: string | null;
@@ -49,6 +51,8 @@ export type BalanceRow = {
   /** 'fee_dropped' = 낸 뒤 편성이 바뀜 · 'overpaid' = 청구보다 많이 받음 */
   refund_reason: string | null;
   note: string | null;
+  readonly history?: BalanceHistory;
+  readonly historyHref?: string;
 };
 
 const won = (n: number) => n.toLocaleString("ko-KR");
@@ -346,6 +350,7 @@ export function PaymentsPanel({
                     <span className="truncate max-w-full">· {b.note}</span>
                   )}
                 </div>
+                {b.historyHref && <BalanceHistoryDetails history={b.history} href={b.historyHref} />}
               </div>
             ))}
           </div>

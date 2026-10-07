@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/supabase/types";
 import { DataLoadError } from "@/components/ui/data-load-error";
 import { adminHref } from "@/lib/events/route";
+import { loadBalanceHistory } from "@/lib/payments/balance-history";
 import {
   PaymentsPanel,
   type ThreeWayRow,
@@ -56,6 +57,9 @@ export default async function AdminPaymentsPage({ params }: { params: Promise<{ 
     return <DataLoadError retryHref={adminHref(eventId, "/payments")} />;
   }
 
+  const history = await loadBalanceHistory(supabase, isMaster ? (balanceRes.data ?? []).flatMap((row) => row.registration_id ? [row.registration_id] : []) : []);
+  if (!history.ok) return <DataLoadError retryHref={adminHref(eventId, "/payments")} />;
+
   const orderOf = new Map(
     (campusRes.data ?? []).map((c) => [c.id, c.display_order])
   );
@@ -99,6 +103,8 @@ export default async function AdminPaymentsPage({ params }: { params: Promise<{ 
     refund_due: b.refund_due ?? 0,
     refund_reason: b.refund_reason ?? null,
     note: b.note ?? null,
+    history: history.histories.get(b.registration_id ?? ""),
+    historyHref: adminHref(eventId, `/logs?person=${encodeURIComponent(b.registration_id ?? "")}`),
   }));
 
   return (
