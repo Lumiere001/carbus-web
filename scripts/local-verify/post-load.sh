@@ -43,6 +43,8 @@ MIGRATIONS=(
   "supabase/migrations/20260721050000_bus_batch_flags.sql"   # Phase 3 배차 특례 플래그
   "supabase/migrations/20260721070000_event_trips.sql"       # Phase 3 하행 편 생성 + 차량 연결
   "supabase/migrations/20260721100000_symmetric_views_guards.sql"  # 위가 되돌린 뷰·가드 복구
+  "supabase/migrations/20260727040000_viewing_event.sql"     # 위 재실행이 되돌린 뷰의 조회 행사 범위 복구
+  "supabase/migrations/20260728047000_header_read_safe.sql"  # 조회 범위 복구가 되돌린 헤더 읽기·쓰기 가드 복구
   # ⚠️ 아래 셋은 **20260721070000 이 create_event 를 다시 정의해서 되돌리는 것**을
   #    복구한다. 그 재실행 하나 때문에 로컬의 create_event 가 §24·§25 수정이 빠진
   #    옛 버전으로 되돌아가 있었다 — 즉 **로컬에서는 행사 전환이 여전히 두 가지

@@ -12,10 +12,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "dev:local": "bash scripts/local-verify/dev-local.sh",
+    "db:local": "bash scripts/local-verify/dev-local.sh db-start",
+    "db:local:stop": "bash scripts/local-verify/dev-local.sh db-stop",
+    "check": "pnpm typecheck && pnpm lint && pnpm test:run"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.0",
     "@tanstack/react-table": "^8.21.3",
@@ -26,7 +29,6 @@
     "papaparse": "^5.5.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-hook-form": "^7.76.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
