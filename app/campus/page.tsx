@@ -62,10 +62,11 @@ export default async function CampusPage() {
 
   const allUnits = unitRes.data ?? [];
   const unitName = new Map(allUnits.map((u) => [u.id, u.name]));
-  const legs: Record<string, { mode: string; status: string; via: string | null }> = {};
+  const legs: Record<string, { mode: string; status: string; via: string | null; viaUnitId?: string | null }> = {};
   for (const l of legRes.data ?? []) {
     legs[`${l.registration_id}:${l.direction}`] = {
       mode: l.mode,
+      viaUnitId: l.via_unit_id,
       status: l.status,
       via: l.via_unit_id ? unitName.get(l.via_unit_id) ?? null : null,
     };

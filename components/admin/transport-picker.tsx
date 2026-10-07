@@ -38,12 +38,12 @@ export function TransportPicker({
   onChange,
 }: {
   label: string;
-  value: LegValue;
+  value: LegValue | null;
   units: { id: string; name: string }[];
   disabled?: boolean;
   onChange: (v: LegValue) => void;
 }) {
-  const isOther = value.mode === "other_district";
+  const isOther = value?.mode === "other_district";
   const sel =
     "text-sm border border-border-2 rounded-md px-2 py-1.5 bg-surface text-foreground";
 
@@ -52,7 +52,7 @@ export function TransportPicker({
       <span className="text-xs text-muted-2">{label}</span>
       <div className="flex flex-wrap items-center gap-1.5">
         <select
-          value={value.mode}
+          value={value?.mode ?? ""}
           disabled={disabled}
           onChange={(e) => {
             const mode = e.target.value as TransportMode;
@@ -64,13 +64,14 @@ export function TransportPicker({
             // 쪽이어야 한다 — 확정이 나면 그때 체크를 풀거나 이동수단 화면에서 누른다.
             onChange(
               mode === "other_district"
-                ? { ...value, mode, status: "pending" }
+                ? { ...(value ?? DEFAULT_LEG), mode, status: "pending" }
                 : { mode, viaUnitId: null, status: "confirmed" }
             );
           }}
           className={sel}
           aria-label={`${label} 이동수단`}
         >
+          {value === null && <option value="">이동수단 선택…</option>}
           {TRANSPORT_MODES.map((m) => (
             <option key={m} value={m}>
               {TRANSPORT_LABELS[m]}
@@ -78,7 +79,7 @@ export function TransportPicker({
           ))}
         </select>
 
-        {isOther && (
+        {isOther && value && (
           <>
             <select
               value={value.viaUnitId ?? ""}
@@ -116,13 +117,13 @@ export function TransportPicker({
           </>
         )}
       </div>
-      {isOther && value.status === "pending" && (
+      {isOther && value?.status === "pending" && (
         <p className="text-xs text-warning">
           확정될 때까지 우리 버스 좌석을 잡아둡니다. 확정으로 바꾸면 이 방향의
           운행편과 배정 호차가 <b>자동으로 비워집니다</b>.
         </p>
       )}
-      {isOther && value.status === "confirmed" && (
+      {isOther && value?.status === "confirmed" && (
         <p className="text-xs text-muted-2">
           확정 — 저장하면 이 방향의 우리 버스 자리를 놓습니다. 되돌리려면 편을 다시
           지정하고 배차를 다시 <span className="whitespace-nowrap">실행해야 합니다.</span>
@@ -130,7 +131,7 @@ export function TransportPicker({
       )}
       {/* KTX·자차·기타도 §26-B 이후로는 좌석을 놓는다. 예전엔 아무 일도 안 일어나서
           운영자가 손으로 편을 비워야 했고, 안 비우면 빈 좌석을 태우고 출발했다. */}
-      {!isOther && value.mode !== "our_bus" && (
+      {!isOther && value && value.mode !== "our_bus" && (
         <p className="text-xs text-muted-2">
           우리 버스를 안 탑니다 — 저장하면 이 방향의 운행편과 배정 호차가 비워집니다.
           되돌리려면 편을 다시 지정하고 배차를 다시 <span className="whitespace-nowrap">실행해야 합니다.</span>

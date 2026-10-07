@@ -4,7 +4,7 @@ import type { RegistrationInsert, RegistrationRow } from "@/lib/registrations/mu
 
 const initial: RegistrationRow = { id: "r1", event_id: "e1", name: "합성 학우", student_id: "26", campus_id: "c1", attendance_type: "roundtrip",
   up_trip_id: 1, down_trip_id: 2, departure_slot_id: 1, uses_return_bus: true, assigned_up_bus_id: null, assigned_down_bus_id: null,
-  attend_from: null, attend_to: null, payment_status: "unpaid", fee: 50000, roles: [], participation_status: "registered",
+  attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null, payment_status: "unpaid", fee: 50000, roles: [], participation_status: "registered",
   cancelled_at: null, cancel_reason: null, cancelled_by: null, checked_in: false, checked_out: false, created_by: null,
   created_at: "2026-10-07T00:00:00Z", updated_at: "2026-10-07T00:00:00Z", version: 2, note: "이전 비고", home_unit_id: null };
 let current: RegistrationRow = initial;

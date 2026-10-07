@@ -12,7 +12,7 @@ vi.mock("@/lib/admin/registrations", () => ({ setRoles: vi.fn(), setAssignment: 
 const row = { id: "10000000-0000-4000-8000-000000000001", name: "합성 인원", student_id: "26", campus_id: "c1",
   attendance_type: "roundtrip", up_trip_id: 1, down_trip_id: 2, fee: 50000, payment_status: "unpaid", roles: [], note: null,
   assigned_up_bus_id: null, assigned_down_bus_id: null, participation_status: "cancelled", cancel_reason: null,
-  attend_from: null, attend_to: null } satisfies AdminRegRow;
+  attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null } satisfies AdminRegRow;
 const props = { eventId: "30000000-0000-4000-8000-000000000001", campuses: [{ id: "c1", name: "합성 캠퍼스", display_order: 0 }],
   buses: [{ id: 1, name: "1호차", up_trip_id: 1, down_trip_id: 2, capacity: 2, kind: "bus" }],
   roleLabels: [{ label: "일반 역할", color: "green" }], isMaster: true, groupByBus: false,

@@ -10,12 +10,55 @@ const SLOTS = [
 ];
 
 describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
+  it("등록된 타지구의 정확한 이름 하나를 명시한 ID로 바꾼다", () => {
+    // Given
+    const units = [{ id: CAMPUS, name: "전주지구" }];
+    const csv = "이름,학번,상행 출발,하행 출발,참여 시작 일시,참여 종료 일시,상행 이동수단,상행 타지구,상행 이동상태\n타지구,26,tue_am,귀가,2026-10-10T09:30,2026-10-12T19:40,타지구 차량,전주지구,대기";
+    // When
+    const result = parseRegistrationsCsv(csv, CAMPUS, SLOTS, units);
+    // Then
+    expect(result.failures).toEqual([]);
+    expect(result.successes[0].legs).toEqual([{ direction: "up", mode: "other_district", via_unit_id: CAMPUS, status: "pending" }]);
+  });
+  it("이름이 같은 지구가 여러 곳이면 첫 지구로 추측하지 않는다", () => {
+    // Given
+    const units = [{ id: CAMPUS, name: "중부지구" }, { id: "22222222-2222-4222-8222-222222222222", name: "중부지구" }];
+    const csv = "이름,학번,상행 출발,하행 출발,참여 시작 일시,참여 종료 일시,상행 이동수단,상행 타지구\n모호함,26,tue_am,귀가,2026-10-10T09:30,2026-10-12T19:40,other_district,중부지구";
+    // When
+    const result = parseRegistrationsCsv(csv, CAMPUS, SLOTS, units);
+    // Then
+    expect(result.successes).toEqual([]);
+    expect(result.failures[0].reason).toContain("여러 곳");
+  });
+  it.each([
+    ["이름,학번,상행 출발,하행 출발,비고", "날짜없음,26,tue_am,,자차 귀가", "이동수단"],
+    ["이름,학번,상행 출발,하행 출발,하행 이동수단", "시각없음,26,tue_am,,own_car", "날짜·시각"],
+    ["이름,학번,상행 출발,하행 출발,하행 이동수단,참여 시작 일시,참여 종료 일시", "날짜만,26,tue_am,,own_car,2026-10-10,2026-10-12", "ISO"],
+  ])("불완전한 방향별 이동·참여 일시는 미리보기에서 거부한다 (%s)", (header, row, reason) => {
+    // Given / When
+    const result = parseRegistrationsCsv(`${header}\n${row}`, CAMPUS, SLOTS);
+    // Then
+    expect(result.successes).toEqual([]);
+    expect(result.failures[0].reason).toContain(reason);
+    expect(result.failures[0].reason).not.toMatch(/attend_from_at:|attend_to_at:|legs[.\d]*:/);
+  });
+  it("CSV native 날짜·시각을 KST로 보내고 비고에서 수단을 추론하지 않는다", () => {
+    // Given
+    const csv = "이름,학번,상행 출발,하행 출발,하행 이동수단,참여 시작 일시,참여 종료 일시\n확정,26,tue_am,,own_car,2026-10-10T09:30,2026-10-12T19:40";
+    // When
+    const result = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
+    // Then
+    expect(result.failures).toEqual([]);
+    expect(result.successes[0]).toMatchObject({ attend_from: null, attend_to: null,
+      attend_from_at: "2026-10-10T09:30:00+09:00", attend_to_at: "2026-10-12T19:40:00+09:00",
+      legs: [{ direction: "down", mode: "own_car", via_unit_id: null, status: "confirmed" }] });
+  });
   it("정상 CSV — 왕복·편도상행·편도하행 3행 모두 성공 (슬롯 key)", () => {
     const csv = [
-      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
-      "김철수,26,왕복,tue_am,O,",
-      "이영희,27,편도,tue_am,X,상행만",
-      "박지민,타지구,편도,,O,하행만",
+      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고,참여 시작 일시,참여 종료 일시,상행 이동수단,하행 이동수단",
+      "김철수,26,왕복,tue_am,O,,,,,",
+      "이영희,27,편도,tue_am,X,상행만,2026-10-10T09:30,2026-10-12T19:40,,own_car",
+      "박지민,타지구,편도,,O,하행만,2026-10-10T09:30,2026-10-12T19:40,ktx,",
     ].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
     expect(failures).toHaveLength(0);
@@ -66,7 +109,7 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
   it("상행 공란이면 편도 하행으로 해석된다 — 예전엔 '왕복 일관성 실패'였다", () => {
     // attendance_type 이 파생값이 되면서 "왕복인데 슬롯 없음" 같은 모순 자체가
     // 표현 불가능해졌다. 두 편만 받으므로 빈 상행은 그냥 하행 편도다.
-    const csv = ["이름,학번,상행 출발,하행 차량 이용,비고", "모순,26,,O,"].join("\n");
+    const csv = ["이름,학번,상행 출발,하행 차량 이용,비고,참여 시작 일시,참여 종료 일시,상행 이동수단", "모순,26,,O,,2026-10-10T09:30,2026-10-12T19:40,ktx"].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
     expect(failures).toHaveLength(0);
     expect(successes[0]).toMatchObject({ up_trip_id: null, down_trip_id: 9 });
@@ -76,9 +119,9 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
     // 임역원 기존 템플릿이 전부 O/X 라 계속 받아야 한다.
     // 하행 편이 하나뿐일 때만 해석 가능 — O 는 "탄다"만 말하기 때문이다.
     const csv = [
-      "이름,학번,상행 출발,하행 차량 이용,비고",
-      "에이,26,tue_am,X,",
-      "비,25,tue_pm,O,",
+      "이름,학번,상행 출발,하행 차량 이용,비고,참여 시작 일시,참여 종료 일시,하행 이동수단",
+      "에이,26,tue_am,X,,2026-10-10T09:30,2026-10-12T19:40,own_car",
+      "비,25,tue_pm,O,,,,",
     ].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
     expect(failures).toHaveLength(0);
@@ -118,11 +161,11 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
     expect(successes[0]).toMatchObject({ name: "탭철수", up_trip_id: 2 });
   });
 
-  it("버스 미이용(self) — 슬롯 빈칸 + 하행 X + 비고에 수단 → 통과", () => {
+  it("버스 미이용(self) — 확정 일시와 방향별 이동수단으로 통과", () => {
     const csv = [
-      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
-      "케이티엑스,26,버스 미이용,,X,KTX 자가 이동",
-      "차차,27,미이용,,X,자차",
+      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고,참여 시작 일시,참여 종료 일시,상행 이동수단,하행 이동수단",
+      "케이티엑스,26,버스 미이용,,X,KTX 자가 이동,2026-10-10T09:30,2026-10-12T19:40,ktx,ktx",
+      "차차,27,미이용,,X,자차,2026-10-10T09:30,2026-10-12T19:40,own_car,own_car",
     ].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
     expect(failures).toHaveLength(0);
@@ -155,7 +198,7 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
   });
 
   it("하행 열이 없는 '편도'(상행 있음) → 그대로 편도 상행", () => {
-    const csv = ["이름,학번,참석 유형,상행 출발,비고", "편도,26,편도,tue_am,"].join("\n");
+    const csv = ["이름,학번,참석 유형,상행 출발,비고,참여 시작 일시,참여 종료 일시,하행 이동수단", "편도,26,편도,tue_am,,2026-10-10T09:30,2026-10-12T19:40,own_car"].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
     expect(failures).toHaveLength(0);
     expect(successes[0]).toMatchObject({ up_trip_id: 1, down_trip_id: null });
@@ -173,10 +216,10 @@ describe("parseRegistrationsCsv (reference/validators.md §5·7)", () => {
 
   it("성공·실패 혼재 → 분리", () => {
     const csv = [
-      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고",
-      "정상,26,왕복,tue_am,O,",
-      "불량,abc,왕복,tue_am,O,",
-      "정상2,타지구,편도,tue_pm,X,",
+      "이름,학번,참석 유형,상행 출발,하행 차량 이용,비고,참여 시작 일시,참여 종료 일시,하행 이동수단",
+      "정상,26,왕복,tue_am,O,,,,",
+      "불량,abc,왕복,tue_am,O,,,,",
+      "정상2,타지구,편도,tue_pm,X,,2026-10-10T09:30,2026-10-12T19:40,own_car",
     ].join("\n");
     const { successes, failures } = parseRegistrationsCsv(csv, CAMPUS, SLOTS);
     expect(successes).toHaveLength(2);

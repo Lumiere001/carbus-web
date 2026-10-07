@@ -1,376 +1,181 @@
 // @vitest-environment happy-dom
-/**
- * 편집 서랍(RegDrawer) — 저장 계약 테스트.
- *
- * 왜 필요한가 — 이 화면은 master 로그인 뒤에만 열려서 브라우저로 확인할 수가 없다.
- * 그리고 여기서 회귀하면 **조용히 데이터를 덮는다.** 저장 버튼이 없어서 사용자가
- * "저장했다"는 순간을 인지하지 못하기 때문에, 잘못 보내도 아무도 눈치채지 못한다.
- *
- * 지키려는 계약 두 가지:
- *   ① 고친 칸 **하나만** 보낸다. 통째로 보내면 내가 안 건드린 칸이 내가 열었을 때의
- *      값으로 되돌아가고, 그 사이 다른 사람이 고친 것이 덮인다.
- *   ② `expected` 에 **내가 보던 값**을 실어 보낸다. 이게 있어야 updateCells 가
- *      충돌을 감지한다. 빠뜨리면 낙관 락이 통째로 무력해진다.
- */
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { RegDrawer } from "@/components/admin/reg-drawer";
 import type { AdminRegRow } from "@/components/admin/registrations-panel";
+import type { RegDrawerProps } from "@/components/admin/drawer/types";
 
-const updateRegField = vi.fn(async () => ({ ok: true as const }));
-const setTransportLeg = vi.fn(async () => ({ ok: true as const }));
-const addPickup = vi.fn(async () => ({ ok: true as const }));
-
-vi.mock("@/lib/admin/registrations", () => ({
-  updateRegField: (...args: unknown[]) => updateRegField(...(args as [])),
+const { updateRegField, saveJourney, addPickup, setCourseSignup, clearCourseSignup } = vi.hoisted(() => ({
+  updateRegField: vi.fn(), saveJourney: vi.fn(), addPickup: vi.fn(), setCourseSignup: vi.fn(), clearCourseSignup: vi.fn(),
 }));
-vi.mock("@/lib/admin/transport", () => ({
-  setTransportLeg: (...args: unknown[]) => setTransportLeg(...(args as [])),
-}));
-vi.mock("@/lib/admin/pickup", () => ({
-  addPickup: (...args: unknown[]) => addPickup(...(args as [])),
-  deletePickup: async () => ({ ok: true as const }),
-  setAttendRange: async () => ({ ok: true as const }),
-}));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
+vi.mock("@/lib/admin/registrations", () => ({ updateRegField }));
+vi.mock("@/lib/registrations/journey", () => ({ saveRegistrationJourney: saveJourney }));
+vi.mock("@/lib/admin/pickup", () => ({ addPickup, deletePickup: vi.fn() }));
+vi.mock("@/lib/admin/courses", () => ({ setCourseSignup, clearCourseSignup }));
+const row: AdminRegRow = { id: "reg-1", name: "김순장", student_id: "23", campus_id: "campus-a", attendance_type: "roundtrip",
+  up_trip_id: 10, down_trip_id: 20, fee: 50000, payment_status: "unpaid", roles: [], note: "기존 비고",
+  assigned_up_bus_id: 1, assigned_down_bus_id: 2, participation_status: "registered", cancel_reason: null,
+  attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null };
+const our = { mode: "our_bus", viaUnitId: null, status: "confirmed" } as const;
+const props: RegDrawerProps = { row, campuses: [{ id: "campus-a", name: "전남대", display_order: 1 }], trips: [],
+  units: [{ id: "unit-1", name: "경주지구" }], upLeg: our, downLeg: our, pickups: [], courses: [], dayCount: 3, places: [],
+  onSaved: vi.fn(), onClose: vi.fn() };
+beforeEach(() => {
+  vi.clearAllMocks();
+  updateRegField.mockResolvedValue({ ok: true }); addPickup.mockResolvedValue({ ok: true });
+  setCourseSignup.mockResolvedValue({ ok: true }); clearCourseSignup.mockResolvedValue({ ok: true });
+});
+afterEach(cleanup);
 
-// 좌석 반납 확인창. 뜨는 것 자체가 옳은 동작이라 막지 않고 "예"로 답한다.
-window.confirm = vi.fn(() => true);
-
-const ROW: AdminRegRow = {
-  id: "reg-1",
-  name: "김순장",
-  student_id: "23",
-  campus_id: "campus-a",
-  attendance_type: "roundtrip",
-  up_trip_id: 10,
-  down_trip_id: 20,
-  fee: 50000,
-  payment_status: "unpaid",
-  roles: [],
-  note: "기존 비고",
-  assigned_up_bus_id: 1,
-  assigned_down_bus_id: 2,
-  participation_status: "registered",
-  cancel_reason: null,
-  attend_from: null,
-  attend_to: null,
-};
-
-const CAMPUSES = [
-  { id: "campus-a", name: "전남대", display_order: 1 },
-  { id: "campus-b", name: "조선대", display_order: 2 },
-];
-const TRIPS = [
-  { id: 10, label: "화 오전 9시", direction: "up", active: true, display_order: 10 },
-  { id: 20, label: "금 오후 3시", direction: "down", active: true, display_order: 10 },
-  { id: 21, label: "금 오후 6시", direction: "down", active: true, display_order: 20 },
-] as never;
-
-const OUR_BUS = { mode: "our_bus", viaUnitId: null, status: "confirmed" } as const;
-
-function drawerElement(row: AdminRegRow = ROW) {
-  return (
-    <RegDrawer
-      row={row}
-      campuses={CAMPUSES}
-      trips={TRIPS}
-      units={[{ id: "unit-1", name: "경주지구" }]}
-      upLeg={{ ...OUR_BUS }}
-      downLeg={{ ...OUR_BUS }}
-      pickups={[]}
-      courses={[]}
-      dayCount={3}
-      places={[]}
-      onSaved={() => {}}
-      onClose={() => {}}
-    />
-  );
-}
-
-function renderDrawer(row: AdminRegRow = ROW) { return render(drawerElement(row)); }
-
+// 기본 정보는 일정·이동 묶음과 독립적으로 관측한 한 칸만 저장한다.
 describe("RegDrawer — 필드별 즉시 저장", () => {
-  beforeEach(() => {
-    cleanup();
-    updateRegField.mockClear();
-    setTransportLeg.mockClear();
+  it("납부만 바꾸면 관측한 납부와 새 납부 한 칸만 보낸다", async () => {
+    // Given
+    render(<RegDrawer {...props} />);
+    // When
+    await act(async () => { fireEvent.change(screen.getByLabelText("납부"), { target: { value: "paid" } }); });
+    // Then
+    expect(updateRegField).toHaveBeenCalledExactlyOnceWith("reg-1", { payment_status: "unpaid" }, { payment_status: "paid" });
+    expect(saveJourney).not.toHaveBeenCalled();
   });
-
-  it("납부만 바꾸면 납부 칸 하나만 보낸다", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("납부"), { target: { value: "paid" } });
-    });
-
-    expect(updateRegField).toHaveBeenCalledTimes(1);
-    const [id, expected, patch] = updateRegField.mock.calls[0] as unknown as [
-      string,
-      Record<string, unknown>,
-      Record<string, unknown>,
-    ];
-    expect(id).toBe("reg-1");
-    // 내가 보던 값 = 충돌 감지 기준
-    expect(expected).toEqual({ payment_status: "unpaid" });
-    // 다른 칸(이름·편·비고)은 절대 실리면 안 된다
-    expect(patch).toEqual({ payment_status: "paid" });
-  });
-
-  it("하행 편을 바꾸면 down_trip_id 만 보낸다 (상행은 건드리지 않는다)", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("하행 (오는 편)"), {
-        target: { value: "21" },
-      });
-    });
-
-    const [, expected, patch] = updateRegField.mock.calls[0] as unknown as [
-      string,
-      Record<string, unknown>,
-      Record<string, unknown>,
-    ];
-    expect(expected).toEqual({ down_trip_id: 20 });
-    expect(patch).toEqual({ down_trip_id: 21 });
-    expect(patch).not.toHaveProperty("up_trip_id");
-  });
-
-  it("‘이용 안 함’을 고르면 null 로 보낸다 (빈 문자열이 아니라)", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("상행 (가는 편)"), {
-        target: { value: "" },
-      });
-    });
-
-    const [, , patch] = updateRegField.mock.calls[0] as unknown as [
-      string,
-      Record<string, unknown>,
-      Record<string, unknown>,
-    ];
-    expect(patch).toEqual({ up_trip_id: null });
-  });
-
   it("값을 안 바꾸고 빠져나가면 아무것도 보내지 않는다", async () => {
-    renderDrawer();
-    const nameInput = screen.getByLabelText("이름");
-    await act(async () => {
-      fireEvent.blur(nameInput);
-    });
+    // Given
+    render(<RegDrawer {...props} />);
+    // When
+    await act(async () => { fireEvent.blur(screen.getByLabelText("이름")); });
+    // Then
     expect(updateRegField).not.toHaveBeenCalled();
   });
-
-  it("비고를 지우면 빈 문자열이 아니라 null 로 보낸다", async () => {
-    renderDrawer();
-    const note = screen.getByLabelText(/비고/);
+  it("비고를 지우면 빈 문자열 대신 null을 보낸다", async () => {
+    // Given
+    render(<RegDrawer {...props} />);
+    // When
     await act(async () => {
-      fireEvent.change(note, { target: { value: "  " } });
-      fireEvent.blur(note);
+      fireEvent.change(screen.getByLabelText(/비고/), { target: { value: "  " } });
+      fireEvent.blur(screen.getByLabelText(/비고/));
     });
-
-    const [, expected, patch] = updateRegField.mock.calls[0] as unknown as [
-      string,
-      Record<string, unknown>,
-      Record<string, unknown>,
-    ];
-    expect(expected).toEqual({ note: "기존 비고" });
-    expect(patch).toEqual({ note: null });
+    // Then
+    expect(updateRegField).toHaveBeenCalledExactlyOnceWith("reg-1", { note: "기존 비고" }, { note: null });
   });
 });
 
-/**
- * 이동수단은 **여러 칸이 모여야 한 값이 된다** — 회귀하면 기능 전체가 죽는다.
- *
- * 실제로 배포된 적이 있다: 타지구를 고르는 순간 저장을 시도했는데 지구가 아직
- * 없어 DB 가 거부했고, 거부되면 화면 값이 안 바뀌니 **지구 고르는 칸이 아예
- * 나타나지 않았다.** 그래서 "확정 대기"를 만들 방법이 없었고, 좌석 자동 반납도
- * 통째로 죽어 있었다. 화면상으로는 그냥 빨간 오류 한 줄로만 보인다.
- */
-describe("RegDrawer — 이동수단 다단계 입력", () => {
-  beforeEach(() => {
-    cleanup();
-    setTransportLeg.mockClear();
-  });
-
-  it("타지구를 고르면 지구 선택 칸이 나타난다", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
-        target: { value: "other_district" },
-      });
-    });
-    expect(screen.getByLabelText("지구 → 수련회장 타지구 이름")).toBeTruthy();
-  });
-
-  it("지구를 고르기 전에는 저장하지 않는다 (거부당하면 칸이 안 열린다)", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
-        target: { value: "other_district" },
-      });
-    });
-    expect(setTransportLeg).not.toHaveBeenCalled();
-  });
-
-  it("지구까지 고르면 그때 저장한다", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
-        target: { value: "other_district" },
-      });
-    });
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("지구 → 수련회장 타지구 이름"), {
-        target: { value: "unit-1" },
-      });
-    });
-    expect(setTransportLeg).toHaveBeenCalledTimes(1);
-    const [, dir, input] = setTransportLeg.mock.calls[0] as unknown as [
-      string,
-      string,
-      { mode: string; viaUnitId: string },
-    ];
-    expect(dir).toBe("up");
-    expect(input.mode).toBe("other_district");
-    expect(input.viaUnitId).toBe("unit-1");
-  });
-
-  it("확정 대기 체크박스도 타지구를 골라야 나타난다", async () => {
-    renderDrawer();
-    expect(screen.queryByText("확정 대기")).toBeNull();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), {
-        target: { value: "other_district" },
-      });
-    });
-    expect(screen.getByText("확정 대기")).toBeTruthy();
-  });
-
-  it("배정 좌석이 있을 때 KTX 변경은 확인한 뒤 저장한다", async () => {
-    renderDrawer();
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("수련회장 → 지구 이동수단"), {
-        target: { value: "ktx" },
-      });
-    });
-    expect(setTransportLeg).not.toHaveBeenCalled();
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "좌석 반납하고 변경" })); });
-    expect(setTransportLeg).toHaveBeenCalledTimes(1);
-  });
-});
-
-/**
- * 픽업 장소는 **총단이 등록한 목록에서 고른다.** 자유 입력이면 차가 실제로 가지
- * 않는 곳이 적히고, 표기도 사람마다 갈린다.
- */
-describe("RegDrawer — 픽업 장소는 고르는 것", () => {
-  beforeEach(cleanup);
-
-  it("장소는 자유 입력이 아니라 선택 목록이다", () => {
-    render(
-      <RegDrawer
-        row={ROW}
-        campuses={CAMPUSES}
-        trips={TRIPS}
-        units={[{ id: "unit-1", name: "경주지구" }]}
-        upLeg={{ ...OUR_BUS }}
-        downLeg={{ ...OUR_BUS }}
-        pickups={[]}
-        courses={[]}
-        dayCount={3}
-        places={[{ id: 7, name: "○○역" }]}
-        onSaved={() => {}}
-        onClose={() => {}}
-      />
-    );
-    const el = screen.getByLabelText("픽업 장소");
-    expect(el.tagName).toBe("SELECT");
-    expect(screen.getByText("○○역")).toBeTruthy();
-  });
-
-  it("총단이 장소를 안 만들었으면 그 사실을 알려준다", () => {
-    renderDrawer();
-    expect(screen.getByText(/등록된 픽업 장소가 없습니다/)).toBeTruthy();
-  });
-});
-
-
-describe("RegDrawer — 입력 보존과 취소", () => {
-  beforeEach(() => { cleanup(); setTransportLeg.mockClear(); updateRegField.mockClear(); addPickup.mockClear(); });
-
+describe("RegDrawer — 입력 보존과 닫기", () => {
   it.each(["이름", "학번", "비고 (특이사항 등 자유 기록)"])("%s 입력 중 Escape의 취소와 버리기는 저장을 일으키지 않는다", async (label) => {
-    const onClose = vi.fn();
-    render(<RegDrawer row={ROW} campuses={CAMPUSES} trips={TRIPS} units={[]} upLeg={OUR_BUS} downLeg={OUR_BUS} pickups={[]} courses={[]} dayCount={3} places={[]} onSaved={() => {}} onClose={onClose} />);
+    // Given
+    render(<RegDrawer {...props} />);
     const input = screen.getByLabelText(label);
     fireEvent.change(input, { target: { value: "새 초안" } });
+    // When: Escape로 닫기 확인을 열고 취소한 뒤 다시 버린다
     fireEvent(screen.getByRole("dialog", { name: "김순장 편집" }), new Event("cancel", { cancelable: true }));
-    expect(onClose).not.toHaveBeenCalled();
     await act(async () => { fireEvent.blur(input); });
+    expect(props.onClose).not.toHaveBeenCalled();
     expect(updateRegField).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
-    expect(input).toHaveProperty("value", "새 초안");
+    expect(input).toHaveValue("새 초안");
     fireEvent(screen.getByRole("dialog", { name: "김순장 편집" }), new Event("cancel", { cancelable: true }));
     fireEvent.click(screen.getByRole("button", { name: "변경 버리고 닫기" }));
-    expect(onClose).toHaveBeenCalledOnce();
+    // Then
+    expect(props.onClose).toHaveBeenCalledOnce();
     expect(updateRegField).not.toHaveBeenCalled();
   });
-
-  it("저장하지 않은 참여기간은 닫기 확인을 취소해도 보존된다", async () => {
-    const onClose = vi.fn();
-    render(<RegDrawer row={ROW} campuses={CAMPUSES} trips={TRIPS} units={[]} upLeg={OUR_BUS} downLeg={OUR_BUS} pickups={[]} courses={[]} dayCount={3} places={[]} onSaved={() => {}} onClose={onClose} />);
-    fireEvent.change(screen.getByLabelText("참여 시작일"), { target: { value: "2026-08-14" } });
+  it("미저장 참여 날짜는 닫기 확인을 취소해도 보존된다", () => {
+    // Given
+    render(<RegDrawer {...props} />);
+    fireEvent.click(screen.getByLabelText("행사의 일부 기간만 참석합니다"));
+    fireEvent.change(screen.getByLabelText("참여 시작 날짜"), { target: { value: "2026-08-14" } });
+    // When
     fireEvent.click(screen.getByRole("button", { name: "편집 닫기" }));
-    expect(onClose).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
-    expect(screen.getByLabelText("참여 시작일")).toHaveProperty("value", "2026-08-14");
-    fireEvent.click(screen.getByRole("button", { name: "편집 닫기" }));
-    fireEvent.click(screen.getByRole("button", { name: "변경 버리고 닫기" }));
-    expect(onClose).toHaveBeenCalledOnce();
-    expect(updateRegField).not.toHaveBeenCalled();
+    // Then
+    expect(screen.getByLabelText("참여 시작 날짜")).toHaveValue("2026-08-14");
+    expect(saveJourney).not.toHaveBeenCalled();
   });
-
-  it("좌석 반납을 취소하면 DB 호출 없이 원래 이동수단을 표시한다", async () => {
-    renderDrawer();
-    await act(async () => { fireEvent.change(screen.getByLabelText("수련회장 → 지구 이동수단"), { target: { value: "ktx" } }); });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "취소" })); });
-    expect(setTransportLeg).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("수련회장 → 지구 이동수단")).toHaveProperty("value", "our_bus");
-  });
-
   it("서버에서 최신 이름이 오면 과거 초안으로 다시 저장하지 않는다", async () => {
-    const view = renderDrawer();
+    // Given
+    const view = render(<RegDrawer {...props} />);
     fireEvent.change(screen.getByLabelText("이름"), { target: { value: "과거 초안" } });
-    view.rerender(drawerElement({ ...ROW, name: "다른 담당자가 저장한 이름" }));
-    expect(screen.getByLabelText("이름")).toHaveProperty("value", "다른 담당자가 저장한 이름");
+    // When
+    view.rerender(<RegDrawer {...props} row={{ ...row, name: "다른 담당자가 저장한 이름" }} />);
     await act(async () => { fireEvent.blur(screen.getByLabelText("이름")); });
+    // Then
+    expect(screen.getByLabelText("이름")).toHaveValue("다른 담당자가 저장한 이름");
     expect(updateRegField).not.toHaveBeenCalled();
   });
-
-  it("픽업 날짜만 입력하면 저장을 막고 초안을 보존한다", async () => {
-    renderDrawer();
-    fireEvent.change(screen.getByLabelText("날짜", { exact: true }), { target: { value: "2026-08-14" } });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "수송 요청 추가" })); });
-    expect(addPickup).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert").textContent).toContain("날짜와 시각");
-    expect(screen.getByLabelText("날짜", { exact: true })).toHaveProperty("value", "2026-08-14");
+  it("포인터로 닫기를 눌러도 미저장 글자를 먼저 자동 저장하지 않는다", async () => {
+    // Given
+    const user = userEvent.setup();
+    render(<RegDrawer {...props} />);
+    // When
+    await act(async () => {
+      await user.click(screen.getByLabelText("이름"));
+      await user.clear(screen.getByLabelText("이름"));
+      await user.type(screen.getByLabelText("이름"), "미저장 수정");
+      await user.click(screen.getByRole("button", { name: "편집 닫기" }));
+    });
+    // Then
+    expect(screen.getByRole("button", { name: "변경 버리고 닫기" })).toBeInTheDocument();
+    expect(updateRegField).not.toHaveBeenCalled();
+  });
+  it("서랍을 열고 닫으면 초점이 원래 버튼으로 돌아간다", () => {
+    // Given
+    render(<button>편집 열기</button>);
+    const opener = screen.getByRole("button", { name: "편집 열기" });
+    opener.focus();
+    const view = render(<RegDrawer {...props} />);
+    expect(screen.getByRole("button", { name: "편집 닫기" })).toHaveFocus();
+    // When
+    view.unmount();
+    // Then
+    expect(opener).toHaveFocus();
   });
 });
 
-
-describe("RegDrawer — 포인터로 닫을 때 저장 범위", () => {
- beforeEach(() => { cleanup(); updateRegField.mockClear(); });
- it("글자를 수정하고 닫기를 눌러도 먼저 자동 저장하지 않는다", async () => {
-  const { default: userEvent } = await import("@testing-library/user-event");
-  const user = userEvent.setup();
-  renderDrawer();
-  await act(async () => {
-    await user.click(screen.getByLabelText("이름"));
-    await user.clear(screen.getByLabelText("이름"));
-    await user.type(screen.getByLabelText("이름"), "미저장 수정");
-    await user.click(screen.getByRole("button", { name: "편집 닫기" }));
+describe("RegDrawer — 선택 수송·수강신청", () => {
+  it("픽업 장소는 자유 입력 대신 총단이 등록한 선택 목록이다", () => {
+    // Given / When
+    render(<RegDrawer {...props} places={[{ id: 7, name: "합성 역" }]} />);
+    // Then
+    expect(screen.getByLabelText("픽업 장소").tagName).toBe("SELECT");
+    expect(screen.getByRole("option", { name: "합성 역" })).toBeInTheDocument();
   });
-  expect(screen.getByRole("button", { name: "변경 버리고 닫기" })).toBeDefined();
-  expect(updateRegField).not.toHaveBeenCalled();
-  await act(async () => { await user.click(screen.getByRole("button", { name: "취소" })); });
-  expect(screen.getByLabelText("이름")).toHaveProperty("value", "미저장 수정");
- });
+  it("총단이 장소를 안 만들었으면 고를 수 없음을 알린다", () => {
+    // Given / When
+    render(<RegDrawer {...props} />);
+    // Then
+    expect(screen.getByLabelText("픽업 장소")).toBeDisabled();
+    expect(screen.getByText(/등록된 픽업 장소가 없습니다/)).toBeInTheDocument();
+  });
+  it("픽업 날짜만 입력하면 저장을 막고 초안을 보존한다", async () => {
+    // Given
+    render(<RegDrawer {...props} />);
+    fireEvent.click(screen.getByText("수송 요청 (선택) · 0건"));
+    fireEvent.change(screen.getByLabelText("픽업 일시 날짜"), { target: { value: "2026-08-14" } });
+    // When
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "수송 요청 추가" })); });
+    // Then
+    expect(addPickup).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("날짜와 시각");
+    expect(screen.getByLabelText("픽업 일시 날짜")).toHaveValue("2026-08-14");
+  });
+  it("수강신청을 켜면 날짜 대신 몇째 날과 시간 미정을 저장한다", async () => {
+    // Given
+    render(<RegDrawer {...props} />);
+    fireEvent.click(screen.getByText("수강신청 (선택) · 0일"));
+    // When
+    await act(async () => { fireEvent.click(screen.getByLabelText("첫째날 수강신청")); });
+    // Then
+    expect(setCourseSignup).toHaveBeenCalledExactlyOnceWith("reg-1", 1, null);
+    expect(saveJourney).not.toHaveBeenCalled();
+  });
+  it("수강신청을 끄면 해당 날의 행을 삭제한다", async () => {
+    // Given
+    render(<RegDrawer {...props} courses={[{ dayNo: 1, atTime: null }]} />);
+    // When
+    await act(async () => { fireEvent.click(screen.getByLabelText("첫째날 수강신청")); });
+    // Then
+    expect(clearCourseSignup).toHaveBeenCalledExactlyOnceWith("reg-1", 1);
+  });
 });

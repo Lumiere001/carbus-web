@@ -11,6 +11,8 @@ import {
   deriveAttendance,
 } from "@/lib/labels";
 import type { EventTrip } from "@/lib/supabase/types";
+import { isCompleteDateTime, toKst } from "@/lib/time/kst";
+import { TRANSPORT_LABELS } from "@/lib/transport/labels";
 
 /**
  * CSV·복붙 import 파싱 (reference/validators.md §5·7).
@@ -30,6 +32,10 @@ const HEADER_MAP: Record<string, string> = {
   "하행 차량 이용": "down_trip_id",
   "하행 출발": "down_trip_id",
   비고: "note",
+  "참여 시작일": "attend_from",
+  "참여 종료일": "attend_to",
+  "참여 시작 일시": "attend_from_at",
+  "참여 종료 일시": "attend_to_at",
 };
 
 export type ParsedRow = Omit<RegistrationInput, "campus_id">;
@@ -51,7 +57,8 @@ const MAX_ROWS = 1000;
 export function parseRegistrationsCsv(
   csv: string,
   campusId: string,
-  trips: Pick<EventTrip, "id" | "key" | "label" | "direction" | "active">[]
+  trips: Pick<EventTrip, "id" | "key" | "label" | "direction" | "active">[],
+  units: readonly { readonly id: string; readonly name: string }[] = []
 ): CsvParseResult {
   const dirTrips = (d: "up" | "down") => trips.filter((t) => t.direction === d);
 
@@ -108,6 +115,7 @@ export function parseRegistrationsCsv(
 
   rows.forEach((rawRow, idx) => {
     const mapped: Record<string, unknown> = {};
+    let transportError: string | null = null;
     for (const [ko, en] of Object.entries(HEADER_MAP)) {
       if (rawRow[ko] !== undefined) mapped[en] = rawRow[ko]?.trim();
     }
@@ -126,6 +134,32 @@ export function parseRegistrationsCsv(
       ? tripIdFromInput((mapped.down_trip_id as string) ?? "", "down")
       : null;
     if (mapped.note === "") mapped.note = null;
+    for (const key of ["attend_from", "attend_to", "attend_from_at", "attend_to_at"] as const) {
+      if (!mapped[key]) mapped[key] = null;
+      else if (key.endsWith("_at") && typeof mapped[key] === "string" && isCompleteDateTime(mapped[key])) mapped[key] = toKst(mapped[key]);
+    }
+    mapped.legs = (["up", "down"] as const).flatMap((direction) => {
+      const prefix = direction === "up" ? "상행" : "하행";
+      const rawMode = rawRow[`${prefix} 이동수단`]?.trim();
+      if (!rawMode) return [];
+      const mode = Object.entries(TRANSPORT_LABELS).find(([, label]) => label === rawMode)?.[0] ?? rawMode;
+      const rawStatus = rawRow[`${prefix} 이동상태`]?.trim();
+      const status = rawStatus === "대기" ? "pending" : rawStatus === "확정" || !rawStatus ? "confirmed" : rawStatus;
+      const unitName = rawRow[`${prefix} 타지구`]?.trim();
+      let viaUnitId = rawRow[`${prefix} 타지구 ID`]?.trim() || null;
+      if (unitName) {
+        const matches = units.filter((unit) => unit.name === unitName);
+        if (viaUnitId && units.length > 0) {
+          if (!matches.some((unit) => unit.id === viaUnitId)) transportError = `${prefix} 타지구 이름과 선택한 지구가 일치하지 않습니다.`;
+        } else if (!viaUnitId) {
+          if (matches.length === 1) viaUnitId = matches[0].id;
+          else transportError = matches.length > 1
+            ? `${prefix} 타지구: '${unitName}' 이름의 지구가 여러 곳입니다. 명단에서 구별한 지구를 선택해 주세요.`
+            : `${prefix} 타지구: 등록된 지구 이름과 정확히 일치해야 합니다 ('${unitName}').`;
+        }
+      }
+      return [{ direction, mode, via_unit_id: viaUnitId, status }];
+    });
 
     // ── '참석 유형' 열 처리 ────────────────────────────────
     // attendance_type 은 3-C 에서 파생값이 됐다(DB 트리거가 두 편에서 계산).
@@ -168,8 +202,8 @@ export function parseRegistrationsCsv(
       }
     }
 
-    if (attendanceError) {
-      failures.push({ row: idx + 2, reason: attendanceError, raw: rawRow });
+    if (attendanceError || transportError) {
+      failures.push({ row: idx + 2, reason: attendanceError ?? transportError ?? "이동수단을 확인해 주세요.", raw: rawRow });
       return;
     }
 
@@ -193,7 +227,11 @@ export function parseRegistrationsCsv(
     } else {
       const errs = fieldErrors(result.error);
       const reason = Object.entries(errs)
-        .map(([k, msgs]) => `${k}: ${msgs[0]}`)
+        .map(([k, msgs]) => {
+          const label = Object.entries(HEADER_MAP).find(([, field]) => field === k)?.[0]
+            ?? (k.startsWith("legs") ? "이동수단" : "입력 정보");
+          return `${label}: ${msgs[0]}`;
+        })
         .join("; ");
       failures.push({ row: idx + 2, reason, raw: rawRow }); // +2: 1-based + 헤더행
     }

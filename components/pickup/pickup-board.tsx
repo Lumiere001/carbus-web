@@ -165,7 +165,7 @@ export function PickupBoard({
       {rows.length === 0 ? (
         <p className="px-5 py-6 text-sm text-muted-2">
           {emptyHint ??
-            "아직 수송 요청이 없습니다. 전체 순장/순원 화면에서 사람을 열고 수송 요청을 추가하면 여기에 묶여서 보입니다."}
+            "아직 수송 요청이 없습니다. 사람의 정보 수정에서 수송 요청을 추가하면 여기에 날짜·시각별로 모입니다."}
         </p>
       ) : (
         <>
@@ -173,8 +173,8 @@ export function PickupBoard({
             <div className="px-5 py-3 text-sm text-danger flex items-start gap-2 border-b border-border bg-danger-bg/40">
               <TriangleAlert size={16} className="mt-0.5 shrink-0" />
               <span>
-                <b>{undecided}건</b>이 시각 미정입니다. 이 사람들에게 도착 시각을 먼저
-                물어봐야 차량을 짤 수 있습니다.
+                <b>{undecided}건</b>이 시각 미정입니다. 수송 예정 시각을 확인하면
+                차량 일정을 정할 수 있습니다.
               </span>
             </div>
           )}
@@ -213,7 +213,7 @@ export function PickupBoard({
                 }
                 title="눌러서 그 묶음으로 이동"
               >
-                {s.label} <b className="tabular-nums">{s.count}명</b>
+                {s.label} <b className="tabular-nums">{s.count}건</b>
               </button>
             ))}
             <button
@@ -272,7 +272,7 @@ export function PickupBoard({
                       </>
                     )}
                     <Badge variant={undecidedGroup ? "danger" : "primary"} dot={false}>
-                      {g.members.length}명
+                      {g.members.length}건
                     </Badge>
                   </button>
 

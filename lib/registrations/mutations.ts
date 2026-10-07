@@ -3,6 +3,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
+import { validateAttendancePlan } from "./attendance-plan";
+import { createRegistrationSchema, type CreateRegistrationInput } from "./create-schema";
+import { saveRegistrationJourney } from "./journey";
 
 export type RegistrationRow =
   Database["public"]["Tables"]["registrations"]["Row"];
@@ -11,7 +14,7 @@ export type RegistrationInsert =
 
 type Result<T> =
   | { ok: true; row: T }
-  | { ok: false; conflict?: boolean; message: string; latest?: T };
+  | { ok: false; conflict?: boolean; uncertain?: boolean; message: string; latest?: T };
 
 /**
  * 신규 순장/순원 INSERT. campus_id는 호출부에서 본인 캠퍼스로 강제 (RLS WITH CHECK도 이중 차단).
@@ -19,8 +22,14 @@ type Result<T> =
 export async function insertRegistration(
   // event_id 는 호출부가 몰라도 된다 — 이 함수가 "지금 보는 행사"로 채운다.
   // (4-4 에서 컬럼 기본값을 지웠지만, 그 지식을 화면마다 퍼뜨리지 않는다)
-  input: Omit<RegistrationInsert, "event_id"> & { event_id?: string }
+  input: Omit<RegistrationInsert, "event_id"> & { event_id?: string; legs?: CreateRegistrationInput["legs"] }
 ): Promise<Result<RegistrationRow>> {
+  const plan = validateAttendancePlan({
+    attend_from: input.attend_from ?? null, attend_to: input.attend_to ?? null,
+    attend_from_at: input.attend_from_at ?? null, attend_to_at: input.attend_to_at ?? null,
+    up_trip_id: input.up_trip_id ?? null, down_trip_id: input.down_trip_id ?? null, legs: input.legs ?? [],
+  });
+  if (!plan.ok) return { ok: false, message: plan.message };
   const supabase = createClient();
   // event_id 를 명시한다 (Phase 4-3). 지금까지는 컬럼 기본값이 채웠는데 4-4 에서
   // 그 기본값을 지운다. 호출부가 이미 넣어줬으면 그대로 존중한다.
@@ -30,9 +39,27 @@ export async function insertRegistration(
     if (!ev.ok) return { ok: false, message: ev.message };
     event_id = ev.id;
   }
+  if (input.legs !== undefined || input.attend_from || input.attend_to || input.attend_from_at || input.attend_to_at) {
+    const parsed = createRegistrationSchema.safeParse({
+      name: input.name, student_id: input.student_id, campus_id: input.campus_id,
+      up_trip_id: input.up_trip_id ?? null, down_trip_id: input.down_trip_id ?? null,
+      payment_status: input.payment_status ?? "unpaid", note: input.note ?? null,
+      attend_from: input.attend_from ?? null, attend_to: input.attend_to ?? null,
+      attend_from_at: input.attend_from_at ?? null, attend_to_at: input.attend_to_at ?? null,
+      legs: input.legs ?? [], pickups: [], courses: [],
+    });
+    if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "입력 값을 확인해 주세요" };
+    const { data: id, error } = await supabase.rpc("create_registration_complete", { p_event_id: event_id, p_input: parsed.data });
+    if (error) return { ok: false, message: humanizeError(error.message) };
+    const { data: row, error: readError } = await supabase.from("registrations").select("*").eq("id", id).single();
+    if (readError) return { ok: false, message: "신청을 저장했지만 결과를 불러오지 못했습니다. 명단을 새로고침해 확인해 주세요." };
+    return { ok: true, row };
+  }
+  const { legs: _legs, ...registration } = input;
+  void _legs;
   const { data, error } = await supabase
     .from("registrations")
-    .insert({ ...input, event_id })
+    .insert({ ...registration, event_id })
     .select()
     .single();
 
@@ -52,7 +79,18 @@ export async function updateRegistration(
   expectedVersion: number,
   patch: Partial<RegistrationInsert>
 ): Promise<Result<RegistrationRow>> {
+  const planKeys = ["attend_from", "attend_to", "attend_from_at", "attend_to_at"] as const;
+  if (planKeys.some((key) => patch[key] !== undefined) && planKeys.some((key) => patch[key] === undefined)) {
+    return { ok: false, message: "참여 날짜와 확정 일시는 함께 확인한 뒤 한 번에 저장해 주세요." };
+  }
   const supabase = createClient();
+  if (planKeys.some((key) => patch[key] !== undefined)) {
+    const { data: current, error } = await supabase.from("registrations").select("*").eq("id", id).maybeSingle();
+    if (error) return { ok: false, message: humanizeError(error.message) };
+    if (!current) return { ok: false, message: "신청 내역을 찾을 수 없습니다" };
+    if (current.version !== expectedVersion) return { ok: false, conflict: true, latest: current, message: "다른 임역원이 먼저 수정했습니다. 최신 값으로 갱신했어요." };
+    return updateCells(id, current, patch);
+  }
   const { data, error } = await supabase
     .from("registrations")
     .update(patch)
@@ -134,6 +172,28 @@ export async function updateCells(
       latest: current,
       message: "다른 임역원이 같은 항목을 먼저 수정했습니다. 최신값을 반영했어요.",
     };
+  }
+
+  const planKeys = ["attend_from", "attend_to", "attend_from_at", "attend_to_at"] as const;
+  if (planKeys.some((key) => patch[key] !== undefined)) {
+    if (planKeys.some((key) => patch[key] === undefined || !(key in expected))) {
+      return { ok: false, message: "참여 날짜와 확정 일시는 함께 확인한 뒤 한 번에 저장해 주세요." };
+    }
+    if (Object.keys(patch).some((key) => !planKeys.some((planKey) => planKey === key))) {
+      return { ok: false, message: "참여 일정과 이동수단은 통합 편집기에서 함께 저장해 주세요." };
+    }
+    const { data: legs, error: legError } = await supabase.from("transport_legs")
+      .select("direction, mode, status, via_unit_id").eq("registration_id", id);
+    if (legError) return { ok: false, message: humanizeError(legError.message) };
+    const journeyLegs = (legs ?? []).filter((leg): leg is typeof leg & { direction: "up" | "down" } => leg.direction === "up" || leg.direction === "down");
+    const plan = validateAttendancePlan({ ...current, ...patch, legs: journeyLegs });
+    if (!plan.ok) return { ok: false, message: plan.message };
+    const result = await saveRegistrationJourney(id, { ...current, legs: journeyLegs }, { ...current, ...patch },
+      { up_trip_id: current.up_trip_id, down_trip_id: current.down_trip_id }, journeyLegs);
+    if (result.ok || !result.conflict) return result;
+    const { data: latest, error: latestError } = await supabase.from("registrations").select("*").eq("id", id).maybeSingle();
+    if (latestError || !latest) return { ...result, message: "저장하지 않았습니다. 최신 자료를 불러오지 못했습니다. 화면을 새로 열고 다시 확인해 주세요." };
+    return { ...result, latest, conflictFields: Object.keys(expected) };
   }
 
   // 원자적 낙관 락: 읽은 version 일 때만 갱신. 그 사이 누가 바꿨으면 0행 → 충돌.

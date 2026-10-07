@@ -59,9 +59,9 @@ export function RegistrationGridHeader({ campusName, visibleRows, trips, buses, 
   );
 }
 
-export function RegistrationGridFilters({ rows, listView, setListView, stats }: {
+export function RegistrationGridFilters({ rows, listView, setListView, missingTransportCount }: {
   readonly rows: RegistrationRow[]; readonly listView: string;
-  readonly setListView: (value: string) => void; readonly stats: Stats;
+  readonly setListView: (value: string) => void; readonly missingTransportCount: number;
 }) { return <>
       <label className="flex flex-wrap items-center gap-3 text-sm text-muted">명단 보기
         <select className="min-h-11 rounded-md border border-border-2 bg-surface px-3 text-foreground" value={listView} onChange={(event) => setListView(event.target.value)}>
@@ -74,11 +74,11 @@ export function RegistrationGridFilters({ rows, listView, setListView, stats }: 
       {/* 안내: 미이용 사용법 + 비고 비어있는 미이용 행 알림 (조건부) */}
       <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-xs text-muted-2 space-y-1">
         <p>
-          상행(가는 편)과 하행(오는 편)을 각각 고릅니다. 한쪽만 이용하면 그 편만 고르고, 버스를 전혀 이용하지 않으면 두 편 모두 <b>이용 안 함</b>으로 둡니다. 참여 기간·수송 요청은 <b>신청 추가</b>와 <b>정보 수정</b>에서 입력합니다.
+          상행(가는 편)과 하행(오는 편)을 각각 고릅니다. 한쪽만 이용하면 그 편만 고르고, 버스를 전혀 이용하지 않으면 두 편 모두 <b>이용 안 함</b>으로 둡니다. 부분 참석·편도는 <b>신청 추가</b>와 <b>정보 수정</b>에서 확정한 시작·종료 일시와 이동수단을 입력합니다. 수송 요청·수강신청은 선택 사항입니다.
         </p>
-        {stats.selfMissingNote > 0 && (
+        {missingTransportCount > 0 && (
           <p className="text-warning">
-            주의: 미이용 {stats.selfCount}명 중 비고가 비어있는 행 {stats.selfMissingNote}건 — 정보 수정에서 이동수단을 확인해 주세요.
+            이동수단 확인 필요 {missingTransportCount}명 — 정보 수정에서 버스를 이용하지 않는 방향의 이동수단을 선택해 주세요.
           </p>
         )}
       </div>

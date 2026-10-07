@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin/registrations";
 import { busSelectOptions } from "@/lib/admin/bus-options";
 import { RegForm } from "@/components/admin/reg-form";
+import { journeyLegsOf } from "@/components/registrations/journey-data";
 import { RegDrawer, type PickupRow } from "@/components/admin/reg-drawer";
 import { TransportBadges } from "@/components/admin/transport-picker";
 import type { LegValue } from "@/components/admin/transport-picker";
@@ -33,6 +34,7 @@ import { setLeaderRole } from "@/lib/admin/leaders";
 import { ROLE_DRIVER, ROLE_FIXED, isSpecialRole } from "@/lib/roles/special";
 
 export type AdminRegRow = {
+  version?: number;
   id: string;
   name: string;
   student_id: string;
@@ -53,6 +55,8 @@ export type AdminRegRow = {
   /** 부분참 참여기간 (date). null = 행사 전체 참석. */
   attend_from: string | null;
   attend_to: string | null;
+  attend_from_at: string | null;
+  attend_to_at: string | null;
 };
 export type CampusInfo = { id: string; name: string; display_order: number };
 export type BusInfo = {
@@ -155,7 +159,7 @@ export function RegistrationsPanel({
   /** 타지구 차량일 때 고를 지구 목록 (org_units). */
   units: { id: string; name: string }[];
   /** "<신청id>:<방향>" → 이동수단. 행이 없으면 우리 버스(기본값). */
-  legs: Record<string, { mode: string; status: string; via: string | null }>;
+  legs: Record<string, { mode: string; status: string; via: string | null; viaUnitId?: string | null }>;
   /** 신청id → 수송 요청들. 없으면 요청 없음. */
   pickups: Record<string, PickupRow[]>;
   /** 총단이 이 행사에 등록해 둔 픽업 장소. 고르기만 한다. */
@@ -432,6 +436,7 @@ export function RegistrationsPanel({
             // 다른 사람으로 갈아타면 서랍을 새로 마운트해 입력 상태를 비운다.
             key={editRow.id}
             row={editRow}
+            journeyLegs={journeyLegsOf(legs, editRow.id)}
             campuses={campuses}
             trips={trips}
             units={units}
@@ -493,8 +498,8 @@ function Row({
   fixedIds: Set<string>;
   trips: EventTrip[];
   /** 이 사람의 방향별 이동수단 — 우리 버스면 배지를 안 그린다. */
-  upLeg: { mode: TransportMode | null; status: TransportStatus | null; via: string | null };
-  downLeg: { mode: TransportMode | null; status: TransportStatus | null; via: string | null };
+  upLeg: { mode: TransportMode | null; status: TransportStatus | null; via: string | null; viaUnitId?: string | null };
+  downLeg: { mode: TransportMode | null; status: TransportStatus | null; via: string | null; viaUnitId?: string | null };
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();

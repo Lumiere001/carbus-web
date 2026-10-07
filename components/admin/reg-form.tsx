@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { validateAttendancePlan } from "@/lib/registrations/attendance-plan";
 import { X } from "lucide-react";
 import { useConfirmation } from "@/components/ui/use-confirmation";
 import { RegistrationCreateBasics } from "@/components/registrations/create/basics";
@@ -27,6 +29,7 @@ export function RegForm({ eventId, campuses, trips, units, places, dayCount, loc
   const [draftEventId] = useState(eventId);
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
+  const [validationPopup, setValidationPopup] = useState("");
   const errorRef = useRef<HTMLParagraphElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -49,6 +52,8 @@ export function RegForm({ eventId, campuses, trips, units, places, dayCount, loc
   }, []);
   function goToSection(legend: string) {
     const target = Array.from(formRef.current?.querySelectorAll("legend") ?? []).find((item) => item.textContent === legend)?.parentElement;
+    const disclosure = target?.closest("details");
+    if (disclosure) disclosure.open = true;
     target?.scrollIntoView({ block: "start" });
     target?.querySelector<HTMLElement>("input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)")?.focus({ preventScroll: true });
   }
@@ -59,9 +64,8 @@ export function RegForm({ eventId, campuses, trips, units, places, dayCount, loc
   const [value, setValue] = useState<CreateRegistrationInput>({
     name: "", student_id: "", campus_id: lockedCampusId ?? campuses[0]?.id ?? "",
     up_trip_id: null, down_trip_id: null, payment_status: "unpaid", note: null,
-    attend_from: null, attend_to: null, pickups: [], courses: [],
-    legs: [{ direction: "up", mode: "our_bus", via_unit_id: null, status: "confirmed" },
-      { direction: "down", mode: "our_bus", via_unit_id: null, status: "confirmed" }],
+    attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null, pickups: [], courses: [],
+    legs: [],
   });
   function change(patch: Partial<CreateRegistrationInput>) {
     setError(""); setDirty(true); setValue((current) => ({ ...current, ...patch }));
@@ -69,9 +73,15 @@ export function RegForm({ eventId, campuses, trips, units, places, dayCount, loc
   function submit() {
     const incomplete = value.pickups.some((p) => p.pickup_at && !isCompleteDateTime(p.pickup_at));
     if (incomplete) { setError("픽업 날짜와 시각을 모두 입력하거나 둘 다 비워 주세요."); return; }
+    const plan = { ...value, attend_from_at: toKst(value.attend_from_at), attend_to_at: toKst(value.attend_to_at) };
+    const validation = validateAttendancePlan(plan);
+    if (!validation.ok) {
+      const message = validation.field === "legs" ? validation.message : "부분참은 참여 기간(시간 포함)을 입력해주세요! " + validation.message;
+      setError(message); setValidationPopup(message); return;
+    }
     setError("");
     start(async () => {
-      const result = await createCompleteRegistration({ ...value,
+      const result = await createCompleteRegistration({ ...plan,
         campus_id: lockedCampusId ?? value.campus_id,
         pickups: value.pickups.map((p) => ({ ...p, pickup_at: toKst(p.pickup_at) })),
       }, draftEventId);
@@ -93,7 +103,7 @@ export function RegForm({ eventId, campuses, trips, units, places, dayCount, loc
       <div className="shrink-0 border-b border-border p-4">
         <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="text-xl font-normal">순장/순원 추가</h2><p className="mt-1 text-sm text-muted">모든 입력은 함께 저장됩니다.</p></div><Button type="button" variant="ghost" size="icon" aria-label="신청 입력 닫기" title="신청 입력 닫기" disabled={pending} onClick={() => void close()}><X size={18} /></Button></div>
         <nav aria-label="신청 입력 항목" className="mt-3 flex flex-wrap gap-2">
-          {[{ label: "기본 정보", legend: "기본 정보" }, { label: "참여 기간", legend: "부분 참석 · 참여 기간" }, { label: "이동수단", legend: "이동수단" }, { label: `수송 요청 ${value.pickups.length}`, legend: "수송 요청" }, { label: `수강신청 ${value.courses.length}`, legend: "수강신청" }].map((section) => <Button key={section.legend} type="button" size="sm" variant="secondary" disabled={pending} aria-label={`${section.legend} 입력으로 이동`} onClick={() => goToSection(section.legend)}>{section.label}</Button>)}
+          {[{ label: "기본 정보", legend: "기본 정보" }, { label: "참여 기간", legend: "참여 예정 일정" }, { label: "이동수단", legend: "이동수단" }, { label: `수송 요청 ${value.pickups.length}`, legend: "수송 요청" }, { label: `수강신청 ${value.courses.length}`, legend: "수강신청" }].map((section) => <Button key={section.legend} type="button" size="sm" variant="secondary" disabled={pending} aria-label={`${section.legend} 입력으로 이동`} onClick={() => goToSection(section.legend)}>{section.label}</Button>)}
         </nav>
       </div>
       <form ref={formRef} data-saving={pending} data-unsaved={dirty} className="flex min-h-0 flex-1 flex-col" onSubmit={(event) => { event.preventDefault(); submit(); }}>
@@ -106,9 +116,10 @@ export function RegForm({ eventId, campuses, trips, units, places, dayCount, loc
             <RegistrationCreateExtras value={value} onChange={change} places={places} dayCount={dayCount} />
           </fieldset>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border bg-surface p-4"><Button type="submit" disabled={pending || uncertain}>{pending ? "저장 중…" : "신청 추가"}</Button><Button type="button" variant="ghost" disabled={pending} onClick={() => void close()}>취소</Button><span className="ml-auto text-xs text-muted-2">{pending ? "저장 확인 중…" : uncertain ? "저장 여부를 확인하세요." : "이름·학번은 필수입니다."}</span></div>
+        <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border bg-surface p-4"><Button type="submit" disabled={pending || uncertain}>{pending ? "저장 중…" : "신청 추가"}</Button><Button type="button" variant="ghost" disabled={pending} onClick={() => void close()}>취소</Button><span className="ml-auto text-xs text-muted-2">{pending ? "저장 확인 중…" : uncertain ? "저장 여부를 확인하세요." : "부분 참석·편도는 일정과 이동수단 필수"}</span></div>
       </form>
     </dialog>
+    <ConfirmDialog open={Boolean(validationPopup)} title="신청 정보를 확인해 주세요" description={validationPopup} confirmLabel="확인" onCancel={() => setValidationPopup("")} onConfirm={() => setValidationPopup("")} />
     {confirmationDialog}
   </>;
 }

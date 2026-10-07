@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { updateCells } from "@/lib/registrations/mutations";
+import { updateCells, updateRegistration } from "@/lib/registrations/mutations";
 
 const { from, update, single, client } = vi.hoisted(() => ({ from: vi.fn(), update: vi.fn(), single: vi.fn(), client: vi.fn() }));
 const query = {
@@ -28,5 +28,20 @@ describe("공통 셀 저장의 필수 이름", () => {
     const result = await updateCells("own", { note: null }, { note: "메모" });
     expect(result.ok).toBe(true);
     expect(update).toHaveBeenCalledExactlyOnceWith({ note: "메모" });
+  });
+  it("참여 날짜만 독립적으로 저장해서 확정 일시와 어긋나게 하지 않는다", async () => {
+    // Given / When
+    const result = await updateCells("own", { attend_from: null }, { attend_from: "2026-10-10" });
+    // Then
+    expect(result).toMatchObject({ ok: false, message: expect.stringContaining("한 번에") });
+    expect(update).not.toHaveBeenCalled();
+  });
+  it("기존 버전 기반 API도 확정 일시 한 칸만 독립 저장하지 않는다", async () => {
+    // Given / When
+    const result = await updateRegistration("own", 1, { attend_from_at: "2026-10-10T09:30:00+09:00" });
+    // Then
+    expect(result).toMatchObject({ ok: false, message: expect.stringContaining("한 번에") });
+    expect(client).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 });

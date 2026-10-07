@@ -35,6 +35,7 @@ export function DateTimeField({ label, value, onChange, disabled, error }: Props
           <input
             ref={dateRef}
             type="date"
+            aria-label={`${label} 날짜`}
             value={date}
             onChange={(event) => change(event.target.value, time)}
             aria-describedby={description}
@@ -47,6 +48,7 @@ export function DateTimeField({ label, value, onChange, disabled, error }: Props
           <input
             ref={timeRef}
             type="time"
+            aria-label={`${label} 시각`}
             value={time}
             onChange={(event) => change(date, event.target.value)}
             aria-describedby={description}

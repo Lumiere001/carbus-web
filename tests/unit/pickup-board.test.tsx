@@ -57,10 +57,10 @@ describe("PickupBoard — 묶음", () => {
         ]}
       />
     );
-    // 위 요약 칩과 묶음 머리글 양쪽에 나온다 — 요약은 "스크롤 없이 어디에 몇 명인지"
+    // 위 요약 칩과 묶음 머리글 양쪽에 나온다 — 요약은 "스크롤 없이 어디에 몇 건인지"
     // 를 보여주는 자리라 같은 문구가 두 번 있는 게 맞다.
     expect(screen.getAllByText("2026-08-11 23:30").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("2명")).toHaveLength(2);
+    expect(screen.getAllByText("2건")).toHaveLength(2);
   });
 
   it("장소가 다르면 다른 묶음이다 (차를 따로 보내야 하므로)", () => {
@@ -73,7 +73,7 @@ describe("PickupBoard — 묶음", () => {
         ]}
       />
     );
-    expect(screen.getAllByText("1명")).toHaveLength(2);
+    expect(screen.getAllByText("1건")).toHaveLength(2);
   });
 
   it("시각 미정은 맨 위에 모이고 건수를 경고로 알린다", () => {
@@ -89,7 +89,7 @@ describe("PickupBoard — 묶음", () => {
     );
     expect(screen.getAllByText("시각 미정").length).toBeGreaterThan(0);
     // 경고 문구에 미정 건수가 숫자로 나와야 한다 — 그게 곧 할 일 개수다.
-    expect(screen.getByText("2건")).toBeTruthy();
+    expect(screen.getAllByText("2건")).toHaveLength(3);
     // 미정 묶음이 먼저 그려진다
     const texts = [...document.querySelectorAll("span")].map((e) => e.textContent);
     expect(texts.indexOf("시각 미정")).toBeLessThan(texts.indexOf("2026-08-11 09:00"));
@@ -141,7 +141,7 @@ describe("PickupBoard — 관리자와 임역원이 보는 것이 다르다", ()
     const { default: userEvent } = await import("@testing-library/user-event");
     render(<PickupBoard rows={rows} audience="campus" />);
     expect(screen.getByText("김순장")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", {name: /어딘가 역.*1명/}));
+    await userEvent.click(screen.getByRole("button", {name: /어딘가 역.*1건/}));
     expect(screen.queryByText("김순장")).toBeNull();
   });
 });

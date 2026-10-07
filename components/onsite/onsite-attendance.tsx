@@ -33,18 +33,18 @@ export function OnsiteAttendance({ registrationId, name, startsOn, endsOn }: {
     return result.ok;
   }
   return <div className="space-y-2" aria-label={`${name} 현장 기록`}>
-    <Badge variant={atSite ? "primary" : "mute"} dot={false}>{atSite ? "현장 참석 중" : departed ? "행사 출발 확인" : "미확인"}</Badge>
-    <div className="space-y-1 text-xs text-muted" aria-live="polite">
-      <p>도착 {latest?.arrived_at ? formatKst(latest.arrived_at) : "미확인"}</p>
-      <p>출발 {latest?.departed_at ? formatKst(latest.departed_at) : "미확인"}</p>
+    <Badge variant={atSite ? "primary" : "mute"} dot={false}>{atSite ? "행사장에 있음" : departed ? "행사장 떠남 확인" : "미확인"}</Badge>
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" aria-live="polite">
+      <p>도착 확인 {latest?.arrived_at ? formatKst(latest.arrived_at) : "미확인"}</p>
+      <p>떠남 확인 {latest?.departed_at ? formatKst(latest.departed_at) : "미확인"}</p>
       {outsidePeriod && <p className="text-warning">행사 날짜 밖 기록 · 한국 시간</p>}
     </div>
     {context.canEdit && <div className="flex flex-wrap gap-2">
       <Button type="button" variant="secondary" disabled={locked || atSite}
-        aria-label={`${name} ${departed ? "현장 재도착" : "현장 도착"} 체크`}
-        onClick={() => { void save(state, { action: "arrive" }); }}>{departed ? "현장 재도착" : "현장 도착"}</Button>
+        aria-label={`${name} ${departed ? "행사장 다시 도착" : "행사장 도착"} 체크`}
+        onClick={() => { void save(state, { action: "arrive" }); }}>{departed ? "행사장 다시 도착" : "행사장 도착"}</Button>
       <Button type="button" variant="secondary" disabled={locked || departed}
-        aria-label={`${name} 행사 출발 체크`} onClick={() => { void save(state, { action: "depart" }); }}>행사 출발</Button>
+        aria-label={`${name} 행사장 떠남 체크`} onClick={() => { void save(state, { action: "depart" }); }}>행사장 떠남</Button>
     </div>}
     {busy && <p role="status" className="text-sm text-muted">저장 중…</p>}
     {message && <p role="alert" className="max-w-sm whitespace-normal text-sm text-danger">{message}</p>}
@@ -56,8 +56,8 @@ export function OnsiteAttendance({ registrationId, name, startsOn, endsOn }: {
       <ol className="space-y-3 whitespace-normal text-xs text-muted">
         {state.visits.map((visit) => <li key={visit.id} className="space-y-1">
           <p className="font-medium">{visit.visit_number}번째 방문{!visit.arrived_at && !visit.departed_at ? " · 기록 해제" : ""}</p>
-          <p>도착 {visit.arrived_at ? formatKst(visit.arrived_at) : "미확인"}</p>
-          <p>출발 {visit.departed_at ? formatKst(visit.departed_at) : "미확인"}</p>
+          <p>도착 확인 {visit.arrived_at ? formatKst(visit.arrived_at) : "미확인"}</p>
+          <p>떠남 확인 {visit.departed_at ? formatKst(visit.departed_at) : "미확인"}</p>
           {context.canEdit && <Button type="button" variant="ghost" disabled={locked}
             aria-label={`${name} ${visit.visit_number}번째 방문 시각 정정`}
             onClick={() => setEditing({ state, visit })}>시각 정정 · 해제</Button>}

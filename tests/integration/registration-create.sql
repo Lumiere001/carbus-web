@@ -11,7 +11,7 @@ insert into public.org_units(id,name,kind) values ('f4000000-0000-4000-8000-0000
 create function pg_temp.assert_create(p_ok boolean,p_reason text) returns void language plpgsql as $$ begin if p_ok is distinct from true then raise exception 'FAIL: %',p_reason; end if; end $$;
 create function pg_temp.create_payload(p_payment text default 'unpaid') returns jsonb language sql as $$
 select jsonb_build_object('name','Complete create person ' || p_payment || ' ' || gen_random_uuid(),'student_id','26','campus_id',(select id from public.campuses limit 1),
-'up_trip_id',31001,'down_trip_id',31002,'payment_status',p_payment,'note','Create note','attend_from','2026-10-10','attend_to','2026-10-12',
+'up_trip_id',31001,'down_trip_id',31002,'payment_status',p_payment,'note','Create note','attend_from','2026-10-10','attend_to','2026-10-12','attend_from_at','2026-10-10T09:30:00+09:00','attend_to_at','2026-10-12T19:40:00+09:00',
 'legs','[{"direction":"up","mode":"ktx","via_unit_id":null,"status":"confirmed"},{"direction":"down","mode":"other_district","via_unit_id":"f4000000-0000-4000-8000-000000000001","status":"pending"}]'::jsonb,
 'pickups','[{"direction":"up","pickup_at":"2026-10-11T14:20:00+09:00","place_id":310000001,"note":"First request"},{"direction":"down","pickup_at":null,"place_id":null,"note":null}]'::jsonb,
 'courses','[{"day_no":1,"at_time":null},{"day_no":2,"at_time":"12:30"}]'::jsonb)

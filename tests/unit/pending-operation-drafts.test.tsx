@@ -24,13 +24,13 @@ const paid = { campus_id: "c1", campus_name: "합성 캠퍼스", system_paid_tot
   master_received_total: 10000, diff_system_vs_campus: 0, diff_campus_vs_master: 0, diff_system_vs_master: 0 } satisfies ThreeWayRow;
 const campusId = "10000000-0000-4000-8000-000000000001";
 const insertedRow = { id: "20000000-0000-4000-8000-000000000001", event_id: "e1", name: "합성 참가자", student_id: "26",
-  campus_id: campusId, attendance_type: "oneway", up_trip_id: 1, down_trip_id: null, departure_slot_id: 1, uses_return_bus: false,
-  assigned_up_bus_id: null, assigned_down_bus_id: null, attend_from: null, attend_to: null,
-  payment_status: "unpaid", fee: 25000, roles: [], participation_status: "registered",
+  campus_id: campusId, attendance_type: "roundtrip", up_trip_id: 1, down_trip_id: 2, departure_slot_id: 1, uses_return_bus: true,
+  assigned_up_bus_id: null, assigned_down_bus_id: null, attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null,
+  payment_status: "unpaid", fee: 50000, roles: [], participation_status: "registered",
   cancelled_at: null, cancel_reason: null, cancelled_by: null, checked_in: false, checked_out: false,
   created_by: null, created_at: "2026-10-07T00:00:00Z", updated_at: "2026-10-07T00:00:00Z",
   version: 1, note: null, home_unit_id: null } satisfies RegistrationRow;
-const trips = [{ id: 1, key: "up_1", label: "오전 출발", direction: "up", active: true }] as const;
+const trips = [{ id: 1, key: "up_1", label: "오전 출발", direction: "up", active: true }, { id: 2, key: "down_1", label: "귀가편", direction: "down", active: true }] as const;
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
@@ -100,12 +100,12 @@ describe("진행 중 운영 초안 보존", () => {
     const view = render(<ImportPanel campusId={campusId} trips={[...trips]} />);
     const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
     if (!input) throw new Error("File control missing");
-    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n합성 참가자,26,오전 출발,,"], "first.csv", {type: "text/csv"}));
+    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n합성 참가자,26,오전 출발,귀가편,"], "first.csv", {type: "text/csv"}));
     // When
     await user.click(screen.getByRole("button", { name: "1명 등록" }));
     // Then
     expect(input).toBeDisabled(); expect(screen.getByRole("button", { name: "CSV 파일 선택" })).toBeDisabled();
-    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n다음 참가자,26,오전 출발,,"], "second.csv", {type: "text/csv"}));
+    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n다음 참가자,26,오전 출발,귀가편,"], "second.csv", {type: "text/csv"}));
     expect(screen.queryByText("다음 참가자")).toBeNull();
     await act(async () => { reply.resolve(failure); });
     expect(input).toBeEnabled(); expect(insertRegistration).toHaveBeenCalledTimes(1);
@@ -119,7 +119,7 @@ describe("진행 중 운영 초안 보존", () => {
     const view = render(<ImportPanel campusId={campusId} trips={[...trips]} />);
     const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
     if (!input) throw new Error("File control missing");
-    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n합성 참가자,26,오전 출발,,\n다음 참가자,26,오전 출발,,"], "partial.csv", {type: "text/csv"}));
+    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n합성 참가자,26,오전 출발,귀가편,\n다음 참가자,26,오전 출발,귀가편,"], "partial.csv", {type: "text/csv"}));
     // When
     await user.click(screen.getByRole("button", { name: "2명 등록" }));
     // Then
@@ -138,7 +138,7 @@ describe("진행 중 운영 초안 보존", () => {
     const view = render(<ImportPanel campusId={campusId} trips={[...trips]} />);
     const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
     if (!input) throw new Error("File control missing");
-    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n합성 참가자,26,오전 출발,,"], "first.csv", {type: "text/csv"}));
+    await user.upload(input, new File(["이름,학번,상행 출발,하행 출발,비고\n합성 참가자,26,오전 출발,귀가편,"], "first.csv", {type: "text/csv"}));
     const nextFile = new File([""], "second.csv", {type: "text/csv"});
     vi.spyOn(nextFile, "text").mockReturnValueOnce(content.promise);
     // When
@@ -148,7 +148,7 @@ describe("진행 중 운영 초안 보존", () => {
     expect(screen.getByRole("button", { name: "1명 등록" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "1명 등록" }));
     expect(insertRegistration).not.toHaveBeenCalled();
-    await act(async () => { content.resolve("이름,학번,상행 출발,하행 출발,비고\n다음 참가자,26,오전 출발,,"); });
+    await act(async () => { content.resolve("이름,학번,상행 출발,하행 출발,비고\n다음 참가자,26,오전 출발,귀가편,"); });
     expect(input).toBeEnabled(); expect(screen.getByRole("button", { name: "1명 등록" })).toBeEnabled();
     expect(screen.getByText("다음 참가자")).toBeInTheDocument(); expect(screen.queryByText("합성 참가자")).toBeNull();
   });

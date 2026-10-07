@@ -8,6 +8,7 @@ import { useRegistrationColumns } from "./registration-grid/columns";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RegForm } from "@/components/admin/reg-form";
+import { journeyLegsOf } from "@/components/registrations/journey-data";
 import { RegDrawer } from "@/components/admin/reg-drawer";
 import type { AdminRegRow } from "@/components/admin/registrations-panel";
 import type { LegValue } from "@/components/admin/transport-picker";
@@ -16,6 +17,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { sortRegistrations, conflictRowIdsOf } from "@/lib/registrations/sort";
 import { cn } from "@/lib/utils";
 import { useRegistrationEditor } from "@/components/registrations/use-registration-editor";
+import { validateAttendancePlan } from "@/lib/registrations/attendance-plan";
+import { TRANSPORT_MODES } from "@/lib/transport/labels";
 import { summarizeRegistrations } from "@/lib/registrations/view";
 
 export function RegistrationGrid({
@@ -45,6 +48,7 @@ export function RegistrationGrid({
     if (!r) return null;
     return {
       id: r.id,
+      version: r.version,
       name: r.name,
       student_id: r.student_id,
       campus_id: r.campus_id,
@@ -61,6 +65,8 @@ export function RegistrationGrid({
       cancel_reason: r.cancel_reason,
       attend_from: r.attend_from,
       attend_to: r.attend_to,
+      attend_from_at: r.attend_from_at,
+      attend_to_at: r.attend_to_at,
     };
   }, [rows, drawerId]);
 
@@ -93,7 +99,14 @@ export function RegistrationGrid({
   return (
     <div className="space-y-4">
       {confirmationDialog}
-      <RegistrationGridHeader campusName={campusName} visibleRows={visibleRows} trips={trips} buses={buses} stats={stats} onCreate={() => setCreating(true)} />
+      <RegistrationGridHeader campusName={campusName} visibleRows={visibleRows.map((row) => {
+        const up = legs[`${row.id}:up`]; const down = legs[`${row.id}:down`];
+        return { ...row, up_mode: TRANSPORT_MODES.find((mode) => mode === up?.mode), down_mode: TRANSPORT_MODES.find((mode) => mode === down?.mode),
+          up_via_unit_name: up?.via ?? null, down_via_unit_name: down?.via ?? null,
+          up_via_unit_id: up?.viaUnitId ?? null, down_via_unit_id: down?.viaUnitId ?? null,
+          up_transport_status: up?.status === "pending" ? "pending" as const : "confirmed" as const,
+          down_transport_status: down?.status === "pending" ? "pending" as const : "confirmed" as const };
+      })} trips={trips} buses={buses} stats={stats} onCreate={() => setCreating(true)} />
 
       {creating && <RegForm eventId={eventId} campuses={[{ id: campusId, name: campusName }]} lockedCampusId={campusId} trips={trips} units={units} places={places} dayCount={dayCount} onClose={() => setCreating(false)} />}
 
@@ -147,7 +160,10 @@ export function RegistrationGrid({
         onCancel={() => setAsk(null)}
       />
 
-      <RegistrationGridFilters rows={rows} listView={listView} setListView={setListView} stats={stats} />
+      <RegistrationGridFilters rows={rows} listView={listView} setListView={setListView} missingTransportCount={rows.filter((row) => {
+        const result = validateAttendancePlan({ ...row, legs: journeyLegsOf(legs, row.id) });
+        return row.participation_status !== "cancelled" && !result.ok && result.field === "legs";
+      }).length} />
 
       {/* Grid container — Card 비주얼 */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-1">
@@ -158,6 +174,7 @@ export function RegistrationGrid({
           <RegDrawer
             key={drawerRow.id}
             row={drawerRow}
+            journeyLegs={journeyLegsOf(legs, drawerRow.id)}
             campuses={[{ id: campusId, name: campusName, display_order: 0 }]}
             trips={trips}
             units={units}

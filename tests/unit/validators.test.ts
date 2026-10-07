@@ -14,6 +14,7 @@ import {
  * 대신 "두 값만으로 모든 조합이 표현되는가"를 여기서 고정한다.
  */
 
+const TIMES = { attend_from_at: "2026-10-10T09:30:00+09:00", attend_to_at: "2026-10-12T19:40:00+09:00" };
 const VALID_CAMPUS = "11111111-1111-4111-8111-111111111111";
 
 function base(overrides: Record<string, unknown> = {}) {
@@ -28,33 +29,33 @@ function base(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe("RegistrationSchema — 상·하행 두 값만 받는다", () => {
+describe("RegistrationSchema — 방향별 이동과 확정 참여 일정", () => {
   it("왕복: 상행 편 + 하행 편", () => {
     expect(RegistrationSchema.safeParse(base()).success).toBe(true);
   });
 
   it("편도 상행: 하행만 비움", () => {
-    expect(RegistrationSchema.safeParse(base({ down_trip_id: null })).success).toBe(true);
+    expect(RegistrationSchema.safeParse(base({ down_trip_id: null, ...TIMES, legs: [{ direction: "down", mode: "own_car", via_unit_id: null, status: "confirmed" }] })).success).toBe(true);
   });
 
   it("편도 하행: 상행만 비움", () => {
-    expect(RegistrationSchema.safeParse(base({ up_trip_id: null })).success).toBe(true);
+    expect(RegistrationSchema.safeParse(base({ up_trip_id: null, ...TIMES, legs: [{ direction: "up", mode: "ktx", via_unit_id: null, status: "confirmed" }] })).success).toBe(true);
   });
 
-  it("버스 미이용: 둘 다 비우고 이동 수단을 비고에", () => {
+  it("버스 미이용: 확정 일시와 방향별 이동 수단", () => {
     const r = RegistrationSchema.safeParse(
-      base({ up_trip_id: null, down_trip_id: null, note: "KTX 자가 이동" })
+      base({ up_trip_id: null, down_trip_id: null, note: null, ...TIMES, legs: [{ direction: "up", mode: "ktx", via_unit_id: null, status: "confirmed" }, { direction: "down", mode: "own_car", via_unit_id: null, status: "confirmed" }] })
     );
     expect(r.success).toBe(true);
   });
 
-  it("버스 미이용인데 비고가 없으면 실패 — 배차·출석에서 빠지므로 수단을 알아야 한다", () => {
+  it("버스 미이용인데 방향별 이동수단이 없으면 실패", () => {
     const r = RegistrationSchema.safeParse(
       base({ up_trip_id: null, down_trip_id: null })
     );
     expect(r.success).toBe(false);
     // fieldErrors 는 필드별 메시지 **배열**을 준다.
-    if (!r.success) expect(fieldErrors(r.error).note?.join(" ")).toContain("이동 수단");
+    if (!r.success) expect(fieldErrors(r.error).legs?.join(" ")).toContain("이동수단");
   });
 
   it("왕복인데 상·하행 편이 서로 다른 시각이어도 된다", () => {

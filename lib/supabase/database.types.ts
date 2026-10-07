@@ -1231,7 +1231,9 @@ export type Database = {
           assigned_down_bus_id: number | null
           assigned_up_bus_id: number | null
           attend_from: string | null
+          attend_from_at: string | null
           attend_to: string | null
+          attend_to_at: string | null
           attendance_type: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
           cancel_reason: string | null
@@ -1262,7 +1264,9 @@ export type Database = {
           assigned_down_bus_id?: number | null
           assigned_up_bus_id?: number | null
           attend_from?: string | null
+          attend_from_at?: string | null
           attend_to?: string | null
+          attend_to_at?: string | null
           attendance_type?: Database["public"]["Enums"]["attendance_type"]
           campus_id: string
           cancel_reason?: string | null
@@ -1293,7 +1297,9 @@ export type Database = {
           assigned_down_bus_id?: number | null
           assigned_up_bus_id?: number | null
           attend_from?: string | null
+          attend_from_at?: string | null
           attend_to?: string | null
+          attend_to_at?: string | null
           attendance_type?: Database["public"]["Enums"]["attendance_type"]
           campus_id?: string
           cancel_reason?: string | null
@@ -2428,6 +2434,18 @@ export type Database = {
           p_registration_id: string
         }
         Returns: undefined
+      }
+      save_registration_journey: {
+        Args: { p_registration_id: string; p_expected: Json; p_input: Json }
+        Returns: {
+          row: Database["public"]["Tables"]["registrations"]["Row"]
+          legs: {
+            direction: "up" | "down"
+            mode: Database["public"]["Enums"]["transport_mode"]
+            status: Database["public"]["Enums"]["transport_status"]
+            via_unit_id: string | null
+          }[]
+        }
       }
       set_manual_assignment: {
         Args: {

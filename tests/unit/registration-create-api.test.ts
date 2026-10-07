@@ -7,10 +7,35 @@ const rpc = vi.fn<(name: string, args: unknown) => Promise<{ data: string | null
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ rpc }) }));
 vi.mock("@/lib/events/current", () => ({ currentEventId: vi.fn() }));
 const eventId = "10000000-0000-4000-8000-000000000001";
-const input = (): CreateRegistrationInput => ({ name: "학우", student_id: "26", campus_id: "20000000-0000-4000-8000-000000000001", up_trip_id: null, down_trip_id: null, payment_status: "unpaid", note: null, attend_from: null, attend_to: null, legs: [], pickups: [], courses: [] });
+const input = (): CreateRegistrationInput => ({ name: "학우", student_id: "26", campus_id: "20000000-0000-4000-8000-000000000001", up_trip_id: 1, down_trip_id: 2, payment_status: "unpaid", note: null, attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null, legs: [], pickups: [], courses: [] });
 beforeEach(() => { vi.clearAllMocks(); rpc.mockResolvedValue({ data: eventId, error: null }); vi.mocked(currentEventId).mockResolvedValue({ ok: true, id: eventId }); });
 
 describe("완전한 신청 추가 경계", () => {
+  it("버스 없는 방향의 수단을 메모로 대신하지 못한다", async () => {
+    // Given / When
+    const result = await createCompleteRegistration({ ...input(), down_trip_id: null, note: "자차 귀가" }, eventId);
+    // Then
+    expect(result).toMatchObject({ ok: false, message: expect.stringContaining("이동수단") });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("직접 API 호출도 편도 확정 일시 없이 저장하지 못한다", async () => {
+    // Given / When
+    const result = await createCompleteRegistration({ ...input(), down_trip_id: null,
+      legs: [{ direction: "down", mode: "own_car", via_unit_id: null, status: "confirmed" }] }, eventId);
+    // Then
+    expect(result).toMatchObject({ ok: false, message: expect.stringContaining("날짜·시각") });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("전 일정 편도 신청은 날짜를 NULL로 유지하면서 알려진 일시와 수단을 원자 RPC로 보낸다", async () => {
+    // Given
+    const value = { ...input(), down_trip_id: null, attend_from_at: "2026-10-10T09:30:00+09:00", attend_to_at: "2026-10-12T19:40:00+09:00",
+      legs: [{ direction: "down", mode: "own_car", via_unit_id: null, status: "confirmed" }] } satisfies CreateRegistrationInput;
+    // When
+    const result = await createCompleteRegistration(value, eventId);
+    // Then
+    expect(result.ok).toBe(true);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("create_registration_complete", { p_event_id: eventId, p_input: value });
+  });
   it.each([{ roles: ["driver"] }, { fee: 1 }, { assigned_up_bus_id: 7 }, { attend_from: "2026-10-12", attend_to: "2026-10-10" }])("권한 또는 형식이 다른 필드는 쓰기 전에 거부한다 (%o)", async (patch) => {
     // Given / When
     const result = await createCompleteRegistration({ ...input(), ...patch }, eventId);

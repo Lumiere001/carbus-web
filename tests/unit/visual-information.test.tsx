@@ -25,14 +25,15 @@ describe("시각 구성의 정보와 행동 보존", () => {
     }
   });
   it.each([true, false])("부분 참석 카드에 모든 원래 정보와 권한별 편집을 보존한다 (%s)", (canEdit) => {
+    const edit = vi.fn();
     render(<PartialList rows={[{ id: "r1", campus: "합성 캠퍼스", name: "검증 학우", student_id: "26", partialPeriod: true,
       attend_from: "2026-10-08", attend_to: null, up_trip_id: 1, down_trip_id: null, up: { mode: "ktx", status: "confirmed", via: null },
-      down: { mode: "own_car", status: "confirmed", via: null }, missing: false, note: "금요일 저녁 이동 · 메모 전체" }]} title="부분 참석" eventId="event-1" canEdit={canEdit} trips={[{ id: 1, label: "오전 출발" }]} startsOn="2026-10-07" endsOn="2026-10-09" />);
+      down: { mode: "own_car", status: "confirmed", via: null }, missing: false, note: "금요일 저녁 이동 · 메모 전체" }]} title="부분 참석" eventId="event-1" canEdit={canEdit} onEdit={edit} trips={[{ id: 1, label: "오전 출발" }]} startsOn="2026-10-07" endsOn="2026-10-09" />);
     for (const text of ["검증 학우", "합성 캠퍼스 · 26", "2026-10-08", "2026-10-09", "금요일 저녁 이동 · 메모 전체"]) expect(screen.getByText(text)).toBeTruthy();
     expect(screen.getByText(/KTX·고속버스/)).toBeTruthy(); expect(screen.getByText(/자차·가족차/)).toBeTruthy();
     expect(screen.getByLabelText("검증 학우 참여 예정")).toBeTruthy(); expect(screen.getByLabelText("검증 학우 현장 실제 기록")).toBeTruthy();
-    const link = screen.queryByRole("link", { name: "검증 학우 정보 수정" });
-    if (canEdit) expect(link).toHaveAttribute("href", "/admin/e/event-1/registrations?edit=r1"); else expect(link).toBeNull();
+    const link = screen.queryByRole("button", { name: "검증 학우 정보 수정" });
+    if (canEdit) { fireEvent.click(link!); expect(edit).toHaveBeenCalledExactlyOnceWith("r1"); } else expect(link).toBeNull();
   });
 
   it("외부 이동 목록은 방향·자리·대기·메모를 보존하고 확정 취소에서 쓰지 않는다", async () => {

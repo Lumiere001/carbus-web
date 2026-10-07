@@ -16,7 +16,7 @@ export type RegistrationGridProps = {
   readonly buses: Bus[];
   readonly trips: EventTrip[];
   /** "<신청id>:<방향>" → 이동수단. 행이 없으면 우리 버스(기본값). */
-  readonly legs: Record<string, { mode: string; status: string; via: string | null }>;
+  readonly legs: Record<string, { mode: string; status: string; via: string | null; viaUnitId?: string | null }>;
   /** 타지구 차량일 때 고를 지구 목록. */
   readonly units: { id: string; name: string }[];
   /** 신청id → 수송 요청들. */

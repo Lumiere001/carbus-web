@@ -20,6 +20,8 @@ function mount(lockedCampusId?: string) {
 function basic() {
   fireEvent.change(screen.getByLabelText("이름"), { target: { value: "추가 학우" } });
   fireEvent.change(screen.getByLabelText("학번"), { target: { value: "26" } });
+  fireEvent.change(screen.getByLabelText("상행 (가는 편)"), { target: { value: "1" } });
+  fireEvent.change(screen.getByLabelText("하행 (오는 편)"), { target: { value: "2" } });
 }
 async function submit() {
   await act(async () => { fireEvent.click(screen.getByRole("button", { name: "신청 추가" })); });
@@ -33,14 +35,17 @@ describe("신규 신청의 필드 일관성", () => {
     mount(lockedCampusId); basic();
     fireEvent.change(screen.getByLabelText("상행 (가는 편)"), { target: { value: "1" } });
     fireEvent.change(screen.getByLabelText("하행 (오는 편)"), { target: { value: "2" } });
-    fireEvent.change(screen.getByLabelText("참여 시작일"), { target: { value: "2026-10-10" } });
-    fireEvent.change(screen.getByLabelText("참여 종료일"), { target: { value: "2026-10-12" } });
+    fireEvent.click(screen.getByLabelText("행사의 일부 기간만 참석합니다"));
+    fireEvent.change(screen.getByLabelText("참여 시작 날짜"), { target: { value: "2026-10-10" } });
+    fireEvent.change(screen.getByLabelText("참여 시작 시각"), { target: { value: "09:30" } });
+    fireEvent.change(screen.getByLabelText("참여 종료 날짜"), { target: { value: "2026-10-12" } });
+    fireEvent.change(screen.getByLabelText("참여 종료 시각"), { target: { value: "19:40" } });
     fireEvent.change(screen.getByLabelText("지구 → 수련회장 이동수단"), { target: { value: "ktx" } });
     fireEvent.change(screen.getByLabelText("수련회장 → 지구 이동수단"), { target: { value: "other_district" } });
     fireEvent.change(screen.getByLabelText("수련회장 → 지구 타지구 이름"), { target: { value: unit } });
     fireEvent.click(screen.getByRole("button", { name: "수송 요청 추가" }));
-    fireEvent.change(screen.getByLabelText("날짜"), { target: { value: "2026-10-10" } });
-    fireEvent.change(screen.getByLabelText("시각"), { target: { value: "15:40" } });
+    fireEvent.change(screen.getByLabelText("픽업 일시 1 날짜"), { target: { value: "2026-10-10" } });
+    fireEvent.change(screen.getByLabelText("픽업 일시 1 시각"), { target: { value: "15:40" } });
     fireEvent.change(screen.getByLabelText("픽업 장소"), { target: { value: "9" } });
     fireEvent.click(screen.getByLabelText("첫째날 수강신청"));
     fireEvent.change(screen.getByLabelText("첫째날 시간"), { target: { value: "12:30" } });
@@ -49,11 +54,29 @@ describe("신규 신청의 필드 일관성", () => {
     // Then
     expect(createCompleteRegistration).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       campus_id: campus, up_trip_id: null, down_trip_id: 2, attend_from: "2026-10-10", attend_to: "2026-10-12",
+      attend_from_at: "2026-10-10T09:30:00+09:00", attend_to_at: "2026-10-12T19:40:00+09:00",
       legs: [{ direction: "up", mode: "ktx", status: "confirmed", via_unit_id: null }, { direction: "down", mode: "other_district", status: "pending", via_unit_id: unit }],
       pickups: [{ direction: "up", pickup_at: "2026-10-10T15:40:00+09:00", place_id: 9, note: null }], courses: [{ day_no: 1, at_time: "12:30" }],
     }), eventId);
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([undefined, campus])("확정한 참여 시각이 없으면 부분 참석을 등록하지 않고 안내한다 (%s)", async (lockedCampusId) => {
+    mount(lockedCampusId); basic();
+    fireEvent.click(screen.getByLabelText("행사의 일부 기간만 참석합니다"));
+    fireEvent.change(screen.getByLabelText("참여 시작 날짜"), { target: { value: "2026-10-10" } });
+    await submit();
+    expect(createCompleteRegistration).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "신청 정보를 확인해 주세요" })).toHaveTextContent("부분참은 참여 기간(시간 포함)을 입력해주세요!");
+    expect(screen.getByLabelText("참여 시작 날짜")).toHaveValue("2026-10-10");
+  });
+  it("한쪽 버스를 이용하지 않으면 실제 이동수단을 선택해야 한다", async () => {
+    mount(); basic();
+    fireEvent.change(screen.getByLabelText("하행 (오는 편)"), { target: { value: "" } });
+    await submit();
+    expect(createCompleteRegistration).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "신청 정보를 확인해 주세요" })).toHaveTextContent("하행 이동수단을 선택하세요.");
   });
 
   it("부가 정보 저장 실패는 입력을 남기고 폼을 닫지 않는다", async () => {
@@ -73,7 +96,7 @@ describe("신규 신청의 필드 일관성", () => {
   it("픽업 날짜만 입력하면 저장을 시작하지 않는다", async () => {
     // Given
     mount(); basic(); fireEvent.click(screen.getByRole("button", { name: "수송 요청 추가" }));
-    fireEvent.change(screen.getByLabelText("날짜"), { target: { value: "2026-10-10" } });
+    fireEvent.change(screen.getByLabelText("픽업 일시 1 날짜"), { target: { value: "2026-10-10" } });
     // When
     await submit();
     // Then
@@ -116,11 +139,12 @@ describe("신규 신청의 필드 일관성", () => {
 
   it("미저장 신청에서 ESC를 취소하면 모든 입력을 보존한다", async () => {
     mount(); basic();
-    fireEvent.change(screen.getByLabelText("참여 시작일"), { target: { value: "2026-10-10" } });
+    fireEvent.click(screen.getByLabelText("행사의 일부 기간만 참석합니다"));
+    fireEvent.change(screen.getByLabelText("참여 시작 날짜"), { target: { value: "2026-10-10" } });
     await act(async () => { fireEvent(screen.getByRole("dialog", { name: "순장/순원 추가" }), new Event("cancel", { cancelable: true })); });
     await act(async () => { fireEvent.click(within(screen.getByRole("dialog", { name: "입력한 신청을 닫을까요?" })).getByRole("button", { name: "취소" })); });
     expect(screen.getByLabelText("이름")).toHaveValue("추가 학우");
-    expect(screen.getByLabelText("참여 시작일")).toHaveValue("2026-10-10");
+    expect(screen.getByLabelText("참여 시작 날짜")).toHaveValue("2026-10-10");
     expect(onClose).not.toHaveBeenCalled();
   });
 

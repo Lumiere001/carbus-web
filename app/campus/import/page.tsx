@@ -17,13 +17,21 @@ export default async function ImportPage() {
     .single();
   if (!profile?.campus_id) redirect("/pending");
 
-  const { data: slots, error } = await supabase
-    .from("event_trips")
-    .select("id, key, label, direction, active")
-        .eq("active", true)
-    .order("display_order");
+  const [tripResult, unitResult] = await Promise.all([
+    supabase
+      .from("event_trips")
+      .select("id, key, label, direction, active")
+      .eq("active", true)
+      .order("display_order"),
+    supabase
+      .from("org_units")
+      .select("id, name")
+      .eq("kind", "district")
+      .is("retired_at", null)
+      .order("display_order"),
+  ]);
 
-  if (error) return <DataLoadError retryHref="/campus/import" />;
+  if (tripResult.error || unitResult.error) return <DataLoadError retryHref="/campus/import" />;
 
   return (
     <div className="space-y-4">
@@ -33,7 +41,7 @@ export default async function ImportPage() {
           템플릿에 맞춰 작성한 CSV 파일을 올리세요. 엑셀·노션에서 작성한 명단도 CSV 파일로 저장한 뒤 올릴 수 있습니다. 캠퍼스는 본인 캠퍼스로 자동 지정됩니다.
         </p>
       </div>
-      <ImportPanel campusId={profile.campus_id} trips={slots ?? []} />
+      <ImportPanel campusId={profile.campus_id} trips={tripResult.data ?? []} units={unitResult.data ?? []} />
     </div>
   );
 }

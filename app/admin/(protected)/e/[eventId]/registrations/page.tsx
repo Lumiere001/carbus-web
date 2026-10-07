@@ -37,7 +37,7 @@ export default async function AdminRegistrationsPage({
     supabase
       .from("registrations")
       .select(
-        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, fee, payment_status, participation_status, cancel_reason, roles, note, assigned_up_bus_id, assigned_down_bus_id, attend_from, attend_to, created_at"
+        "id, name, student_id, campus_id, attendance_type, up_trip_id, down_trip_id, fee, payment_status, participation_status, cancel_reason, roles, note, assigned_up_bus_id, assigned_down_bus_id, attend_from, attend_to, attend_from_at, attend_to_at, version, created_at"
       )
       .order("created_at", { ascending: true }),
     supabase.from("campuses").select("id, name, display_order"),
@@ -109,11 +109,12 @@ export default async function AdminRegistrationsPage({
   // 사람 → 방향별 이동수단. 없으면 우리 버스(기본값)라 행을 안 만든다.
   const legs = new Map<
     string,
-    { mode: string; status: string; via: string | null }
+    { mode: string; status: string; via: string | null; viaUnitId?: string | null }
   >();
   for (const l of legRes.data ?? []) {
     legs.set(`${l.registration_id}:${l.direction}`, {
       mode: l.mode,
+      viaUnitId: l.via_unit_id,
       status: l.status,
       via: l.via_unit_id ? unitName.get(l.via_unit_id) ?? null : null,
     });

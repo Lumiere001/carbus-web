@@ -5,6 +5,7 @@ import { currentEventId } from "@/lib/events/current";
 import type { Database } from "@/lib/supabase/database.types";
 import { updateCells } from "@/lib/registrations/mutations";
 import { toKst } from "@/lib/time/kst";
+import type { AttendancePlan } from "@/lib/registrations/attendance-plan";
 
 export { toKst } from "@/lib/time/kst";
 
@@ -80,6 +81,17 @@ export async function setAttendRange(
   expected: { readonly attend_from: string | null; readonly attend_to: string | null }
 ): ReturnType<typeof updateCells> {
   return updateCells(registrationId, expected, { attend_from: from || null, attend_to: to || null });
+}
+
+/** 날짜와 확정 일시는 관찰한 네 필드를 비교한 뒤 한 번에 저장한다. */
+export async function setAttendancePlan(
+  registrationId: string,
+  plan: AttendancePlan,
+  expected: AttendancePlan
+): ReturnType<typeof updateCells> {
+  return updateCells(registrationId, expected, {
+    ...plan, attend_from_at: toKst(plan.attend_from_at), attend_to_at: toKst(plan.attend_to_at),
+  });
 }
 
 function humanize(msg: string): string {

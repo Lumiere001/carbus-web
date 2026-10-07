@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { registrationLegSchema } from "@/lib/registrations/create-schema";
+import { validateAttendancePlan } from "@/lib/registrations/attendance-plan";
 
 /**
  * 순장/순원 신청 검증 — carbus-web v4.2 (reference/validators.md 포팅).
@@ -39,16 +41,16 @@ export const RegistrationSchema = z
       .nullable(),
     note: z.string().max(200, "비고는 200자 이내입니다").nullish(),
     roles: z.array(z.string()).default([]),
+    attend_from: z.iso.date().nullable().default(null),
+    attend_to: z.iso.date().nullable().default(null),
+    attend_from_at: z.iso.datetime({ offset: true }).nullable().default(null),
+    attend_to_at: z.iso.datetime({ offset: true }).nullable().default(null),
+    legs: z.array(registrationLegSchema).default([]),
   })
-  // 버스를 전혀 안 타면 이동 수단을 알아야 한다 — 배차·출석에서 빠지기 때문이다.
-  .refine(
-    (d) => d.up_trip_id !== null || d.down_trip_id !== null || !!d.note?.trim(),
-    {
-      message:
-        "버스를 이용하지 않는 경우 이동 수단(KTX·자차 등)을 비고에 적어주세요",
-      path: ["note"],
-    }
-  );
+  .superRefine((value, ctx) => {
+    const result = validateAttendancePlan(value);
+    if (!result.ok) ctx.addIssue({ code: "custom", message: result.message, path: [result.field] });
+  });
 
 export type RegistrationInput = z.infer<typeof RegistrationSchema>;
 

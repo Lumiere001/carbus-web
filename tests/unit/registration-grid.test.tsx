@@ -37,7 +37,7 @@ const row = (id = "own", name = "원래 이름"): RegistrationRow => ({
   payment_status: "unpaid", fee: 50000, note: null, roles: [], assigned_up_bus_id: null,
   assigned_down_bus_id: null, created_by: null, created_at: "2026-10-07T00:00:00Z", updated_at: "2026-10-07T00:00:00Z",
   version: 1, checked_in: false, checked_out: false, home_unit_id: null, participation_status: "registered",
-  cancelled_at: null, cancelled_by: null, cancel_reason: null, attend_from: null, attend_to: null,
+  cancelled_at: null, cancelled_by: null, cancel_reason: null, attend_from: null, attend_to: null, attend_from_at: null, attend_to_at: null,
 });
 const props = (): RegistrationGridProps => ({ eventId: "event", campusId: "campus", campusName: "테스트", initialRows: [row(), row("other", "다른 학우")],
   buses: [], trips: [1,2].map((id) => ({ id, key: `t${id}`, label: `기존 편 ${id}`, direction: id === 1 ? "up" : "down", active: true, display_order: id, event_id: "event", created_at: "2026-10-07T00:00:00Z", departs_at: null, origin: null, destination: null })),
@@ -55,6 +55,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("캠퍼스 명단 모듈 경계", () => {
+  it.each([true, false])("비고 대신 구조화된 이동수단으로 누락 안내를 판단한다 (%s)", (complete) => {
+    const person = { ...row(), attendance_type: "self" as const, up_trip_id: null, down_trip_id: null,
+      note: complete ? null : "자차 예정", attend_from_at: "2026-10-07T09:30:00+09:00", attend_to_at: "2026-10-09T19:40:00+09:00" };
+    rosterRead.mockResolvedValue({ data: [person], error: null });
+    render(<RegistrationGrid {...props()} initialRows={[person]} legs={complete ? {
+      [`${person.id}:up`]: { mode: "own_car", status: "confirmed", via: null }, [`${person.id}:down`]: { mode: "ktx", status: "confirmed", via: null },
+    } : {}} />);
+    const warning = screen.queryByText(/이동수단 확인 필요/);
+    if (complete) expect(warning).toBeNull(); else expect(warning?.textContent).toContain("1명");
+  });
+
   it("운행편 메타데이터가 바뀌면 열의 선택지에 최신 이름을 보여 준다", () => {
     // Given
     const initial = props(); const { rerender } = render(<RegistrationGrid {...initial} />);

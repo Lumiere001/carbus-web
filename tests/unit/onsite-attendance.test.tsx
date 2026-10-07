@@ -36,7 +36,7 @@ describe("현장 기록 확인", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
     // Then server-confirmed state replaces the older local snapshot
     expect(rpc).toHaveBeenCalledExactlyOnceWith("onsite_snapshot", { p_event: event, p_reg_ids: [reg] });
-    expect(screen.getByText("현장 참석 중")).toBeInTheDocument();
+    expect(screen.getByText("행사장에 있음")).toBeInTheDocument();
     Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
     await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
     expect(rpc).toHaveBeenCalledTimes(1);
@@ -48,30 +48,30 @@ describe("현장 기록 확인", () => {
     let complete: ((reply: Reply) => void) | undefined;
     rpc.mockReturnValueOnce(new Promise((resolve) => { complete = resolve; })); mount();
     // When arrival is checked
-    await userEvent.click(screen.getByRole("button", { name: "검증 학우 현장 도착 체크" }));
+    await userEvent.click(screen.getByRole("button", { name: "검증 학우 행사장 도착 체크" }));
     // Then the action stays pending until the server confirms it
     expect(screen.getByRole("status")).toHaveTextContent("저장 중");
-    expect(screen.queryByText("현장 참석 중")).not.toBeInTheDocument();
+    expect(screen.queryByText("행사장에 있음")).not.toBeInTheDocument();
     await act(async () => { complete?.({ data: confirmed, error: null }); });
-    expect(screen.getByText("현장 참석 중")).toBeInTheDocument();
+    expect(screen.getByText("행사장에 있음")).toBeInTheDocument();
     expect(screen.getByLabelText("검증 학우 현장 기록")).toHaveTextContent(/도착.*12:30/);
   });
   it("통신 결과가 불명확하면 새 체크를 막고 같은 UUID로 저장 여부를 확인한다", async () => {
     // Given an unknown transport result
     rpc.mockResolvedValueOnce({ data: null, error: { code: "", message: "transport unavailable" } }); mount();
     // When checking arrival and retrying the uncertain request
-    await userEvent.click(screen.getByRole("button", { name: "검증 학우 현장 도착 체크" }));
-    expect(screen.getByRole("button", { name: "검증 학우 행사 출발 체크" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "검증 학우 행사장 도착 체크" }));
+    expect(screen.getByRole("button", { name: "검증 학우 행사장 떠남 체크" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "같은 요청 확인" }));
     // Then retry uses the exact original request identity and payload
     expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[0]);
-    expect(screen.getByText("현장 참석 중")).toBeInTheDocument();
+    expect(screen.getByText("행사장에 있음")).toBeInTheDocument();
   });
   it("다른 기기의 변경 충돌이면 최신 기록을 읽고 저장했다고 표시하지 않는다", async () => {
     // Given a stale revision
     rpc.mockResolvedValueOnce({ data: null, error: { code: "40001", message: "다른 기기 변경" } }); mount();
     // When arrival is checked
-    await userEvent.click(screen.getByRole("button", { name: "검증 학우 현장 도착 체크" }));
+    await userEvent.click(screen.getByRole("button", { name: "검증 학우 행사장 도착 체크" }));
     // Then server conflict persists while latest confirmed history is loaded
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("다른 기기 변경"));
     expect(rpc.mock.calls[1]?.[0]).toBe("onsite_snapshot");

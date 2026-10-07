@@ -24,7 +24,7 @@ describe("현장 시각 정정", () => {
     // Given an incomplete arrival edit
     const save = vi.fn();
     render(<OnsiteCorrection visit={visit} name="합성 학우" busy={false} onSave={save} onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText("현장 도착 시각"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("행사장 도착 시각"), { target: { value: "" } });
     await userEvent.type(screen.getByLabelText("정정 사유"), "입력 중");
     // When submitting
     await userEvent.click(screen.getByRole("button", { name: "정정 저장" }));
@@ -46,10 +46,10 @@ describe("현장 시각 정정", () => {
   });
   it("정정 저장 중에는 시각·사유·해제·닫기를 잠가 전송 내용이 바뀌지 않는다", () => {
     render(<OnsiteCorrection visit={visit} name="합성 학우" busy={true} onSave={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.getByLabelText("현장 도착 날짜")).toBeDisabled();
-    expect(screen.getByLabelText("현장 도착 시각")).toBeDisabled();
-    expect(screen.getByLabelText("행사 출발 날짜")).toBeDisabled();
-    expect(screen.getByLabelText("행사 출발 시각")).toBeDisabled();
+    expect(screen.getByLabelText("행사장 도착 날짜")).toBeDisabled();
+    expect(screen.getByLabelText("행사장 도착 시각")).toBeDisabled();
+    expect(screen.getByLabelText("행사장 떠남 날짜")).toBeDisabled();
+    expect(screen.getByLabelText("행사장 떠남 시각")).toBeDisabled();
     expect(screen.getByLabelText("정정 사유")).toBeDisabled();
     for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled();
   });
