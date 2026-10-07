@@ -89,15 +89,15 @@ export function FleetTripSection({
           />
         ))}
 
-        <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-border">
-          <label className="flex flex-col gap-1 text-xs text-muted-2">
+        <div className="flex flex-wrap items-start gap-3 pt-2 border-t border-border">
+          <label className="mt-5 flex flex-col gap-1 text-xs text-muted-2">
             새 운행편 이름
             <input
               disabled={pending}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder={direction === "up" ? "예: 화 오전 9시" : "예: 일 오후 3시"}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground w-48"
+              className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground w-48 max-w-full"
             />
           </label>
           {/* 차량 대수를 여기서 같이 받는다. 편만 만들면 차가 0대라 아무도 못 타는데,
@@ -106,7 +106,7 @@ export function FleetTripSection({
 
               라벨이 그냥 "차량 대수" 였을 때 **새로 만드는 대수인지 그 편을 뛰는 총
               대수인지** 알 수 없었다. 총 대수다 — 이미 있는 차부터 채운다. */}
-          <label className="flex flex-col gap-1 text-xs text-muted-2">
+          <label className="mt-5 flex flex-col gap-1 text-xs text-muted-2">
             이 편을 뛸 차량 대수
             <input
               disabled={pending}
@@ -115,7 +115,7 @@ export function FleetTripSection({
               max={30}
               value={busCountDraft}
               onChange={(e) => setBusCountDraft(e.target.value)}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground w-24 text-right tabular-nums"
+              className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground w-28 text-right tabular-nums"
             />
           </label>
           <DateTimeField
@@ -131,6 +131,7 @@ export function FleetTripSection({
           <Button
             variant="secondary"
             size="sm"
+            className="mt-0 min-h-11 md:mt-11"
             disabled={pending || !label.trim()}
             onClick={async () => {
               if (departsAt && !isCompleteDateTime(departsAt)) {
